@@ -240,3 +240,18 @@ body.trial-expired .settings-form select{
 .billing-success-card h1{font:800 30px/1.1 "Manrope";letter-spacing:-.04em;margin:0 0 10px}.billing-success-card>p{font-size:13px;line-height:1.6;color:var(--muted);margin:0 0 18px}
 .billing-success-card .notice{text-align:left}.billing-success-link{display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:16px}
 @media(max-width:700px){.billing-choice-wrap{grid-template-columns:1fr}.billing-settings-row{align-items:flex-start;flex-direction:column}.billing-settings-row a{width:100%;justify-content:center}}
+
+
+/* Abo-Status */
+.trial-side-status.warning{border-color:rgba(246,197,107,.22);background:rgba(187,132,31,.12)}
+.trial-side-status.warning strong{color:#ffe0a1}
+.trial-mobile-status.warning{background:#fff7df;color:#8b651b}
+.billing-choice-wrap[hidden]{display:none!important}
+.billing-current-card{max-width:880px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;margin-bottom:18px;display:grid;gap:10px}
+.billing-current-card h2{font:800 26px/1.1 "Manrope";letter-spacing:-.035em;margin:0}
+.billing-current-card p{font-size:12px;line-height:1.55;color:var(--muted);max-width:650px;margin:0}
+.billing-current-card>a{justify-self:start;min-height:42px;padding:0 14px;border-radius:10px;background:var(--dark);color:#fff;display:flex;align-items:center;font-size:11px;font-weight:800}
+.billing-state{justify-self:start;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:800}
+.billing-state.good{background:#e7f6ee;color:#237a55}
+.billing-state.warning{background:#fff3d8;color:#8b651b}
+.billing-state.bad{background:#fff0e9;color:#a54831}
