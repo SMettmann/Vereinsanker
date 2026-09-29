@@ -73,3 +73,26 @@ button:disabled{opacity:.58;cursor:not-allowed}
 .field-label-row label{margin:0}
 .forgot-link{font-size:11px;font-weight:800;color:var(--green)}
 .forgot-link:hover{text-decoration:underline}
+
+
+/* Vereinslogo */
+.club-logo-shell{width:38px;height:42px;display:grid;place-items:center;flex:0 0 auto}
+.club-logo-shell>img{width:38px;height:38px;border-radius:10px;object-fit:contain;background:#fff}
+.club-logo-shell>i{width:38px;height:42px;display:grid;place-items:center;background:var(--green);clip-path:polygon(50% 0,94% 14%,90% 66%,50% 100%,10% 66%,6% 14%);font-style:normal;font-size:11px;font-weight:800}
+.club-mini>.club-logo-shell>i{width:38px;height:42px}
+.club-mini>.club-logo-shell+div{display:grid;gap:3px}
+.dashboard-heading{display:flex;align-items:center;gap:13px}
+.dashboard-logo-shell{width:48px;height:48px;display:grid;place-items:center;flex:0 0 auto}
+.dashboard-logo-shell img{width:48px;height:48px;object-fit:contain;border-radius:13px;background:#fff;border:1px solid var(--line)}
+.dashboard-logo-shell i{width:48px;height:48px;display:grid;place-items:center;border-radius:13px;background:var(--green);color:#fff;font-style:normal;font-weight:800;font-size:12px}
+.logo-settings{display:flex;align-items:center;gap:17px;padding:15px;border:1px solid var(--line);border-radius:15px;background:#fafbf8;margin-bottom:18px}
+.logo-preview-shell{width:76px;height:76px;border-radius:16px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
+.logo-preview-shell img{width:68px;height:68px;object-fit:contain}
+.logo-preview-shell i{width:60px;height:60px;border-radius:14px;display:grid;place-items:center;background:var(--green);color:#fff;font-style:normal;font-weight:800}
+.logo-settings-copy{display:grid;gap:5px}.logo-settings-copy>strong{font-size:13px}.logo-settings-copy>span{font-size:11px;color:var(--muted)}
+.logo-actions{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
+.logo-upload-button,.logo-remove-button{height:36px;padding:0 12px;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center}
+.logo-upload-button{background:var(--green);color:#fff;border:0}
+.logo-remove-button{background:#fff;color:#9b4838;border:1px solid var(--line)}
+.logo-remove-button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:600px){.logo-settings{align-items:flex-start}.logo-preview-shell{width:64px;height:64px}.logo-preview-shell img{width:56px;height:56px}.dashboard-logo-shell{width:42px;height:42px}.dashboard-logo-shell img,.dashboard-logo-shell i{width:42px;height:42px}}
