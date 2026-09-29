@@ -579,6 +579,25 @@ async function initSettings() {
   });
 }
 
+
+function setupMobileNavigation() {
+  if (!$(".app-shell") || $(".mobile-bottom-nav")) return;
+  const page = location.pathname.split("/").pop() || "app.html";
+  const items = [
+    ["app.html", "⌂", "Übersicht"],
+    ["members.html", "♙", "Mitglieder"],
+    ["contributions.html", "€", "Beiträge"],
+    ["settings.html", "⚙", "Einstellungen"]
+  ];
+  const nav = document.createElement("nav");
+  nav.className = "mobile-bottom-nav";
+  nav.setAttribute("aria-label", "App-Navigation");
+  nav.innerHTML = items.map(([href, icon, label]) =>
+    '<a href="' + href + '" class="' + (page === href ? "active" : "") + '"><i>' + icon + '</i><span>' + label + '</span></a>'
+  ).join("");
+  document.body.appendChild(nav);
+}
+
 function setupLogout() {
   const sideBottom = $(".side-bottom");
   if (!sideBottom) return;
@@ -603,6 +622,7 @@ function setupLogout() {
     const session = await requireSession();
     if (!session) return;
     setupLogout();
+    setupMobileNavigation();
 
     if ($("#finishSetup")) return initOnboarding();
     if ($("#dashboardPage")) return initDashboard();
