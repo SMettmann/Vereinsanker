@@ -170,6 +170,83 @@ async function initLogin() {
   });
 }
 
+
+async function initForgotPassword() {
+  const form = $("#forgotPasswordForm");
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const button = $("button[type='submit']", form);
+    const email = $("#forgotEmail").value.trim();
+
+    button.disabled = true;
+    button.textContent = "E-Mail wird gesendet …";
+
+    const redirectTo = new URL("reset-password.html", location.href).href;
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+
+    if (error) {
+      setMessage(form, "Reset-Link konnte nicht gesendet werden. Bitte versuche es erneut.", "error");
+      button.disabled = false;
+      button.textContent = "Reset-Link senden →";
+      return;
+    }
+
+    setMessage(form, "Wenn die E-Mail-Adresse registriert ist, erhältst du jetzt einen Reset-Link.", "success");
+    button.textContent = "Reset-Link gesendet ✓";
+  });
+}
+
+async function initResetPassword() {
+  const form = $("#resetPasswordForm");
+  const button = $("button[type='submit']", form);
+
+  const params = new URLSearchParams(location.hash.startsWith("#") ? location.hash.slice(1) : location.search);
+  if (params.get("error")) {
+    setMessage(form, "Der Reset-Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.", "error");
+    button.disabled = true;
+    return;
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 250));
+  const session = await getSession();
+  if (!session) {
+    setMessage(form, "Dieser Reset-Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.", "error");
+    button.disabled = true;
+    return;
+  }
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const password = $("#newPassword").value;
+    const confirmPassword = $("#newPasswordConfirm").value;
+
+    if (password.length < 8) {
+      setMessage(form, "Das Passwort muss mindestens 8 Zeichen haben.", "error");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setMessage(form, "Die beiden Passwörter stimmen nicht überein.", "error");
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Passwort wird gespeichert …";
+
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) {
+      setMessage(form, "Passwort konnte nicht geändert werden. Bitte fordere einen neuen Reset-Link an.", "error");
+      button.disabled = false;
+      button.textContent = "Passwort speichern →";
+      return;
+    }
+
+    await sb.auth.signOut();
+    setMessage(form, "Passwort geändert. Du kannst dich jetzt anmelden.", "success");
+    button.textContent = "Passwort geändert ✓";
+    setTimeout(() => location.replace("login.html"), 1200);
+  });
+}
+
 function showStep(n) {
   $$(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
   if ($("#stepNo")) $("#stepNo").textContent = n;
@@ -616,6 +693,14 @@ function setupLogout() {
     }
     if ($("#loginForm")) {
       await initLogin();
+      return;
+    }
+    if ($("#forgotPasswordForm")) {
+      await initForgotPassword();
+      return;
+    }
+    if ($("#resetPasswordForm")) {
+      await initResetPassword();
       return;
     }
 
