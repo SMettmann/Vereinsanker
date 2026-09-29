@@ -217,3 +217,26 @@ body.trial-expired .settings-form select{
   font-weight:800!important;
   margin-top:2px;
 }
+
+
+/* Stripe Tarifwahl */
+.billing-choice-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:880px;margin-bottom:18px}
+.billing-choice{position:relative;background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;gap:22px}
+.billing-choice.recommended{border:2px solid var(--green)}
+.billing-badge{position:absolute;right:18px;top:16px;padding:5px 8px;border-radius:999px;background:var(--soft);color:var(--green);font-size:9px;font-weight:800}
+.billing-choice>div{display:grid;gap:7px}.billing-choice>div>span{font-size:12px;color:var(--muted);font-weight:700}
+.billing-choice strong{font:800 34px/1 "Manrope";letter-spacing:-.05em}.billing-choice small{font-size:11px;color:var(--muted)}
+.billing-choice button{height:48px;border:0;border-radius:11px;background:var(--dark);color:#fff;font-weight:800;cursor:pointer}
+.billing-choice.recommended button{background:var(--green)}
+.billing-note{max-width:880px;padding:18px;border:1px solid var(--line);border-radius:16px;background:#fff;display:grid;gap:7px}
+.billing-note strong{font-size:13px}.billing-note span{font-size:11px;color:var(--muted);line-height:1.5}
+.billing-back{display:inline-block;margin-top:18px;font-size:12px;font-weight:800;color:var(--green)}
+.billing-settings-row{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.billing-settings-row>div{display:grid;gap:4px}.billing-settings-row strong{font-size:13px}.billing-settings-row span{font-size:11px;color:var(--muted)}
+.billing-settings-row a{min-height:40px;padding:0 13px;border-radius:9px;background:var(--dark);color:#fff;display:flex;align-items:center;font-size:11px;font-weight:800}
+.billing-success-shell{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg)}
+.billing-success-card{width:min(520px,100%);background:#fff;border:1px solid var(--line);border-radius:24px;padding:34px;text-align:center}
+.billing-success-icon{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;background:var(--soft);color:var(--green);font-size:27px;font-weight:800}
+.billing-success-card h1{font:800 30px/1.1 "Manrope";letter-spacing:-.04em;margin:0 0 10px}.billing-success-card>p{font-size:13px;line-height:1.6;color:var(--muted);margin:0 0 18px}
+.billing-success-card .notice{text-align:left}.billing-success-link{display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:16px}
+@media(max-width:700px){.billing-choice-wrap{grid-template-columns:1fr}.billing-settings-row{align-items:flex-start;flex-direction:column}.billing-settings-row a{width:100%;justify-content:center}}
