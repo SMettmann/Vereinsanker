@@ -148,6 +148,11 @@ async function importPreparedMembers(rows, mapping, club) {
   ].filter(Boolean)));
 
   const usedNumbers = new Set(existing.map(m => String(m.member_number || "")).filter(Boolean));
+  rows.forEach(row => {
+    const mapped = mapImportRow(row, mapping, club.standard_fee);
+    if (mapped.member_number) usedNumbers.add(String(mapped.member_number));
+  });
+
   let nextNumber = 1001;
   const nextFreeNumber = () => {
     while (usedNumbers.has(String(nextNumber))) nextNumber++;
