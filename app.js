@@ -22,6 +22,7 @@ function normalizeIbanValue(value) {
 function isValidIbanValue(value) {
   const iban = normalizeIbanValue(value);
   if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  if (iban.startsWith("DE") && iban.length !== 22) return false;
   const rearranged = iban.slice(4) + iban.slice(0, 4);
   let remainder = 0;
   for (const ch of rearranged) {
@@ -29,6 +30,47 @@ function isValidIbanValue(value) {
     for (const digit of part) remainder = (remainder * 10 + Number(digit)) % 97;
   }
   return remainder === 1;
+}
+
+function bindIbanValidation(input) {
+  if (!input || input.dataset.ibanBound) return;
+  input.dataset.ibanBound = "1";
+
+  const validate = () => {
+    const value = normalizeIbanValue(input.value);
+    input.value = value.replace(/(.{4})/g, "$1 ").trim();
+    const invalid = Boolean(value) && !isValidIbanValue(value);
+    input.classList.toggle("input-invalid", invalid);
+    input.setCustomValidity(invalid ? "Bitte eine gültige IBAN eingeben." : "");
+
+    let note = input.parentElement?.querySelector(".iban-inline-error");
+    if (invalid && !note) {
+      note = document.createElement("span");
+      note.className = "iban-inline-error";
+      note.textContent = "Diese IBAN ist ungültig und kann nicht gespeichert werden.";
+      input.insertAdjacentElement("afterend", note);
+    } else if (!invalid && note) {
+      note.remove();
+    }
+  };
+
+  input.addEventListener("blur", validate);
+  input.addEventListener("input", () => {
+    const value = normalizeIbanValue(input.value);
+    if (!value || isValidIbanValue(value)) {
+      input.classList.remove("input-invalid");
+      input.setCustomValidity("");
+      input.parentElement?.querySelector(".iban-inline-error")?.remove();
+    }
+  });
+}
+
+function memberSepaProblem(member) {
+  if (!member?.iban) return "IBAN fehlt";
+  if (!isValidIbanValue(member.iban)) return "IBAN ungültig";
+  if (!member.mandate_reference) return "Mandatsreferenz fehlt";
+  if (!member.mandate_signed_at) return "Mandatsdatum fehlt";
+  return "";
 }
 
 function initials(first = "", last = "") {
@@ -546,6 +588,7 @@ async function initMembers() {
   applyClubBrand(club);
   applyTrialUI(club);
 
+  bindIbanValidation($("#memberIban"));
   let members = await loadMembers();
   let contributions = await loadContributions();
   let contributionMap = new Map(contributions.map(c => [c.member_id, c]));
@@ -594,75 +637,70 @@ async function initMembers() {
     e.preventDefault();
     const form = e.currentTarget;
     const button = $("button[type='submit']", form);
-    button.disabled = true;
-    button.textContent = "Wird gespeichert …";
-
     const fee = Number($("#memberFee").value || club.standard_fee || 0);
     const memberNumber = String(1001 + members.length);
     const memberIban = normalizeIbanValue($("#memberIban").value);
 
     if (memberIban && !isValidIbanValue(memberIban)) {
-      button.disabled = false;
-      button.textContent = "Mitglied speichern";
+      bindIbanValidation($("#memberIban"));
+      $("#memberIban").classList.add("input-invalid");
       $("#memberIban").focus();
-      showToast("Die IBAN des Mitglieds ist ungültig. Bitte Eingabe prüfen.");
+      showToast("IBAN ungültig – Mitglied wurde nicht gespeichert.");
       return;
     }
 
-    const memberPayload = {
-      club_id: club.id,
-      member_number: memberNumber,
-      first_name: $("#firstName").value.trim(),
-      last_name: $("#lastName").value.trim(),
-      group_name: $("#memberGroup").value.trim() || null,
-      email: $("#memberEmail").value.trim() || null,
-      iban: memberIban || null,
-      annual_fee: fee,
-      mandate_reference: $("#memberMandate")?.value.trim() || null,
-      mandate_signed_at: $("#memberMandateDate")?.value || null,
-      updated_at: new Date().toISOString()
-    };
+    button.disabled = true;
+    button.textContent = "Wird gespeichert …";
 
-    const { data: member, error } = await sb.from("members").insert(memberPayload).select().single();
-    if (error) {
+    let createdMemberId = null;
+    try {
+      const memberPayload = {
+        club_id: club.id,
+        member_number: memberNumber,
+        first_name: $("#firstName").value.trim(),
+        last_name: $("#lastName").value.trim(),
+        group_name: $("#memberGroup").value.trim() || null,
+        email: $("#memberEmail").value.trim() || null,
+        iban: memberIban || null,
+        annual_fee: fee,
+        mandate_reference: $("#memberMandate")?.value.trim() || null,
+        mandate_signed_at: $("#memberMandateDate")?.value || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: member, error } = await sb.from("members").insert(memberPayload).select().single();
+      if (error) throw error;
+      createdMemberId = member.id;
+
+      const dueDate = club.due_date
+        ? currentYear + club.due_date.slice(4)
+        : currentYear + "-03-01";
+
+      const { error: contributionError } = await sb.from("contributions").insert({
+        club_id: club.id,
+        member_id: member.id,
+        contribution_year: currentYear,
+        amount: fee,
+        due_date: dueDate,
+        status: "open"
+      });
+      if (contributionError) throw contributionError;
+
+      closeBackdrop(addMemberSheet);
+      showToast("Mitglied gespeichert ✓");
+      setTimeout(() => location.reload(), 250);
+    } catch (error) {
+      console.error("Mitglied speichern:", error);
+      if (createdMemberId) {
+        await sb.from("members").delete().eq("id", createdMemberId);
+      }
+      const invalidIban = String(error?.message || "").includes("INVALID_IBAN");
+      showToast(invalidIban
+        ? "IBAN ungültig – Mitglied wurde nicht gespeichert."
+        : "Mitglied konnte nicht gespeichert werden. Bitte erneut versuchen.");
       button.disabled = false;
       button.textContent = "Mitglied speichern";
-      showToast("Speichern fehlgeschlagen");
-      return;
     }
-
-    const dueDate = club.due_date
-      ? currentYear + club.due_date.slice(4)
-      : currentYear + "-03-01";
-
-    const { error: contributionError } = await sb.from("contributions").insert({
-      club_id: club.id,
-      member_id: member.id,
-      contribution_year: currentYear,
-      amount: fee,
-      due_date: dueDate,
-      status: "open"
-    });
-
-    if (contributionError) {
-      await sb.from("members").delete().eq("id", member.id);
-      button.disabled = false;
-      button.textContent = "Mitglied speichern";
-      showToast("Beitrag konnte nicht angelegt werden");
-      return;
-    }
-
-    form.reset();
-    $("#memberFee").value = Number(club.standard_fee || 0);
-    closeBackdrop(addMemberSheet);
-    showToast("Mitglied gespeichert ✓");
-
-    members = await loadMembers();
-    contributions = await loadContributions();
-    contributionMap = new Map(contributions.map(c => [c.member_id, c]));
-    renderMemberRows(members, contributionMap);
-    button.disabled = false;
-    button.textContent = "Mitglied speichern";
   });
 
 }
@@ -701,7 +739,7 @@ async function initContributions() {
     paymentList.innerHTML = contributions.map(c => {
       const m = contributionMember(c);
       return '<div class="payment-row" data-search="' + esc((memberFullName(m) + " " + (m.group_name || "")).toLowerCase()) + '">' +
-        '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.group_name || "Ohne Gruppe") + '</small></b></span>' +
+        '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.group_name || "Ohne Gruppe") + '</small>' + (c.status !== "paid" && memberSepaProblem(m) ? '<small class="sepa-row-warning">SEPA nicht möglich: ' + esc(memberSepaProblem(m)) + '</small>' : '') + '</b></span>' +
         '<strong>' + esc(money(c.amount)) + '</strong>' +
         (c.status === "paid"
           ? '<span class="paid-check">✓ Bezahlt</span>'
@@ -892,6 +930,7 @@ async function initSettings() {
 
   updateLogoControls();
 
+  bindIbanValidation($("#settingsIban"));
   $("#settingsClub").value = club.name || "";
   $("#settingsShort").value = club.short_name || "";
   $("#settingsCreditor").value = club.creditor_id || "";
