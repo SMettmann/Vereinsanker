@@ -237,6 +237,7 @@ async function enhanceMemberPage() {
 
   const memberSheet = $("#memberSheet");
   const editSheet = $("#editMemberSheet");
+  bindIbanValidation($("#editMemberIban"));
 
   $("#memberRows")?.addEventListener("click", async e => {
     const row = e.target.closest(".members-row");
