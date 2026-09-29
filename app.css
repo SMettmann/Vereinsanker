@@ -147,3 +147,48 @@ body.app-data-ready .mobile-top{
 }
 @keyframes va-spin{to{transform:rotate(360deg)}}
 @keyframes va-fade-in{from{opacity:0}to{opacity:1}}
+
+
+/* 14-Tage-Test */
+.trial-side-status{display:grid;gap:3px;margin:0 0 10px;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.04)}
+.trial-side-status strong{font-size:11px;color:#fff}.trial-side-status span{font-size:9px;line-height:1.4;color:rgba(255,255,255,.48)}
+.trial-side-status.expired{border-color:rgba(255,184,148,.22);background:rgba(168,91,37,.12)}
+.trial-side-status.expired strong{color:#ffd2bd}.trial-side-status.paid strong{color:#72dfa6}
+.trial-mobile-status{display:none}
+.trial-expired-banner{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;margin:0 0 18px;border:1px solid #ecc9b8;border-radius:16px;background:#fff4ee}
+.trial-expired-banner>div{display:grid;gap:4px}.trial-expired-banner strong{font:800 14px/1.2 "Manrope"}.trial-expired-banner span{font-size:11px;color:#735d51;line-height:1.45}
+.trial-expired-banner a{flex:0 0 auto;min-height:38px;padding:0 13px;border-radius:9px;background:var(--dark);color:#fff;display:flex;align-items:center;font-size:11px;font-weight:800}
+
+body.trial-expired #addMemberBtn,
+body.trial-expired .import-button[for="memberImport"],
+body.trial-expired #editMemberBtn,
+body.trial-expired #deleteMemberBtn,
+body.trial-expired #addMemberForm .primary,
+body.trial-expired #editMemberForm .primary,
+body.trial-expired #createYearContributions,
+body.trial-expired .mark-paid,
+body.trial-expired #openSepa,
+body.trial-expired #prepareSepa,
+body.trial-expired .tiny-action,
+body.trial-expired #remindAll,
+body.trial-expired .logo-upload-button,
+body.trial-expired #removeClubLogo,
+body.trial-expired .color-choice,
+body.trial-expired .settings-save .primary{
+  opacity:.45!important;
+  pointer-events:none!important;
+  cursor:not-allowed!important;
+}
+body.trial-expired .settings-form input,
+body.trial-expired .settings-form select{
+  background:#f4f5f2;
+  color:#7d8781;
+  pointer-events:none;
+}
+
+@media(max-width:900px){
+  .trial-mobile-status{display:block;padding:8px 14px;background:#eaf5ef;color:#226746;font-size:10px;font-weight:800;text-align:center}
+  .trial-mobile-status.expired{background:#fff0e8;color:#9a4d31}
+  .trial-expired-banner{align-items:flex-start;flex-direction:column}
+  .trial-expired-banner a{width:100%;justify-content:center}
+}
