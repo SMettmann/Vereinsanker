@@ -52,7 +52,11 @@ function splitFullName(value) {
 
 function parseFee(value, fallback = 0) {
   if (typeof value === "number") return Math.max(0, value);
-  const n = Number(String(value ?? "").replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, ""));
+  const raw = String(value ?? "").trim();
+  const normalized = raw.includes(",")
+    ? raw.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, "")
+    : raw.replace(/[^0-9.-]/g, "");
+  const n = Number(normalized);
   return Number.isFinite(n) ? Math.max(0, n) : Number(fallback || 0);
 }
 
@@ -294,6 +298,7 @@ async function enhanceMemberPage() {
     if (!id || !confirm("Mitglied aus der aktiven Mitgliederliste entfernen? Vergangene Beitragsdaten bleiben erhalten.")) return;
     const { error } = await sb.from("members").update({ active: false, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return showToast("Mitglied konnte nicht entfernt werden");
+    await sb.from("contributions").delete().eq("member_id", id).eq("contribution_year", currentYear).neq("status", "paid");
     closeBackdrop(memberSheet);
     showToast("Mitglied entfernt ✓");
     setTimeout(() => location.reload(), 500);
@@ -323,7 +328,11 @@ function xmlEscape(value) {
 }
 
 function safeSepaText(value, max = 70) {
-  return String(value || "").replace(/[^A-Za-z0-9ÄÖÜäöüß .,'+?/:()\-]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+  return String(value || "")
+    .replace(/Ä/g,"Ae").replace(/Ö/g,"Oe").replace(/Ü/g,"Ue")
+    .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+    .replace(/[^A-Za-z0-9 .,'+?/:()\-]/g, " ")
+    .replace(/\s+/g, " ").trim().slice(0, max);
 }
 
 function compactId(value, max = 35) {
@@ -447,6 +456,7 @@ async function enhanceContributionPage() {
     if (!currentClub.creditor_id) return showToast("Bitte zuerst die Gläubiger-ID eintragen");
     if (!validIban(currentClub.iban)) return showToast("Bitte zuerst eine gültige Vereins-IBAN eintragen");
     if (!collectionDate) return showToast("Bitte Einzugsdatum wählen");
+    if (collectionDate < new Date().toISOString().slice(0,10)) return showToast("Einzugsdatum darf nicht in der Vergangenheit liegen");
     if (!ready.length) return showToast("Kein offener Beitrag mit vollständigem SEPA-Mandat");
 
     const xml = buildSepaXml(currentClub, ready, collectionDate);
@@ -514,8 +524,11 @@ async function enhanceOnboardingImport() {
       window.vaOnboardingImportState = state;
       const drop = $(".drop");
       if (drop) {
+        const mappingOkay = state.mapping.full_name || (state.mapping.first_name && state.mapping.last_name);
         $("strong", drop).textContent = file.name;
-        $("span", drop).textContent = state.rows.length + " Zeilen erkannt ✓";
+        $("span", drop).textContent = mappingOkay
+          ? state.rows.length + " Zeilen erkannt ✓"
+          : "Namensspalten nicht sicher erkannt – später im Import zuordnen";
       }
     } catch (error) {
       showToast?.(error.message || "Liste konnte nicht gelesen werden");
@@ -525,6 +538,11 @@ async function enhanceOnboardingImport() {
 
 (async function enhanceVereinsanker() {
   try {
+    const needsAuth = $("#membersPage") || $("#contributionsPage") || $("#memberFile");
+    if (needsAuth) {
+      const session = await requireSession();
+      if (!session) return;
+    }
     if ($("#membersPage")) await enhanceMemberPage();
     if ($("#contributionsPage")) await enhanceContributionPage();
     if ($("#memberFile")) await enhanceOnboardingImport();
