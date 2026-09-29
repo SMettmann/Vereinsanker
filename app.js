@@ -93,22 +93,22 @@ function applyClubBrand(club) {
   if (club.color) document.documentElement.style.setProperty("--green", club.color);
 
   const shortName = (club.short_name || "VA").slice(0, 4).toUpperCase();
-  $("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
+  $$("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
 
-  $(".club-logo-fallback").forEach(el => {
+  $$(".club-logo-fallback").forEach(el => {
     el.textContent = shortName;
     el.hidden = Boolean(club.logo_path);
     if (club.color) el.style.background = club.color;
   });
 
-  $("#clubBadge").forEach(el => {
+  $$("#clubBadge").forEach(el => {
     el.textContent = shortName;
     el.hidden = Boolean(club.logo_path);
     if (club.color) el.style.background = club.color;
   });
 
   const logoUrl = clubLogoPublicUrl(club.logo_path);
-  $(".club-logo-img").forEach(img => {
+  $$(".club-logo-img").forEach(img => {
     if (logoUrl) {
       img.src = logoUrl;
       img.alt = (club.name || "Verein") + " Logo";
