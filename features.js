@@ -402,6 +402,55 @@ async function readImportFile(file) {
   return { file, rows, columns, mapping: autoMapColumns(columns) };
 }
 
+
+async function prepareImportReview(rows, mapping, club) {
+  const existing = await loadMembers();
+  const seen = new Set(existing.flatMap(m => [
+    m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
+    m.email ? "e:" + String(m.email).trim().toLowerCase() : null,
+    "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase()
+  ].filter(Boolean)));
+
+  const valid = [];
+  const corrections = [];
+
+  rows.forEach((row, index) => {
+    const rowNo = index + 2;
+    const m = mapImportRow(row, mapping, club.standard_fee);
+    const reasons = validateImportedMember(m);
+
+    if (mapping.mandate_signed_at && row[mapping.mandate_signed_at] && !m.mandate_signed_at) {
+      if (!reasons.includes("Mandatsdatum fehlt/ungültig")) reasons.push("Mandatsdatum ungültig");
+      m.mandate_signed_at = String(row[mapping.mandate_signed_at]).trim();
+    }
+
+    const keys = [
+      m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
+      m.email ? "e:" + String(m.email).trim().toLowerCase() : null,
+      m.first_name && m.last_name ? "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase() : null
+    ].filter(Boolean);
+
+    if (!reasons.length && keys.some(k => seen.has(k))) {
+      reasons.push("Dublette");
+    }
+
+    if (reasons.length) {
+      corrections.push({
+        row: rowNo,
+        name: memberFullName(m),
+        reasons: [...new Set(reasons)],
+        member: { ...m, __row: rowNo }
+      });
+      return;
+    }
+
+    keys.forEach(k => seen.add(k));
+    valid.push({ ...m, __row: rowNo });
+  });
+
+  return { valid, corrections };
+}
+
 async function enhanceMemberPage() {
   const fileInput = $("#memberImport");
   const importSheet = $("#importSheet");
@@ -421,32 +470,56 @@ async function enhanceMemberPage() {
     downloadBlob("\uFEFF" + csv, "VEREINSANKER_Mitglieder.csv", "text/csv;charset=utf-8");
   });
 
+  const refreshImportReview = async () => {
+    if (!vaImportState) return;
+    const m = vaImportState.mapping;
+
+    if (!(m.full_name || (m.first_name && m.last_name))) {
+      vaImportState.valid = [];
+      vaImportState.corrections = [];
+      preview.innerHTML = "";
+      renderImportCorrections([]);
+      importHint.textContent = "Bitte zuerst Vorname + Nachname oder „Name komplett“ zuordnen.";
+      runImport.disabled = true;
+      return;
+    }
+
+    const club = vaClub || await getClub();
+    const review = await prepareImportReview(vaImportState.rows, m, club);
+    vaImportState.valid = review.valid;
+    vaImportState.corrections = review.corrections;
+
+    preview.innerHTML = importPreviewHtml(vaImportState.rows, m, club.standard_fee || 0);
+    renderImportCorrections(review.corrections);
+
+    const ready = review.valid.length;
+    const problem = review.corrections.length;
+
+    importHint.innerHTML = problem
+      ? '<strong>' + ready + ' bereit · ' + problem + ' müssen korrigiert oder übersprungen werden.</strong>'
+      : '<strong>' + ready + ' Mitglieder geprüft · alles bereit zum Import.</strong>';
+
+    runImport.disabled = ready === 0 && problem === 0;
+    runImport.textContent = problem ? "Geprüfte Mitglieder importieren" : "Mitglieder importieren";
+  };
+
   fileInput?.addEventListener("change", async e => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       vaImportState = await readImportFile(file);
+      vaImportState.valid = [];
       vaImportState.corrections = [];
-      vaImportState.totalInserted = 0;
       mappingBox.innerHTML = importMappingHtml(vaImportState.columns, vaImportState.mapping);
-      preview.innerHTML = importPreviewHtml(vaImportState.rows, vaImportState.mapping, vaClub?.standard_fee || 0);
-      renderImportCorrections([]);
-
-      const initialMapped = vaImportState.rows.map(row => mapImportRow(row, vaImportState.mapping, vaClub?.standard_fee || 0));
-      const initialErrors = initialMapped.filter(m => validateImportedMember(m).length).length;
-      importHint.textContent = vaImportState.rows.length + " Zeilen erkannt" + (initialErrors ? " · " + initialErrors + " mit Fehlern" : " · bereit zur Prüfung") + ".";
-      runImport.disabled = false;
-      runImport.textContent = "Mitglieder importieren";
       openBackdrop(importSheet);
+      await refreshImportReview();
 
-      $$("[data-map]", mappingBox).forEach(select => select.addEventListener("change", () => {
+      $$("[data-map]", mappingBox).forEach(select => select.addEventListener("change", async () => {
         vaImportState.mapping[select.dataset.map] = select.value || null;
-        vaImportState.corrections = [];
-        renderImportCorrections([]);
-        preview.innerHTML = importPreviewHtml(vaImportState.rows, vaImportState.mapping, vaClub?.standard_fee || 0);
-        runImport.textContent = "Mitglieder importieren";
+        await refreshImportReview();
       }));
     } catch (error) {
+      console.error(error);
       showToast(error.message || "Datei konnte nicht gelesen werden");
     } finally {
       e.target.value = "";
@@ -459,72 +532,62 @@ async function enhanceMemberPage() {
   correctionsBox?.addEventListener("click", e => {
     const skip = e.target.closest("[data-skip-correction]");
     if (!skip || !vaImportState?.corrections) return;
+
     const index = Number(skip.dataset.skipCorrection);
     vaImportState.corrections.splice(index, 1);
     renderImportCorrections(vaImportState.corrections);
 
-    if (!vaImportState.corrections.length) {
-      closeBackdrop(importSheet);
-      showToast((vaImportState.totalInserted || 0) + " Mitglieder importiert ✓");
-      setTimeout(() => location.reload(), 500);
-    } else {
-      importHint.textContent = vaImportState.corrections.length + " Zeile(n) noch zu korrigieren oder zu überspringen.";
-    }
+    const ready = vaImportState.valid?.length || 0;
+    const remaining = vaImportState.corrections.length;
+    importHint.innerHTML = remaining
+      ? '<strong>' + ready + ' bereit · ' + remaining + ' müssen noch korrigiert oder übersprungen werden.</strong>'
+      : '<strong>' + ready + ' Mitglieder bereit. Fehlerzeilen wurden übersprungen.</strong>';
   });
 
   runImport?.addEventListener("click", async () => {
     if (!vaImportState) return;
 
-    const correcting = Array.isArray(vaImportState.corrections) && vaImportState.corrections.length > 0;
-
-    if (!correcting) {
-      const m = vaImportState.mapping;
-      if (!(m.full_name || (m.first_name && m.last_name))) {
-        showToast("Bitte Namen-Spalten zuordnen");
-        return;
-      }
-    }
-
     runImport.disabled = true;
-    runImport.textContent = correcting ? "Korrekturen werden geprüft …" : "Wird importiert …";
+    runImport.textContent = "Wird geprüft …";
 
     try {
       const club = vaClub || await getClub();
-      const result = correcting
-        ? await importCorrectedMembers(collectImportCorrections(), club)
-        : await importPreparedMembers(vaImportState.rows, vaImportState.mapping, club);
+      const corrected = collectImportCorrections();
+      const allCandidates = [...(vaImportState.valid || []), ...corrected];
 
-      vaImportState.totalInserted = (vaImportState.totalInserted || 0) + result.inserted;
+      if (!allCandidates.length) {
+        showToast("Keine Mitglieder zum Importieren vorhanden");
+        runImport.disabled = false;
+        runImport.textContent = "Geprüfte Mitglieder importieren";
+        return;
+      }
 
-      const unresolved = [...result.errors, ...result.duplicates];
-      vaImportState.corrections = unresolved;
+      const finalCheck = await importCorrectedMembers(allCandidates, club);
 
-      if (unresolved.length) {
-        renderImportCorrections(unresolved);
+      if (finalCheck.errors.length || finalCheck.duplicates.length) {
+        vaImportState.valid = [];
+        vaImportState.corrections = [...finalCheck.errors, ...finalCheck.duplicates];
+        renderImportCorrections(vaImportState.corrections);
         preview.innerHTML = "";
 
-        const parts = [];
-        if (result.errors.length) parts.push(result.errors.length + " fehlerhaft");
-        if (result.duplicates.length) parts.push(result.duplicates.length + " Dubletten");
-
         importHint.innerHTML =
-          '<strong>' + vaImportState.totalInserted + ' Mitglied(er) bereits importiert.</strong> ' +
-          esc(parts.join(" · ")) +
-          '. Bitte unten korrigieren oder bewusst überspringen.';
+          '<strong>' + finalCheck.inserted + ' importiert.</strong> ' +
+          vaImportState.corrections.length + ' Zeile(n) brauchen noch eine Korrektur.';
 
         runImport.disabled = false;
         runImport.textContent = "Korrekturen prüfen & importieren";
-      } else {
-        renderImportCorrections([]);
-        closeBackdrop(importSheet);
-        showToast(vaImportState.totalInserted + " Mitglieder importiert ✓");
-        setTimeout(() => location.reload(), 500);
+        return;
       }
+
+      renderImportCorrections([]);
+      closeBackdrop(importSheet);
+      showToast(finalCheck.inserted + " Mitglieder importiert ✓");
+      setTimeout(() => location.reload(), 500);
     } catch (error) {
       console.error(error);
       showToast("Import fehlgeschlagen");
       runImport.disabled = false;
-      runImport.textContent = correcting ? "Korrekturen prüfen & importieren" : "Mitglieder importieren";
+      runImport.textContent = "Geprüfte Mitglieder importieren";
     }
   });
 
