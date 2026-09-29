@@ -854,6 +854,12 @@ async function initContributions() {
   const paymentList = $("#paymentList");
   const openList = $("#openContributions");
 
+  const formatPaidDate = value => {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("de-DE");
+  };
+
   const render = () => {
     if (!contributions.length) {
       paymentList.innerHTML = '<div class="empty-row"><strong>Noch keine Beiträge</strong><span>Lege zuerst Mitglieder an.</span></div>';
@@ -862,23 +868,36 @@ async function initContributions() {
       return;
     }
 
-    paymentList.innerHTML = contributions.map(c => {
-      const m = contributionMember(c);
-      return '<div class="payment-row" data-search="' + esc((memberFullName(m) + " " + (m.group_name || "")).toLowerCase()) + '">' +
-        '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.group_name || "Ohne Gruppe") + '</small>' + (c.status !== "paid" && memberSepaProblem(m) ? '<small class="sepa-row-warning">SEPA nicht möglich: ' + esc(memberSepaProblem(m)) + '</small>' : '') + '</b></span>' +
-        '<strong>' + esc(money(c.amount)) + '</strong>' +
-        (c.status === "paid"
-          ? '<span class="paid-check">✓ Bezahlt</span>'
-          : '<button class="mark-paid" data-id="' + esc(c.id) + '">Als bezahlt markieren</button>') +
-      '</div>';
-    }).join("");
-
     const openRows = contributions.filter(c => c.status !== "paid");
     $("#openCount").textContent = openRows.length;
+
     openList.innerHTML = openRows.length ? openRows.map(c => {
       const m = contributionMember(c);
-      return '<div class="open-row"><span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc((m.group_name || "Ohne Gruppe") + " · Jahresbeitrag") + '</small></b></span><strong>' + esc(money(c.amount)) + '</strong><span>' + (c.due_date ? "Fällig " + new Date(c.due_date + "T00:00:00").toLocaleDateString("de-DE") : "Keine Fälligkeit") + '</span><button class="tiny-action">Erinnern</button></div>';
+      return '<div class="open-row">' +
+        '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
+        esc(memberFullName(m)) +
+        '<small>' + esc((m.group_name || "Ohne Gruppe") + " · Jahresbeitrag") + '</small>' +
+        (memberSepaProblem(m) ? '<small class="sepa-row-warning">SEPA nicht möglich: ' + esc(memberSepaProblem(m)) + '</small>' : '') +
+        '</b></span>' +
+        '<strong>' + esc(money(c.amount)) + '</strong>' +
+        '<span>' + (c.due_date ? "Fällig " + new Date(c.due_date + "T00:00:00").toLocaleDateString("de-DE") : "Keine Fälligkeit") + '</span>' +
+        '<span class="open-actions"><button class="mark-paid" data-id="' + esc(c.id) + '">Als bezahlt markieren</button><button class="tiny-action">Erinnern</button></span>' +
+      '</div>';
     }).join("") : '<div class="empty-row"><strong>Alles erledigt ✓</strong><span>Keine offenen Beiträge.</span></div>';
+
+    paymentList.innerHTML = contributions.map(c => {
+      const m = contributionMember(c);
+      const paidDate = c.status === "paid" ? formatPaidDate(c.paid_at) : "";
+      return '<div class="payment-row" data-search="' + esc((memberFullName(m) + " " + (m.group_name || "")).toLowerCase()) + '">' +
+        '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
+        esc(memberFullName(m)) +
+        '<small>' + esc(m.group_name || "Ohne Gruppe") + '</small></b></span>' +
+        '<strong>' + esc(money(c.amount)) + '</strong>' +
+        (c.status === "paid"
+          ? '<span class="paid-check paid-with-date"><b>✓ Bezahlt</b><small>' + esc(paidDate ? "am " + paidDate : "Zahlungsdatum nicht hinterlegt") + '</small></span>'
+          : '<span class="payment-open-status">Offen</span>') +
+      '</div>';
+    }).join("");
   };
 
   render();
@@ -888,23 +907,33 @@ async function initContributions() {
     $$(".payment-row").forEach(row => { row.hidden = !row.dataset.search.includes(q); });
   });
 
-  paymentList.addEventListener("click", async e => {
-    const button = e.target.closest(".mark-paid");
+  const markPaid = async button => {
     if (!button) return;
     button.disabled = true;
+    button.textContent = "Wird verbucht …";
+
+    const paidAt = new Date().toISOString();
     const { error } = await sb.from("contributions").update({
       status: "paid",
-      paid_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      paid_at: paidAt,
+      updated_at: paidAt
     }).eq("id", button.dataset.id);
+
     if (error) {
       button.disabled = false;
+      button.textContent = "Als bezahlt markieren";
       showToast("Zahlung konnte nicht gespeichert werden");
       return;
     }
+
     contributions = await loadContributions();
+    render();
     showToast("Zahlung als bezahlt markiert ✓");
-    location.reload();
+  };
+
+  openList.addEventListener("click", async e => {
+    const button = e.target.closest(".mark-paid");
+    if (button) await markPaid(button);
   });
 
 
