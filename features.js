@@ -25,16 +25,16 @@ function parseDateValue(value) {
 function autoMapColumns(columns) {
   const map = {};
   const aliases = {
-    first_name: ["vorname", "firstname", "first"],
+    first_name: ["vorname", "firstname", "first", "rufname"],
     last_name: ["nachname", "lastname", "surname", "familienname"],
-    full_name: ["name", "mitglied", "vollstaendigername", "fullname"],
-    group_name: ["gruppe", "abteilung", "mannschaft", "team", "bereich"],
-    email: ["email", "emailadresse", "mail"],
-    iban: ["iban", "kontoiban"],
-    annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag"],
-    member_number: ["mitgliedsnummer", "mitgliednr", "nummer", "membernumber"],
-    mandate_reference: ["mandatsreferenz", "mandat", "mandate", "mandatref"],
-    mandate_signed_at: ["mandatsdatum", "mandatdatum", "unterschriftsdatum", "mandatesigned"]
+    full_name: ["name", "mitglied", "mitgliedname", "vollstaendigername", "vollername", "fullname", "namevorname"],
+    group_name: ["gruppe", "abteilung", "mannschaft", "team", "bereich", "sektion", "sparte"],
+    email: ["email", "emailadresse", "mail", "emailprivat", "emailkontakt"],
+    iban: ["iban", "kontoiban", "bankiban"],
+    annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag", "beitrageuro", "beitragjahr"],
+    member_number: ["mitgliedsnummer", "mitgliednr", "mitgliedsnr", "nummer", "membernumber", "mitgliedid"],
+    mandate_reference: ["mandatsreferenz", "mandat", "mandate", "mandatref", "sepamandat", "referenz"],
+    mandate_signed_at: ["mandatsdatum", "mandatdatum", "unterschriftsdatum", "mandatesigned", "mandatunterschriebenam"]
   };
 
   for (const [field, names] of Object.entries(aliases)) {
@@ -45,7 +45,13 @@ function autoMapColumns(columns) {
 }
 
 function splitFullName(value) {
-  const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
+  const raw = String(value || "").trim();
+  if (raw.includes(",")) {
+    const [last, ...rest] = raw.split(",");
+    const first = rest.join(",").trim();
+    if (last.trim() && first) return { first_name: first, last_name: last.trim() };
+  }
+  const parts = raw.split(/\s+/).filter(Boolean);
   if (parts.length < 2) return { first_name: parts[0] || "", last_name: "" };
   return { first_name: parts.slice(0, -1).join(" "), last_name: parts.at(-1) };
 }
@@ -81,6 +87,22 @@ function mapImportRow(row, mapping, fallbackFee) {
   };
 }
 
+function validEmail(value) {
+  if (!value) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+}
+
+function validateImportedMember(member) {
+  const errors = [];
+  if (!member.first_name) errors.push("Vorname fehlt");
+  if (!member.last_name) errors.push("Nachname fehlt");
+  if (member.email && !validEmail(member.email)) errors.push("E-Mail ungültig");
+  if (member.iban && !validIban(member.iban)) errors.push("IBAN ungültig");
+  if (member.mandate_reference && !member.mandate_signed_at) errors.push("Mandatsdatum fehlt/ungültig");
+  if (member.mandate_signed_at && !member.mandate_reference) errors.push("Mandatsreferenz fehlt");
+  return errors;
+}
+
 function importMappingHtml(columns, mapping) {
   const fields = [
     ["first_name", "Vorname", true],
@@ -104,10 +126,16 @@ function importMappingHtml(columns, mapping) {
 }
 
 function importPreviewHtml(rows, mapping, fallbackFee) {
-  const mapped = rows.slice(0, 4).map(row => mapImportRow(row, mapping, fallbackFee));
+  const mapped = rows.slice(0, 5).map((row, index) => {
+    const member = mapImportRow(row, mapping, fallbackFee);
+    return { member, errors: validateImportedMember(member), rowNo: index + 2 };
+  });
   if (!mapped.length) return "";
-  return '<strong>Vorschau</strong><div class="preview-table">' + mapped.map(m =>
-    '<div><span>' + esc(memberFullName(m)) + '</span><small>' + esc(m.group_name || "Ohne Gruppe") + ' · ' + esc(money(m.annual_fee)) + '</small></div>'
+  return '<strong>Vorschau</strong><div class="preview-table">' + mapped.map(item =>
+    '<div class="' + (item.errors.length ? 'preview-error' : '') + '"><span>' +
+    esc(memberFullName(item.member)) +
+    (item.errors.length ? '<em>Zeile ' + item.rowNo + ': ' + esc(item.errors.join(", ")) + '</em>' : '') +
+    '</span><small>' + esc(item.member.group_name || "Ohne Gruppe") + ' · ' + esc(money(item.member.annual_fee)) + '</small></div>'
   ).join("") + '</div>';
 }
 
@@ -119,24 +147,61 @@ async function importPreparedMembers(rows, mapping, club) {
     "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase()
   ].filter(Boolean)));
 
-  const prepared = [];
-  let autoNumber = 1001 + existing.length;
+  const usedNumbers = new Set(existing.map(m => String(m.member_number || "")).filter(Boolean));
+  let nextNumber = 1001;
+  const nextFreeNumber = () => {
+    while (usedNumbers.has(String(nextNumber))) nextNumber++;
+    const value = String(nextNumber++);
+    usedNumbers.add(value);
+    return value;
+  };
 
-  for (const row of rows) {
+  const prepared = [];
+  const errors = [];
+  const duplicates = [];
+
+  rows.forEach((row, index) => {
+    const rowNo = index + 2;
     const m = mapImportRow(row, mapping, club.standard_fee);
-    if (!m.first_name || !m.last_name) continue;
-    if (!m.member_number) m.member_number = String(autoNumber++);
+    const rowErrors = validateImportedMember(m);
+
+    if (rowErrors.length) {
+      errors.push({ row: rowNo, name: memberFullName(m), reasons: rowErrors });
+      return;
+    }
+
+    if (!m.member_number) m.member_number = nextFreeNumber();
+
     const keys = [
       m.member_number ? "n:" + m.member_number.toLowerCase() : null,
       m.email ? "e:" + m.email.toLowerCase() : null,
       "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase()
     ].filter(Boolean);
-    if (keys.some(k => existingKeys.has(k))) continue;
-    keys.forEach(k => existingKeys.add(k));
-    prepared.push({ ...m, club_id: club.id, active: true, updated_at: new Date().toISOString() });
-  }
 
-  if (!prepared.length) return { inserted: 0, skipped: rows.length };
+    if (keys.some(k => existingKeys.has(k))) {
+      duplicates.push({ row: rowNo, name: memberFullName(m) });
+      return;
+    }
+
+    keys.forEach(k => existingKeys.add(k));
+    if (m.member_number) usedNumbers.add(String(m.member_number));
+
+    prepared.push({
+      ...m,
+      club_id: club.id,
+      active: true,
+      updated_at: new Date().toISOString()
+    });
+  });
+
+  if (!prepared.length) {
+    return {
+      inserted: 0,
+      errors,
+      duplicates,
+      total: rows.length
+    };
+  }
 
   const { data: created, error } = await sb.from("members").insert(prepared).select();
   if (error) throw error;
@@ -150,16 +215,29 @@ async function importPreparedMembers(rows, mapping, club) {
     due_date: dueDate,
     status: "open"
   }));
+
   if (contributionRows.length) {
     const { error: contributionError } = await sb.from("contributions").insert(contributionRows);
-    if (contributionError) throw contributionError;
+    if (contributionError) {
+      await sb.from("members").delete().in("id", created.map(m => m.id));
+      throw contributionError;
+    }
   }
-  return { inserted: created.length, skipped: rows.length - created.length };
+
+  return {
+    inserted: created.length,
+    errors,
+    duplicates,
+    total: rows.length
+  };
 }
 window.importPreparedMembers = importPreparedMembers;
 
 async function readImportFile(file) {
   if (!window.XLSX) throw new Error("Excel-Import ist noch nicht geladen.");
+  const name = String(file?.name || "").toLowerCase();
+  if (!/\.(csv|xlsx|xls)$/.test(name)) throw new Error("Bitte eine CSV-, XLSX- oder XLS-Datei auswählen.");
+  if (file.size > 8 * 1024 * 1024) throw new Error("Die Datei ist zu groß. Maximal 8 MB.");
   const data = await file.arrayBuffer();
   const wb = XLSX.read(data, { type: "array", cellDates: true });
   const ws = wb.Sheets[wb.SheetNames[0]];
@@ -194,7 +272,9 @@ async function enhanceMemberPage() {
       vaImportState = await readImportFile(file);
       mappingBox.innerHTML = importMappingHtml(vaImportState.columns, vaImportState.mapping);
       preview.innerHTML = importPreviewHtml(vaImportState.rows, vaImportState.mapping, vaClub?.standard_fee || 0);
-      importHint.textContent = vaImportState.rows.length + " Zeilen erkannt · Duplikate werden automatisch übersprungen.";
+      const initialMapped = vaImportState.rows.map(row => mapImportRow(row, vaImportState.mapping, vaClub?.standard_fee || 0));
+      const initialErrors = initialMapped.filter(m => validateImportedMember(m).length).length;
+      importHint.textContent = vaImportState.rows.length + " Zeilen erkannt" + (initialErrors ? " · " + initialErrors + " mit Fehlern" : " · bereit zur Prüfung") + ".";
       runImport.disabled = false;
       openBackdrop(importSheet);
 
@@ -224,9 +304,24 @@ async function enhanceMemberPage() {
     try {
       const club = vaClub || await getClub();
       const result = await importPreparedMembers(vaImportState.rows, vaImportState.mapping, club);
-      closeBackdrop(importSheet);
-      showToast(result.inserted + " Mitglieder importiert ✓");
-      setTimeout(() => location.reload(), 650);
+      const skipped = result.errors.length + result.duplicates.length;
+
+      if (skipped) {
+        const parts = [];
+        if (result.errors.length) parts.push(result.errors.length + " fehlerhaft");
+        if (result.duplicates.length) parts.push(result.duplicates.length + " Dubletten");
+        importHint.innerHTML = '<strong>' + result.inserted + ' importiert.</strong> ' + esc(parts.join(" · ")) + ' wurden nicht übernommen.' +
+          (result.errors.length
+            ? '<br><span class="import-error-list">' + result.errors.slice(0, 5).map(x => 'Zeile ' + x.row + ': ' + esc(x.reasons.join(", "))).join("<br>") + (result.errors.length > 5 ? '<br>…' : '') + '</span>'
+            : '');
+        runImport.disabled = false;
+        runImport.textContent = result.inserted ? "Import abgeschlossen" : "Mitglieder importieren";
+        if (result.inserted) setTimeout(() => location.reload(), 2200);
+      } else {
+        closeBackdrop(importSheet);
+        showToast(result.inserted + " Mitglieder importiert ✓");
+        setTimeout(() => location.reload(), 650);
+      }
     } catch (error) {
       console.error(error);
       showToast("Import fehlgeschlagen");
@@ -319,6 +414,7 @@ function normalizeIban(value) {
 function validIban(value) {
   const iban = normalizeIban(value);
   if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  if (iban.startsWith("DE") && iban.length !== 22) return false;
   const rearranged = iban.slice(4) + iban.slice(0,4);
   let remainder = 0;
   for (const ch of rearranged) {
