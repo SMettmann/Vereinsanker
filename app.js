@@ -576,7 +576,8 @@ async function initMembers() {
 
   $("#addMemberForm").addEventListener("submit", async e => {
     e.preventDefault();
-    const button = $("button[type='submit']", e.currentTarget);
+    const form = e.currentTarget;
+    const button = $("button[type='submit']", form);
     button.disabled = true;
     button.textContent = "Wird gespeichert …";
 
@@ -626,7 +627,7 @@ async function initMembers() {
       return;
     }
 
-    e.currentTarget.reset();
+    form.reset();
     $("#memberFee").value = Number(club.standard_fee || 0);
     closeBackdrop(addMemberSheet);
     showToast("Mitglied gespeichert ✓");
