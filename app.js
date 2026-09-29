@@ -128,6 +128,79 @@ function applyClubBrand(club) {
   });
 }
 
+
+function hasPaidAccess(club) {
+  return ["active_monthly", "active_yearly"].includes(club?.subscription_status);
+}
+
+function trialDaysRemaining(club) {
+  if (!club?.trial_ends_at) return 0;
+  const ms = new Date(club.trial_ends_at).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / 86400000));
+}
+
+function applyTrialUI(club) {
+  if (!club) return;
+  const paid = hasPaidAccess(club);
+  const days = trialDaysRemaining(club);
+  const expired = !paid && new Date(club.trial_ends_at).getTime() <= Date.now();
+
+  document.body.classList.toggle("trial-expired", expired);
+
+  const endDate = club.trial_ends_at
+    ? new Date(club.trial_ends_at).toLocaleDateString("de-DE")
+    : "";
+
+  const side = $("#trialStatusSide");
+  if (side) {
+    if (paid) {
+      side.innerHTML = '<strong>Abo aktiv</strong><span>VEREINSANKER ist freigeschaltet.</span>';
+      side.className = "trial-side-status paid";
+    } else if (expired) {
+      side.innerHTML = '<strong>Test beendet</strong><span>Deine Daten bleiben erhalten.</span>';
+      side.className = "trial-side-status expired";
+    } else {
+      side.innerHTML = '<strong>Noch ' + days + (days === 1 ? ' Tag' : ' Tage') + '</strong><span>Test endet am ' + esc(endDate) + ' automatisch.</span>';
+      side.className = "trial-side-status";
+    }
+  }
+
+  let mobile = $("#trialMobileStatus");
+  if (!mobile && $(".app-shell")) {
+    mobile = document.createElement("div");
+    mobile.id = "trialMobileStatus";
+    mobile.className = "trial-mobile-status";
+    $(".app-shell").before(mobile);
+  }
+  if (mobile) {
+    if (paid) {
+      mobile.hidden = true;
+    } else if (expired) {
+      mobile.hidden = false;
+      mobile.textContent = "Test beendet · Daten bleiben erhalten";
+      mobile.className = "trial-mobile-status expired";
+    } else {
+      mobile.hidden = false;
+      mobile.textContent = "Kostenloser Test · noch " + days + (days === 1 ? " Tag" : " Tage");
+      mobile.className = "trial-mobile-status";
+    }
+  }
+
+  const main = $(".app-main");
+  let banner = $("#trialExpiredBanner");
+  if (expired && main) {
+    if (!banner) {
+      banner = document.createElement("section");
+      banner.id = "trialExpiredBanner";
+      banner.className = "trial-expired-banner";
+      main.insertBefore(banner, main.firstChild);
+    }
+    banner.innerHTML = '<div><strong>Dein 14-Tage-Test ist beendet.</strong><span>Deine Daten bleiben erhalten. Zum Weiterbearbeiten kannst du VEREINSANKER freischalten.</span></div><a href="index.html#preis">Tarife ansehen</a>';
+  } else if (banner) {
+    banner.remove();
+  }
+}
+
 async function initSignup() {
   const existingSession = await getSession();
   if (existingSession) {
@@ -393,6 +466,7 @@ async function initDashboard() {
     return;
   }
   applyClubBrand(club);
+  applyTrialUI(club);
 
   const [members, contributions] = await Promise.all([loadMembers(), loadContributions()]);
   const total = contributions.reduce((sum, c) => sum + Number(c.amount || 0), 0);
@@ -446,6 +520,7 @@ async function initMembers() {
   const club = await getClub();
   if (!club) return location.replace("onboarding.html");
   applyClubBrand(club);
+  applyTrialUI(club);
 
   let members = await loadMembers();
   let contributions = await loadContributions();
@@ -566,6 +641,7 @@ async function initContributions() {
   const club = await getClub();
   if (!club) return location.replace("onboarding.html");
   applyClubBrand(club);
+  applyTrialUI(club);
 
   let contributions = await loadContributions();
   const total = contributions.reduce((s, c) => s + Number(c.amount || 0), 0);
@@ -657,6 +733,7 @@ async function initSettings() {
   let club = await getClub();
   if (!club) return location.replace("onboarding.html");
   applyClubBrand(club);
+  applyTrialUI(club);
 
   const logoInput = $("#clubLogoInput");
   const removeLogoButton = $("#removeClubLogo");
@@ -813,7 +890,7 @@ function setupMobileNavigation() {
 function setupLogout() {
   const sideBottom = $(".side-bottom");
   if (!sideBottom) return;
-  sideBottom.innerHTML = '<button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
+  sideBottom.innerHTML = '<div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
   $("#logoutButton").addEventListener("click", async () => {
     await sb.auth.signOut();
     location.replace("login.html");
