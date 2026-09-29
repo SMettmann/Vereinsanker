@@ -304,6 +304,31 @@ function applyTrialUI(club) {
     }
   }
 
+  const billingSideAction = $("#billingSideAction");
+  if (billingSideAction) {
+    billingSideAction.hidden = false;
+    billingSideAction.removeAttribute("target");
+    billingSideAction.removeAttribute("rel");
+
+    if (paid) {
+      billingSideAction.href = portalUrl();
+      billingSideAction.textContent = "Abo verwalten →";
+      billingSideAction.target = "_blank";
+      billingSideAction.rel = "noopener";
+    } else if (status === "payment_failed") {
+      billingSideAction.href = portalUrl();
+      billingSideAction.textContent = "Zahlung korrigieren →";
+      billingSideAction.target = "_blank";
+      billingSideAction.rel = "noopener";
+    } else if (status === "canceled") {
+      billingSideAction.href = "billing.html";
+      billingSideAction.textContent = "Neu aktivieren →";
+    } else {
+      billingSideAction.href = "billing.html";
+      billingSideAction.textContent = "Tarif wählen →";
+    }
+  }
+
   let mobile = $("#trialMobileStatus");
   if (!mobile && $(".app-shell")) {
     mobile = document.createElement("div");
@@ -320,20 +345,20 @@ function applyTrialUI(club) {
       mobile.hidden = true;
     } else if (status === "payment_failed") {
       mobile.hidden = false;
-      mobile.textContent = "Zahlung fehlgeschlagen · Zahlungsart aktualisieren";
-      mobile.className = "trial-mobile-status expired";
+      mobile.innerHTML = '<span>Zahlung fehlgeschlagen</span><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Zahlung korrigieren →</a>';
+      mobile.className = "trial-mobile-status expired trial-mobile-with-action";
     } else if (status === "canceled") {
       mobile.hidden = false;
-      mobile.textContent = "Abo beendet · Daten bleiben erhalten";
-      mobile.className = "trial-mobile-status expired";
+      mobile.innerHTML = '<span>Abo beendet · Daten bleiben erhalten</span><a href="billing.html">Neu aktivieren →</a>';
+      mobile.className = "trial-mobile-status expired trial-mobile-with-action";
     } else if (blocked) {
       mobile.hidden = false;
       mobile.textContent = "Test beendet · Daten bleiben erhalten";
       mobile.className = "trial-mobile-status expired";
     } else {
       mobile.hidden = false;
-      mobile.textContent = "Kostenloser Test · noch " + days + (days === 1 ? " Tag" : " Tage");
-      mobile.className = "trial-mobile-status";
+      mobile.innerHTML = '<span>Kostenloser Test · noch ' + days + (days === 1 ? ' Tag' : ' Tage') + '</span><a href="billing.html">Tarif wählen →</a>';
+      mobile.className = "trial-mobile-status trial-mobile-with-action";
     }
   }
 
@@ -1211,7 +1236,7 @@ function setupMobileNavigation() {
 function setupLogout() {
   const sideBottom = $(".side-bottom");
   if (!sideBottom) return;
-  sideBottom.innerHTML = '<div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
+  sideBottom.innerHTML = '<div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><a id="billingSideAction" class="billing-side-action" href="billing.html">Tarif wählen →</a><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
   $("#logoutButton").addEventListener("click", async () => {
     await sb.auth.signOut();
     location.replace("login.html");
