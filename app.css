@@ -310,3 +310,25 @@ body.trial-expired .settings-form select{
   color:#a33f2f;
   line-height:1.55;
 }
+
+
+/* Import-Korrekturen */
+.import-corrections[hidden]{display:none!important}
+.import-corrections{margin:0 0 18px}
+.correction-head{padding:14px 15px;border-radius:13px 13px 0 0;background:#fff3ee;border:1px solid #e9c2b6;border-bottom:0}
+.correction-head>div{display:grid;gap:4px}
+.correction-head strong{font-size:13px;color:#8f3f2e}
+.correction-head span{font-size:11px;line-height:1.45;color:#795e55}
+.correction-list{display:grid;gap:10px;padding:10px;border:1px solid #e9c2b6;border-radius:0 0 13px 13px;background:#fffaf8;max-height:430px;overflow:auto}
+.correction-card{border:1px solid #e1b1a4;border-radius:12px;padding:13px;background:#fff}
+.correction-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.correction-card-head>div{display:grid;gap:3px}
+.correction-card-head strong{font-size:12px}
+.correction-card-head span{font-size:10px;color:#a33f2f;font-weight:800}
+.correction-skip{border:0;background:#f3f4f1;color:#657068;border-radius:8px;padding:7px 9px;font-size:9px;font-weight:800;cursor:pointer}
+.correction-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.correction-grid label{display:grid;gap:5px}
+.correction-grid label>span{font-size:9px;font-weight:800;color:#69736d}
+.correction-grid input{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 9px;font:11px "DM Sans",sans-serif;outline:none;background:#fff}
+.correction-grid input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(35,122,85,.08)}
+@media(max-width:650px){.correction-grid{grid-template-columns:1fr}.correction-card-head{flex-direction:column}.correction-skip{align-self:flex-start}}
