@@ -1132,6 +1132,7 @@ async function initBilling() {
 
     const url = new URL(base);
     url.searchParams.set("client_reference_id", club.id);
+    if (vaSession?.user?.email) url.searchParams.set("locked_prefilled_email", vaSession.user.email);
     url.searchParams.set("utm_source", "vereinsanker_app");
     url.searchParams.set("utm_medium", "upgrade");
     url.searchParams.set("utm_campaign", plan);
