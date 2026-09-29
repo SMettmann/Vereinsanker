@@ -82,13 +82,42 @@ async function getClub() {
   return data;
 }
 
+function clubLogoPublicUrl(path) {
+  if (!path) return "";
+  const { data } = sb.storage.from("club-logos").getPublicUrl(path);
+  return data?.publicUrl || "";
+}
+
 function applyClubBrand(club) {
   if (!club) return;
   if (club.color) document.documentElement.style.setProperty("--green", club.color);
-  $$("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
-  $$("#clubBadge").forEach(el => {
-    el.textContent = (club.short_name || "VA").slice(0, 4).toUpperCase();
+
+  const shortName = (club.short_name || "VA").slice(0, 4).toUpperCase();
+  $("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
+
+  $(".club-logo-fallback").forEach(el => {
+    el.textContent = shortName;
+    el.hidden = Boolean(club.logo_path);
     if (club.color) el.style.background = club.color;
+  });
+
+  $("#clubBadge").forEach(el => {
+    el.textContent = shortName;
+    el.hidden = Boolean(club.logo_path);
+    if (club.color) el.style.background = club.color;
+  });
+
+  const logoUrl = clubLogoPublicUrl(club.logo_path);
+  $(".club-logo-img").forEach(img => {
+    if (logoUrl) {
+      img.src = logoUrl;
+      img.alt = (club.name || "Verein") + " Logo";
+      img.hidden = false;
+    } else {
+      img.removeAttribute("src");
+      img.alt = "";
+      img.hidden = true;
+    }
   });
 }
 
@@ -618,9 +647,98 @@ async function initContributions() {
 }
 
 async function initSettings() {
-  const club = await getClub();
+  let club = await getClub();
   if (!club) return location.replace("onboarding.html");
   applyClubBrand(club);
+
+  const logoInput = $("#clubLogoInput");
+  const removeLogoButton = $("#removeClubLogo");
+
+  function updateLogoControls() {
+    if (removeLogoButton) removeLogoButton.disabled = !club.logo_path;
+  }
+
+  logoInput?.addEventListener("change", async e => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      showToast("Bitte PNG, JPG oder WebP auswählen.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("Das Logo darf maximal 2 MB groß sein.");
+      return;
+    }
+
+    const oldPath = club.logo_path;
+    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+    const newPath = club.id + "/logo-" + Date.now() + "." + ext;
+
+    showToast("Logo wird hochgeladen …");
+
+    const { error: uploadError } = await sb.storage
+      .from("club-logos")
+      .upload(newPath, file, {
+        cacheControl: "3600",
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) {
+      showToast("Logo konnte nicht hochgeladen werden.");
+      return;
+    }
+
+    const { data, error: saveError } = await sb
+      .from("clubs")
+      .update({ logo_path: newPath, updated_at: new Date().toISOString() })
+      .eq("id", club.id)
+      .select()
+      .single();
+
+    if (saveError) {
+      await sb.storage.from("club-logos").remove([newPath]);
+      showToast("Logo konnte nicht gespeichert werden.");
+      return;
+    }
+
+    if (oldPath) await sb.storage.from("club-logos").remove([oldPath]);
+
+    club = data;
+    vaClub = data;
+    applyClubBrand(data);
+    updateLogoControls();
+    showToast("Vereinslogo gespeichert ✓");
+  });
+
+  removeLogoButton?.addEventListener("click", async () => {
+    if (!club.logo_path) return;
+    const oldPath = club.logo_path;
+
+    const { data, error } = await sb
+      .from("clubs")
+      .update({ logo_path: null, updated_at: new Date().toISOString() })
+      .eq("id", club.id)
+      .select()
+      .single();
+
+    if (error) {
+      showToast("Logo konnte nicht entfernt werden.");
+      return;
+    }
+
+    await sb.storage.from("club-logos").remove([oldPath]);
+    club = data;
+    vaClub = data;
+    applyClubBrand(data);
+    updateLogoControls();
+    showToast("Vereinslogo entfernt ✓");
+  });
+
+  updateLogoControls();
 
   $("#settingsClub").value = club.name || "";
   $("#settingsShort").value = club.short_name || "";
@@ -658,8 +776,10 @@ async function initSettings() {
       showToast("Speichern fehlgeschlagen");
       return;
     }
+    club = data;
     vaClub = data;
     applyClubBrand(data);
+    updateLogoControls();
     showToast("Einstellungen gespeichert ✓");
   });
 }
