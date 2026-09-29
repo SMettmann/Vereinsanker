@@ -274,13 +274,19 @@ async function enhanceMemberPage() {
     e.preventDefault();
     const id = $("#editMemberId").value;
     const amount = Number($("#editMemberFee").value || 0);
+    const editIban = normalizeIban($("#editMemberIban").value);
+    if (editIban && !validIban(editIban)) {
+      $("#editMemberIban").focus();
+      showToast("Die IBAN des Mitglieds ist ungültig. Bitte Eingabe prüfen.");
+      return;
+    }
     const payload = {
       first_name: $("#editFirstName").value.trim(),
       last_name: $("#editLastName").value.trim(),
       group_name: $("#editMemberGroup").value.trim() || null,
       email: $("#editMemberEmail").value.trim() || null,
       annual_fee: amount,
-      iban: $("#editMemberIban").value.replace(/\s+/g, "").toUpperCase() || null,
+      iban: editIban || null,
       mandate_reference: $("#editMemberMandate").value.trim() || null,
       mandate_signed_at: $("#editMemberMandateDate").value || null,
       updated_at: new Date().toISOString()
