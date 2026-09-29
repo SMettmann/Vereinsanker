@@ -233,6 +233,13 @@ async function initOnboarding() {
     }
 
     vaClub = data;
+    if (window.vaOnboardingImportState && window.importPreparedMembers) {
+      const state = window.vaOnboardingImportState;
+      const mappingOkay = state.mapping.full_name || (state.mapping.first_name && state.mapping.last_name);
+      if (mappingOkay) {
+        try { await window.importPreparedMembers(state.rows, state.mapping, data); } catch (importError) { console.error(importError); }
+      }
+    }
     location.href = "app.html";
   });
 }
@@ -379,8 +386,10 @@ async function initMembers() {
       last_name: $("#lastName").value.trim(),
       group_name: $("#memberGroup").value.trim() || null,
       email: $("#memberEmail").value.trim() || null,
-      iban: $("#memberIban").value.trim() || null,
+      iban: $("#memberIban").value.replace(/\s+/g, "").toUpperCase() || null,
       annual_fee: fee,
+      mandate_reference: $("#memberMandate")?.value.trim() || null,
+      mandate_signed_at: $("#memberMandateDate")?.value || null,
       updated_at: new Date().toISOString()
     };
 
@@ -509,10 +518,7 @@ async function initContributions() {
     location.reload();
   });
 
-  openList.addEventListener("click", e => {
-    if (e.target.closest(".tiny-action")) showToast("Zahlungserinnerung vorbereitet ✓");
-  });
-  $("#remindAll")?.addEventListener("click", () => showToast("Zahlungserinnerungen vorbereitet ✓"));
+
 
   const sepaSheet = $("#sepaSheet");
   $("#openSepa")?.addEventListener("click", () => {
@@ -529,7 +535,7 @@ async function initContributions() {
   });
   $("#closeSepa")?.addEventListener("click", () => closeBackdrop(sepaSheet));
   sepaSheet?.addEventListener("click", e => { if (e.target === sepaSheet) closeBackdrop(sepaSheet); });
-  $("#prepareSepa")?.addEventListener("click", () => showToast("Der bankfähige SEPA-XML-Export folgt im nächsten Schritt."));
+
 }
 
 async function initSettings() {
