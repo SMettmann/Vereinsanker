@@ -435,12 +435,6 @@ async function initMembers() {
     button.textContent = "Mitglied speichern";
   });
 
-  $("#memberImport")?.addEventListener("change", e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    showToast("Import-Assistent für " + file.name + " wird als Nächstes ergänzt.");
-    e.target.value = "";
-  });
 }
 
 function contributionMember(c) {
