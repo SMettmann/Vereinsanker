@@ -253,7 +253,7 @@ function applyTrialUI(club) {
       banner.className = "trial-expired-banner";
       main.insertBefore(banner, main.firstChild);
     }
-    banner.innerHTML = '<div><strong>Dein 14-Tage-Test ist beendet.</strong><span>Deine Daten bleiben erhalten. Zum Weiterbearbeiten kannst du VEREINSANKER freischalten.</span></div><a href="index.html#preis">Tarife ansehen</a>';
+    banner.innerHTML = '<div><strong>Dein 14-Tage-Test ist beendet.</strong><span>Deine Daten bleiben erhalten. Zum Weiterbearbeiten kannst du VEREINSANKER freischalten.</span></div><a href="billing.html">Tarif wählen</a>';
   } else if (banner) {
     banner.remove();
   }
@@ -984,6 +984,35 @@ async function initSettings() {
 }
 
 
+
+const VA_PAYMENT_LINKS = {
+  monthly: "https://buy.stripe.com/aFa3cx643dWg9sPh1res001",
+  yearly: "https://buy.stripe.com/5kQ7sNakj6tO34r6mNes002"
+};
+
+async function initBilling() {
+  const club = await getClub();
+  if (!club) return location.replace("onboarding.html");
+  applyClubBrand(club);
+  applyTrialUI(club);
+
+  $("[data-checkout]").forEach(button => button.addEventListener("click", () => {
+    const plan = button.dataset.checkout;
+    const base = VA_PAYMENT_LINKS[plan];
+    if (!base) return;
+
+    const url = new URL(base);
+    url.searchParams.set("client_reference_id", club.id);
+    url.searchParams.set("utm_source", "vereinsanker_app");
+    url.searchParams.set("utm_medium", "upgrade");
+    url.searchParams.set("utm_campaign", plan);
+
+    button.disabled = true;
+    button.textContent = "Stripe wird geöffnet …";
+    location.href = url.toString();
+  }));
+}
+
 function setupMobileNavigation() {
   if (!$(".app-shell") || $(".mobile-bottom-nav")) return;
   const page = location.pathname.split("/").pop() || "app.html";
@@ -1058,6 +1087,11 @@ function setupLogout() {
     }
     if ($("#settingsForm")) {
       await initSettings();
+      finishAppLoad();
+      return;
+    }
+    if ($("#billingPage")) {
+      await initBilling();
       finishAppLoad();
       return;
     }
