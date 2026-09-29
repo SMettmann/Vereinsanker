@@ -184,7 +184,7 @@ async function importPreparedMembers(rows, mapping, club) {
     const rowErrors = validateImportedMember(m);
 
     if (rowErrors.length) {
-      errors.push({ row: rowNo, name: memberFullName(m), reasons: rowErrors });
+      errors.push({ row: rowNo, name: memberFullName(m), reasons: rowErrors, member: { ...m } });
       return;
     }
 
@@ -197,7 +197,7 @@ async function importPreparedMembers(rows, mapping, club) {
     ].filter(Boolean);
 
     if (keys.some(k => existingKeys.has(k))) {
-      duplicates.push({ row: rowNo, name: memberFullName(m) });
+      duplicates.push({ row: rowNo, name: memberFullName(m), reasons: ["Dublette"], member: { ...m } });
       return;
     }
 
@@ -250,6 +250,143 @@ async function importPreparedMembers(rows, mapping, club) {
   };
 }
 window.importPreparedMembers = importPreparedMembers;
+
+async function importCorrectedMembers(members, club) {
+  const existing = await loadMembers();
+  const existingKeys = new Set(existing.flatMap(m => [
+    m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
+    m.email ? "e:" + m.email.toLowerCase() : null,
+    "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase()
+  ].filter(Boolean)));
+
+  const usedNumbers = new Set(existing.map(m => String(m.member_number || "")).filter(Boolean));
+  members.forEach(m => { if (m.member_number) usedNumbers.add(String(m.member_number)); });
+
+  let nextNumber = 1001;
+  const nextFreeNumber = () => {
+    while (usedNumbers.has(String(nextNumber))) nextNumber++;
+    const value = String(nextNumber++);
+    usedNumbers.add(value);
+    return value;
+  };
+
+  const prepared = [];
+  const errors = [];
+  const duplicates = [];
+
+  members.forEach((source, index) => {
+    const m = {
+      first_name: String(source.first_name || "").trim(),
+      last_name: String(source.last_name || "").trim(),
+      group_name: String(source.group_name || "").trim() || null,
+      email: String(source.email || "").trim() || null,
+      iban: normalizeIban(source.iban) || null,
+      annual_fee: parseFee(source.annual_fee, club.standard_fee),
+      member_number: String(source.member_number || "").trim() || null,
+      mandate_reference: String(source.mandate_reference || "").trim() || null,
+      mandate_signed_at: source.mandate_signed_at ? parseDateValue(source.mandate_signed_at) : null
+    };
+
+    const rowNo = source.__row || index + 1;
+    const rowErrors = validateImportedMember(m);
+    if (source.mandate_signed_at && !m.mandate_signed_at) rowErrors.push("Mandatsdatum ungültig");
+
+    if (rowErrors.length) {
+      errors.push({ row: rowNo, name: memberFullName(m), reasons: [...new Set(rowErrors)], member: { ...m, __row: rowNo } });
+      return;
+    }
+
+    if (!m.member_number) m.member_number = nextFreeNumber();
+
+    const keys = [
+      m.member_number ? "n:" + m.member_number.toLowerCase() : null,
+      m.email ? "e:" + m.email.toLowerCase() : null,
+      "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase()
+    ].filter(Boolean);
+
+    if (keys.some(k => existingKeys.has(k))) {
+      duplicates.push({ row: rowNo, name: memberFullName(m), reasons: ["Dublette"], member: { ...m, __row: rowNo } });
+      return;
+    }
+
+    keys.forEach(k => existingKeys.add(k));
+    prepared.push({ ...m, club_id: club.id, active: true, updated_at: new Date().toISOString() });
+  });
+
+  if (!prepared.length) return { inserted: 0, errors, duplicates };
+
+  const { data: created, error } = await sb.from("members").insert(prepared).select();
+  if (error) throw error;
+
+  const dueDate = club.due_date ? currentYear + club.due_date.slice(4) : currentYear + "-03-01";
+  const contributionRows = created.map(m => ({
+    club_id: club.id,
+    member_id: m.id,
+    contribution_year: currentYear,
+    amount: Number(m.annual_fee || 0),
+    due_date: dueDate,
+    status: "open"
+  }));
+
+  if (contributionRows.length) {
+    const { error: contributionError } = await sb.from("contributions").insert(contributionRows);
+    if (contributionError) {
+      await sb.from("members").delete().in("id", created.map(m => m.id));
+      throw contributionError;
+    }
+  }
+
+  return { inserted: created.length, errors, duplicates };
+}
+
+function correctionValue(member, key) {
+  const value = member?.[key];
+  return value == null ? "" : String(value);
+}
+
+function renderImportCorrections(items) {
+  const box = $("#importCorrections");
+  if (!box) return;
+  if (!items.length) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+
+  box.hidden = false;
+  box.innerHTML =
+    '<div class="correction-head"><div><strong>' + items.length + ' Zeile(n) brauchen deine Hilfe</strong><span>Korrigiere die roten Angaben direkt hier. Du musst Excel nicht erneut öffnen.</span></div></div>' +
+    '<div class="correction-list">' +
+    items.map((item, index) => {
+      const m = item.member || {};
+      return '<section class="correction-card" data-correction-index="' + index + '">' +
+        '<div class="correction-card-head"><div><strong>Zeile ' + esc(item.row) + ' · ' + esc(memberFullName(m)) + '</strong><span>' + esc((item.reasons || []).join(" · ")) + '</span></div><button type="button" class="correction-skip" data-skip-correction="' + index + '">Überspringen</button></div>' +
+        '<div class="correction-grid">' +
+          '<label><span>Vorname</span><input data-correct="first_name" value="' + esc(correctionValue(m,"first_name")) + '"></label>' +
+          '<label><span>Nachname</span><input data-correct="last_name" value="' + esc(correctionValue(m,"last_name")) + '"></label>' +
+          '<label><span>Mitgliedsnummer</span><input data-correct="member_number" value="' + esc(correctionValue(m,"member_number")) + '"></label>' +
+          '<label><span>Gruppe / Abteilung</span><input data-correct="group_name" value="' + esc(correctionValue(m,"group_name")) + '"></label>' +
+          '<label><span>E-Mail</span><input data-correct="email" value="' + esc(correctionValue(m,"email")) + '"></label>' +
+          '<label><span>IBAN</span><input data-correct="iban" value="' + esc(correctionValue(m,"iban")) + '"></label>' +
+          '<label><span>Jahresbeitrag</span><input data-correct="annual_fee" value="' + esc(correctionValue(m,"annual_fee")) + '"></label>' +
+          '<label><span>Mandatsreferenz</span><input data-correct="mandate_reference" value="' + esc(correctionValue(m,"mandate_reference")) + '"></label>' +
+          '<label><span>Mandatsdatum</span><input data-correct="mandate_signed_at" placeholder="TT.MM.JJJJ" value="' + esc(correctionValue(m,"mandate_signed_at")) + '"></label>' +
+        '</div>' +
+      '</section>';
+    }).join("") +
+    '</div>';
+}
+
+function collectImportCorrections() {
+  return $(".correction-card").map(card => {
+    const item = vaImportState.corrections[Number(card.dataset.correctionIndex)];
+    const result = { __row: item.row };
+    $("[data-correct]", card).forEach(input => { result[input.dataset.correct] = input.value; });
+    return result;
+  });
+}
+
+
 
 async function readImportFile(file) {
   if (!window.XLSX) throw new Error("Excel-Import ist noch nicht geladen.");
