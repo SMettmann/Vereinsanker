@@ -451,6 +451,70 @@ async function prepareImportReview(rows, mapping, club) {
   return { valid, corrections };
 }
 
+
+async function reviewCorrectedCandidates(members, club) {
+  const existing = await loadMembers();
+  const seen = new Set(existing.flatMap(m => [
+    m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
+    m.email ? "e:" + String(m.email).trim().toLowerCase() : null,
+    "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase()
+  ].filter(Boolean)));
+
+  const valid = [];
+  const corrections = [];
+
+  members.forEach((source, index) => {
+    const rawDate = String(source.mandate_signed_at || "").trim();
+    const parsedDate = rawDate ? parseDateValue(rawDate) : null;
+
+    const m = {
+      first_name: String(source.first_name || "").trim(),
+      last_name: String(source.last_name || "").trim(),
+      group_name: String(source.group_name || "").trim() || null,
+      email: String(source.email || "").trim() || null,
+      iban: normalizeIban(source.iban) || null,
+      annual_fee: parseFee(source.annual_fee, club.standard_fee),
+      member_number: String(source.member_number || "").trim() || null,
+      mandate_reference: String(source.mandate_reference || "").trim() || null,
+      mandate_signed_at: parsedDate
+    };
+
+    const rowNo = source.__row || index + 1;
+    const reasons = validateImportedMember(m);
+
+    if (rawDate && !parsedDate && !reasons.includes("Mandatsdatum fehlt/ungültig")) {
+      reasons.push("Mandatsdatum ungültig");
+    }
+
+    const keys = [
+      m.member_number ? "n:" + m.member_number.toLowerCase() : null,
+      m.email ? "e:" + m.email.toLowerCase() : null,
+      m.first_name && m.last_name ? "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase() : null
+    ].filter(Boolean);
+
+    if (!reasons.length && keys.some(k => seen.has(k))) reasons.push("Dublette");
+
+    if (reasons.length) {
+      corrections.push({
+        row: rowNo,
+        name: memberFullName(m),
+        reasons: [...new Set(reasons)],
+        member: {
+          ...m,
+          mandate_signed_at: rawDate || m.mandate_signed_at || "",
+          __row: rowNo
+        }
+      });
+      return;
+    }
+
+    keys.forEach(k => seen.add(k));
+    valid.push({ ...m, __row: rowNo });
+  });
+
+  return { valid, corrections };
+}
+
 async function enhanceMemberPage() {
   const fileInput = $("#memberImport");
   const importSheet = $("#importSheet");
@@ -500,7 +564,7 @@ async function enhanceMemberPage() {
       : '<strong>' + ready + ' Mitglieder geprüft · alles bereit zum Import.</strong>';
 
     runImport.disabled = ready === 0 && problem === 0;
-    runImport.textContent = problem ? "Geprüfte Mitglieder importieren" : "Mitglieder importieren";
+    runImport.textContent = problem ? "Korrekturen prüfen" : ready + " Mitglieder importieren";
   };
 
   fileInput?.addEventListener("change", async e => {
@@ -542,52 +606,82 @@ async function enhanceMemberPage() {
     importHint.innerHTML = remaining
       ? '<strong>' + ready + ' bereit · ' + remaining + ' müssen noch korrigiert oder übersprungen werden.</strong>'
       : '<strong>' + ready + ' Mitglieder bereit. Fehlerzeilen wurden übersprungen.</strong>';
+    runImport.textContent = remaining ? "Korrekturen prüfen" : ready + " Mitglieder importieren";
+    runImport.disabled = ready === 0 && remaining === 0;
   });
 
   runImport?.addEventListener("click", async () => {
     if (!vaImportState) return;
 
     runImport.disabled = true;
-    runImport.textContent = "Wird geprüft …";
 
     try {
       const club = vaClub || await getClub();
-      const corrected = collectImportCorrections();
-      const allCandidates = [...(vaImportState.valid || []), ...corrected];
+      const hasCorrections = Array.isArray(vaImportState.corrections) && vaImportState.corrections.length > 0;
 
-      if (!allCandidates.length) {
+      if (hasCorrections) {
+        runImport.textContent = "Korrekturen werden geprüft …";
+
+        const corrected = collectImportCorrections();
+        const review = await reviewCorrectedCandidates(
+          [...(vaImportState.valid || []), ...corrected],
+          club
+        );
+
+        vaImportState.valid = review.valid;
+        vaImportState.corrections = review.corrections;
+        renderImportCorrections(review.corrections);
+
+        if (review.corrections.length) {
+          importHint.innerHTML =
+            '<strong>' + review.valid.length + ' bereit · ' +
+            review.corrections.length + ' müssen noch korrigiert oder übersprungen werden.</strong>';
+          runImport.disabled = false;
+          runImport.textContent = "Korrekturen prüfen";
+          return;
+        }
+
+        preview.innerHTML = "";
+        importHint.innerHTML =
+          '<strong>Alles geprüft ✓ · ' + review.valid.length + ' Mitglieder bereit zum Import.</strong>';
+        runImport.disabled = false;
+        runImport.textContent = review.valid.length + " Mitglieder importieren";
+        return;
+      }
+
+      const candidates = vaImportState.valid || [];
+      if (!candidates.length) {
         showToast("Keine Mitglieder zum Importieren vorhanden");
         runImport.disabled = false;
-        runImport.textContent = "Geprüfte Mitglieder importieren";
+        runImport.textContent = "Mitglieder importieren";
         return;
       }
 
-      const finalCheck = await importCorrectedMembers(allCandidates, club);
+      runImport.textContent = "Wird importiert …";
+      const result = await importCorrectedMembers(candidates, club);
 
-      if (finalCheck.errors.length || finalCheck.duplicates.length) {
+      if (result.errors.length || result.duplicates.length) {
         vaImportState.valid = [];
-        vaImportState.corrections = [...finalCheck.errors, ...finalCheck.duplicates];
+        vaImportState.corrections = [...result.errors, ...result.duplicates];
         renderImportCorrections(vaImportState.corrections);
-        preview.innerHTML = "";
-
         importHint.innerHTML =
-          '<strong>' + finalCheck.inserted + ' importiert.</strong> ' +
-          vaImportState.corrections.length + ' Zeile(n) brauchen noch eine Korrektur.';
-
+          '<strong>Import gestoppt.</strong> ' +
+          vaImportState.corrections.length + ' Zeile(n) müssen nochmals geprüft werden.';
         runImport.disabled = false;
-        runImport.textContent = "Korrekturen prüfen & importieren";
+        runImport.textContent = "Korrekturen prüfen";
         return;
       }
 
-      renderImportCorrections([]);
       closeBackdrop(importSheet);
-      showToast(finalCheck.inserted + " Mitglieder importiert ✓");
+      showToast(result.inserted + " Mitglieder importiert ✓");
       setTimeout(() => location.reload(), 500);
     } catch (error) {
       console.error(error);
       showToast("Import fehlgeschlagen");
       runImport.disabled = false;
-      runImport.textContent = "Geprüfte Mitglieder importieren";
+      runImport.textContent = vaImportState?.corrections?.length
+        ? "Korrekturen prüfen"
+        : ((vaImportState?.valid?.length || 0) + " Mitglieder importieren");
     }
   });
 
