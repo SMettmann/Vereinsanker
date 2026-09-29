@@ -289,3 +289,24 @@ body.trial-expired .settings-form select{
   font-weight:800;
   text-decoration:none;
 }
+
+
+/* Import-Pruefung */
+.preview-table .preview-error{
+  border-color:#e2b6aa;
+  background:#fff7f3;
+}
+.preview-table .preview-error em{
+  display:block;
+  margin-top:3px;
+  color:#a33f2f;
+  font-size:9px;
+  font-style:normal;
+  font-weight:800;
+}
+.import-error-list{
+  display:block;
+  margin-top:7px;
+  color:#a33f2f;
+  line-height:1.55;
+}
