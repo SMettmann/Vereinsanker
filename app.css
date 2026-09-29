@@ -332,3 +332,21 @@ body.trial-expired .settings-form select{
 .correction-grid input{height:38px;border:1px solid var(--line);border-radius:9px;padding:0 9px;font:11px "DM Sans",sans-serif;outline:none;background:#fff}
 .correction-grid input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(35,122,85,.08)}
 @media(max-width:650px){.correction-grid{grid-template-columns:1fr}.correction-card-head{flex-direction:column}.correction-skip{align-self:flex-start}}
+
+
+/* Beitragsseite Arbeitsreihenfolge */
+.open-row{grid-template-columns:1fr 90px 140px minmax(220px,auto)}
+.open-actions{display:flex;justify-content:flex-end;gap:7px;align-items:center}
+.open-actions .mark-paid{padding:0 11px;white-space:nowrap}
+.open-actions .tiny-action{padding:0 11px}
+.paid-with-date{display:grid!important;justify-items:end;gap:2px}
+.paid-with-date b{font-size:11px;color:var(--green)}
+.paid-with-date small{font-size:9px;color:var(--muted);font-weight:700}
+.payment-open-status{justify-self:end;padding:5px 8px;border-radius:999px;background:#fff3d8;color:#89651d;font-size:10px;font-weight:800}
+@media(max-width:900px){
+  .open-row{grid-template-columns:1fr auto}
+  .open-row>strong{grid-column:2;grid-row:1}
+  .open-row>span:nth-of-type(2){display:block;grid-column:1/-1}
+  .open-actions{grid-column:1/-1;justify-content:flex-start}
+  .open-actions .mark-paid{flex:1}
+}
