@@ -146,3 +146,27 @@ $$(".mark-paid").forEach(btn=>btn.addEventListener("click",()=>{
 
 $$(".tiny-action").forEach(btn=>btn.addEventListener("click",()=>showToast("Zahlungserinnerung vorbereitet ✓")));
 $("#remindAll")?.addEventListener("click",()=>showToast("24 Zahlungserinnerungen vorbereitet ✓"));
+
+
+const settingsForm=$("#settingsForm");
+if(settingsForm){
+  const club=$("#settingsClub"),short=$("#settingsShort"),creditor=$("#settingsCreditor"),iban=$("#settingsIban"),fee=$("#settingsFee"),due=$("#settingsDue");
+  club.value=localStorage.getItem("va_club")||"";
+  short.value=localStorage.getItem("va_short")||"";
+  creditor.value=localStorage.getItem("va_creditor")||"";
+  iban.value=localStorage.getItem("va_iban")||"";
+  fee.value=localStorage.getItem("va_fee")||"60";
+  due.value=localStorage.getItem("va_due")||"";
+  const savedColor=localStorage.getItem("va_color")||"#237a55";
+  $$(".color-choice").forEach(btn=>btn.classList.toggle("active",btn.dataset.color===savedColor));
+  settingsForm.addEventListener("submit",e=>{
+    e.preventDefault();
+    localStorage.setItem("va_club",club.value.trim());
+    localStorage.setItem("va_short",short.value.trim().toUpperCase());
+    localStorage.setItem("va_creditor",creditor.value.trim());
+    localStorage.setItem("va_iban",iban.value.trim());
+    localStorage.setItem("va_fee",fee.value||"60");
+    localStorage.setItem("va_due",due.value||"");
+    showToast("Einstellungen gespeichert ✓");
+  });
+}
