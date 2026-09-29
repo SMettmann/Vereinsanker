@@ -622,7 +622,7 @@ async function initOnboarding() {
     if (window.vaOnboardingImportState && window.importPreparedMembers) {
       const state = window.vaOnboardingImportState;
       const mappingOkay = state.mapping.full_name || (state.mapping.first_name && state.mapping.last_name);
-      if (mappingOkay) {
+      if (mappingOkay && !state.blocked) {
         try { await window.importPreparedMembers(state.rows, state.mapping, data); } catch (importError) { console.error(importError); }
       }
     }
