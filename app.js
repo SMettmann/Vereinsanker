@@ -191,34 +191,115 @@ function hasPaidAccess(club) {
   return ["active_monthly", "active_yearly"].includes(club?.subscription_status);
 }
 
+function formatBillingDate(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("de-DE");
+}
+
 function trialDaysRemaining(club) {
   if (!club?.trial_ends_at) return 0;
   const ms = new Date(club.trial_ends_at).getTime() - Date.now();
   return Math.max(0, Math.ceil(ms / 86400000));
 }
 
+function portalUrl() {
+  const url = new URL(VA_PORTAL_LOGIN_URL);
+  const email = vaSession?.user?.email;
+  if (email) url.searchParams.set("prefilled_email", email);
+  return url.toString();
+}
+
+function accessIsBlocked(club) {
+  if (hasPaidAccess(club)) return false;
+  if (["payment_failed", "canceled"].includes(club?.subscription_status)) return true;
+  return new Date(club?.trial_ends_at || 0).getTime() <= Date.now();
+}
+
+function applyBillingCard(club) {
+  const title = $("#settingsBillingTitle");
+  const detail = $("#settingsBillingDetail");
+  const action = $("#billingActionLink");
+  if (!title || !detail || !action) return;
+
+  const paid = hasPaidAccess(club);
+  const periodEnd = formatBillingDate(club.stripe_current_period_end);
+
+  if (paid) {
+    const yearly = club.subscription_status === "active_yearly";
+    title.textContent = yearly ? "Jahresabo aktiv" : "Monatsabo aktiv";
+    if (club.stripe_cancel_at_period_end) {
+      detail.textContent = periodEnd
+        ? "Gekündigt zum " + periodEnd + " · Zugriff bleibt bis dahin bestehen."
+        : "Kündigung vorgemerkt · Zugriff bleibt bis zum Laufzeitende bestehen.";
+    } else {
+      detail.textContent = periodEnd
+        ? "Aktiv · nächste Verlängerung am " + periodEnd + "."
+        : "Aktiv · VEREINSANKER ist freigeschaltet.";
+    }
+    action.href = portalUrl();
+    action.textContent = "Abo verwalten →";
+    action.target = "_blank";
+    action.rel = "noopener";
+    return;
+  }
+
+  action.removeAttribute("target");
+  action.removeAttribute("rel");
+
+  if (club.subscription_status === "payment_failed") {
+    title.textContent = "Zahlung fehlgeschlagen";
+    detail.textContent = "Bitte Zahlungsart im Stripe-Kundenbereich aktualisieren.";
+    action.href = portalUrl();
+    action.textContent = "Zahlung korrigieren →";
+    action.target = "_blank";
+    action.rel = "noopener";
+  } else if (club.subscription_status === "canceled") {
+    title.textContent = "Abo beendet";
+    detail.textContent = "Deine Daten bleiben erhalten. Du kannst jederzeit neu freischalten.";
+    action.href = "billing.html";
+    action.textContent = "Neu aktivieren →";
+  } else {
+    const days = trialDaysRemaining(club);
+    title.textContent = "Kostenloser Test";
+    detail.textContent = "Noch " + days + (days === 1 ? " Tag" : " Tage") + " · keine automatische Verlängerung.";
+    action.href = "billing.html";
+    action.textContent = "Tarif wählen →";
+  }
+}
+
 function applyTrialUI(club) {
   if (!club) return;
+
   const paid = hasPaidAccess(club);
+  const status = club.subscription_status || "trial";
   const days = trialDaysRemaining(club);
-  const expired = !paid && new Date(club.trial_ends_at).getTime() <= Date.now();
+  const blocked = accessIsBlocked(club);
+  const trialEnd = formatBillingDate(club.trial_ends_at);
+  const periodEnd = formatBillingDate(club.stripe_current_period_end);
 
-  document.body.classList.toggle("trial-expired", expired);
-
-  const endDate = club.trial_ends_at
-    ? new Date(club.trial_ends_at).toLocaleDateString("de-DE")
-    : "";
+  document.body.classList.toggle("trial-expired", blocked);
+  applyBillingCard(club);
 
   const side = $("#trialStatusSide");
   if (side) {
-    if (paid) {
-      side.innerHTML = '<strong>Abo aktiv</strong><span>VEREINSANKER ist freigeschaltet.</span>';
+    if (paid && club.stripe_cancel_at_period_end) {
+      side.innerHTML = '<strong>Gekündigt zum ' + esc(periodEnd || "Laufzeitende") + '</strong><span>Zugang bleibt bis dahin aktiv.</span>';
+      side.className = "trial-side-status warning";
+    } else if (paid) {
+      side.innerHTML = '<strong>Abo aktiv</strong><span>' + (status === "active_yearly" ? "Jahrestarif" : "Monatstarif") + ' · VEREINSANKER freigeschaltet.</span>';
       side.className = "trial-side-status paid";
-    } else if (expired) {
+    } else if (status === "payment_failed") {
+      side.innerHTML = '<strong>Zahlung fehlgeschlagen</strong><span>Bitte Zahlungsart aktualisieren.</span>';
+      side.className = "trial-side-status expired";
+    } else if (status === "canceled") {
+      side.innerHTML = '<strong>Abo beendet</strong><span>Deine Daten bleiben erhalten.</span>';
+      side.className = "trial-side-status expired";
+    } else if (blocked) {
       side.innerHTML = '<strong>Test beendet</strong><span>Deine Daten bleiben erhalten.</span>';
       side.className = "trial-side-status expired";
     } else {
-      side.innerHTML = '<strong>Noch ' + days + (days === 1 ? ' Tag' : ' Tage') + '</strong><span>Test endet am ' + esc(endDate) + ' automatisch.</span>';
+      side.innerHTML = '<strong>Noch ' + days + (days === 1 ? ' Tag' : ' Tage') + '</strong><span>Test endet am ' + esc(trialEnd) + ' automatisch.</span>';
       side.className = "trial-side-status";
     }
   }
@@ -231,9 +312,21 @@ function applyTrialUI(club) {
     $(".app-shell").before(mobile);
   }
   if (mobile) {
-    if (paid) {
+    if (paid && club.stripe_cancel_at_period_end) {
+      mobile.hidden = false;
+      mobile.textContent = "Abo gekündigt · Zugriff bis " + (periodEnd || "Laufzeitende");
+      mobile.className = "trial-mobile-status warning";
+    } else if (paid) {
       mobile.hidden = true;
-    } else if (expired) {
+    } else if (status === "payment_failed") {
+      mobile.hidden = false;
+      mobile.textContent = "Zahlung fehlgeschlagen · Zahlungsart aktualisieren";
+      mobile.className = "trial-mobile-status expired";
+    } else if (status === "canceled") {
+      mobile.hidden = false;
+      mobile.textContent = "Abo beendet · Daten bleiben erhalten";
+      mobile.className = "trial-mobile-status expired";
+    } else if (blocked) {
       mobile.hidden = false;
       mobile.textContent = "Test beendet · Daten bleiben erhalten";
       mobile.className = "trial-mobile-status expired";
@@ -246,14 +339,22 @@ function applyTrialUI(club) {
 
   const main = $(".app-main");
   let banner = $("#trialExpiredBanner");
-  if (expired && main) {
+
+  if (blocked && main) {
     if (!banner) {
       banner = document.createElement("section");
       banner.id = "trialExpiredBanner";
       banner.className = "trial-expired-banner";
       main.insertBefore(banner, main.firstChild);
     }
-    banner.innerHTML = '<div><strong>Dein 14-Tage-Test ist beendet.</strong><span>Deine Daten bleiben erhalten. Zum Weiterbearbeiten kannst du VEREINSANKER freischalten.</span></div><a href="billing.html">Tarif wählen</a>';
+
+    if (status === "payment_failed") {
+      banner.innerHTML = '<div><strong>Zahlung fehlgeschlagen.</strong><span>Bitte aktualisiere deine Zahlungsart. Sobald Stripe die Zahlung bestätigt, wird VEREINSANKER automatisch wieder freigeschaltet.</span></div><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Zahlung korrigieren</a>';
+    } else if (status === "canceled") {
+      banner.innerHTML = '<div><strong>Dein Abo ist beendet.</strong><span>Deine Daten bleiben erhalten. Du kannst VEREINSANKER jederzeit wieder freischalten.</span></div><a href="billing.html">Neu aktivieren</a>';
+    } else {
+      banner.innerHTML = '<div><strong>Dein 14-Tage-Test ist beendet.</strong><span>Deine Daten bleiben erhalten. Zum Weiterbearbeiten kannst du VEREINSANKER freischalten.</span></div><a href="billing.html">Tarif wählen</a>';
+    }
   } else if (banner) {
     banner.remove();
   }
