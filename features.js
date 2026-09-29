@@ -403,13 +403,68 @@ async function readImportFile(file) {
 }
 
 
+function importDuplicateKeys(member) {
+  return [
+    member?.member_number ? "n:" + String(member.member_number).trim().toLowerCase() : null,
+    member?.email ? "e:" + String(member.email).trim().toLowerCase() : null,
+    member?.first_name && member?.last_name
+      ? "x:" + (memberFullName(member) + "|" + (member.group_name || "")).toLowerCase()
+      : null
+  ].filter(Boolean);
+}
+
+function buildDuplicateIndex(members) {
+  const index = new Map();
+  members.forEach(member => {
+    importDuplicateKeys(member).forEach(key => {
+      if (!index.has(key)) index.set(key, []);
+      index.get(key).push(member);
+    });
+  });
+  return index;
+}
+
+function findExistingDuplicateMatches(member, index) {
+  const found = new Map();
+  importDuplicateKeys(member).forEach(key => {
+    (index.get(key) || []).forEach(existing => found.set(existing.id, existing));
+  });
+  return [...found.values()];
+}
+
+function duplicateCorrectionItem(rowNo, member, matches = [], source = "existing") {
+  const one = matches.length === 1 ? matches[0] : null;
+  const reason = source === "file"
+    ? "Dublette innerhalb der Datei"
+    : matches.length > 1
+      ? "Dublette: Angaben passen zu mehreren bestehenden Mitgliedern"
+      : "Dublette: Mitglied bereits vorhanden";
+
+  return {
+    row: rowNo,
+    name: memberFullName(member),
+    reasons: [reason],
+    kind: "duplicate",
+    duplicate_source: source,
+    existing_member_id: one?.id || null,
+    existing_member: one ? { ...one } : null,
+    existing_matches: matches.map(m => ({
+      id: m.id,
+      first_name: m.first_name,
+      last_name: m.last_name,
+      member_number: m.member_number,
+      email: m.email,
+      group_name: m.group_name
+    })),
+    resolution: null,
+    member: { ...member, __row: rowNo }
+  };
+}
+
 async function prepareImportReview(rows, mapping, club) {
   const existing = await loadMembers();
-  const seen = new Set(existing.flatMap(m => [
-    m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
-    m.email ? "e:" + String(m.email).trim().toLowerCase() : null,
-    "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase()
-  ].filter(Boolean)));
+  const existingIndex = buildDuplicateIndex(existing);
+  const seenImport = new Map();
 
   const valid = [];
   const corrections = [];
@@ -424,46 +479,49 @@ async function prepareImportReview(rows, mapping, club) {
       m.mandate_signed_at = String(row[mapping.mandate_signed_at]).trim();
     }
 
-    const keys = [
-      m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
-      m.email ? "e:" + String(m.email).trim().toLowerCase() : null,
-      m.first_name && m.last_name ? "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase() : null
-    ].filter(Boolean);
-
-    if (!reasons.length && keys.some(k => seen.has(k))) {
-      reasons.push("Dublette");
-    }
+    const existingMatches = findExistingDuplicateMatches(m, existingIndex);
+    const fileMatch = importDuplicateKeys(m).map(key => seenImport.get(key)).find(Boolean);
 
     if (reasons.length) {
       corrections.push({
         row: rowNo,
         name: memberFullName(m),
         reasons: [...new Set(reasons)],
+        kind: "error",
         member: { ...m, __row: rowNo }
       });
       return;
     }
 
-    keys.forEach(k => seen.add(k));
+    if (existingMatches.length) {
+      corrections.push(duplicateCorrectionItem(rowNo, m, existingMatches, "existing"));
+      return;
+    }
+
+    if (fileMatch) {
+      const item = duplicateCorrectionItem(rowNo, m, [], "file");
+      item.matched_import_row = fileMatch.__row || null;
+      corrections.push(item);
+      return;
+    }
+
     valid.push({ ...m, __row: rowNo });
+    importDuplicateKeys(m).forEach(key => seenImport.set(key, { ...m, __row: rowNo }));
   });
 
   return { valid, corrections };
 }
 
-
-async function reviewCorrectedCandidates(members, club) {
+async function reviewCorrectedCandidates(sources, club) {
   const existing = await loadMembers();
-  const seen = new Set(existing.flatMap(m => [
-    m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
-    m.email ? "e:" + String(m.email).trim().toLowerCase() : null,
-    "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase()
-  ].filter(Boolean)));
+  const existingIndex = buildDuplicateIndex(existing);
+  const seenImport = new Map();
 
   const valid = [];
   const corrections = [];
+  const duplicateActions = [];
 
-  members.forEach((source, index) => {
+  sources.forEach((source, index) => {
     const rawDate = String(source.mandate_signed_at || "").trim();
     const parsedDate = rawDate ? parseDateValue(rawDate) : null;
 
@@ -481,38 +539,74 @@ async function reviewCorrectedCandidates(members, club) {
 
     const rowNo = source.__row || index + 1;
     const reasons = validateImportedMember(m);
-
     if (rawDate && !parsedDate && !reasons.includes("Mandatsdatum fehlt/ungültig")) {
       reasons.push("Mandatsdatum ungültig");
     }
-
-    const keys = [
-      m.member_number ? "n:" + m.member_number.toLowerCase() : null,
-      m.email ? "e:" + m.email.toLowerCase() : null,
-      m.first_name && m.last_name ? "x:" + (memberFullName(m) + "|" + (m.group_name || "")).toLowerCase() : null
-    ].filter(Boolean);
-
-    if (!reasons.length && keys.some(k => seen.has(k))) reasons.push("Dublette");
 
     if (reasons.length) {
       corrections.push({
         row: rowNo,
         name: memberFullName(m),
         reasons: [...new Set(reasons)],
-        member: {
-          ...m,
-          mandate_signed_at: rawDate || m.mandate_signed_at || "",
-          __row: rowNo
-        }
+        kind: "error",
+        member: { ...m, mandate_signed_at: rawDate || "", __row: rowNo }
       });
       return;
     }
 
-    keys.forEach(k => seen.add(k));
+    const existingMatches = findExistingDuplicateMatches(m, existingIndex);
+    const fileMatch = importDuplicateKeys(m).map(key => seenImport.get(key)).find(Boolean);
+    const resolution = source.__resolution || null;
+    const targetId = source.__existing_member_id || null;
+
+    if (resolution === "update") {
+      const target = targetId
+        ? existing.find(x => x.id === targetId)
+        : (existingMatches.length === 1 ? existingMatches[0] : null);
+
+      if (!target) {
+        const item = duplicateCorrectionItem(rowNo, m, existingMatches, "existing");
+        item.reasons = ["Bestehendes Mitglied konnte nicht eindeutig erkannt werden"];
+        item.resolution = null;
+        corrections.push(item);
+        return;
+      }
+
+      duplicateActions.push({
+        action: "update",
+        row: rowNo,
+        target_id: target.id,
+        member: { ...m }
+      });
+      return;
+    }
+
+    if (resolution === "create") {
+      duplicateActions.push({
+        action: "create",
+        row: rowNo,
+        member: { ...m }
+      });
+      return;
+    }
+
+    if (existingMatches.length) {
+      corrections.push(duplicateCorrectionItem(rowNo, m, existingMatches, "existing"));
+      return;
+    }
+
+    if (fileMatch) {
+      const item = duplicateCorrectionItem(rowNo, m, [], "file");
+      item.matched_import_row = fileMatch.__row || null;
+      corrections.push(item);
+      return;
+    }
+
     valid.push({ ...m, __row: rowNo });
+    importDuplicateKeys(m).forEach(key => seenImport.set(key, { ...m, __row: rowNo }));
   });
 
-  return { valid, corrections };
+  return { valid, corrections, duplicateActions };
 }
 
 async function enhanceMemberPage() {
