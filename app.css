@@ -96,3 +96,10 @@ button:disabled{opacity:.58;cursor:not-allowed}
 .logo-remove-button{background:#fff;color:#9b4838;border:1px solid var(--line)}
 .logo-remove-button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:600px){.logo-settings{align-items:flex-start}.logo-preview-shell{width:64px;height:64px}.logo-preview-shell img{width:56px;height:56px}.dashboard-logo-shell{width:42px;height:42px}.dashboard-logo-shell img,.dashboard-logo-shell i{width:42px;height:42px}}
+
+
+/* Logo ersetzt das Vereinskuerzel vollstaendig */
+.club-logo-img[hidden],
+.club-logo-fallback[hidden]{
+  display:none !important;
+}
