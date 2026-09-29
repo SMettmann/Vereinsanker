@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="VEREINSANKER – einfache Beitragsverwaltung für Vereine. Mitglieder importieren, Beiträge verwalten, SEPA-Dateien erstellen und offene Zahlungen im Blick behalten.">
+  <meta name="theme-color" content="#10251d">
+  <title>VEREINSANKER – Beiträge erledigt. Mehr Zeit für den Verein.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="header" id="top">
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="VEREINSANKER">
+      <span class="crest">
+        <svg viewBox="0 0 48 54" aria-hidden="true">
+          <path d="M24 2 44 9v15c0 13-8.6 23-20 28C12.6 47 4 37 4 24V9L24 2Z" fill="currentColor"/>
+          <path d="M24 12v24M17 22h14M16 34c2.2 4.2 5 6.5 8 8.3 3-1.8 5.8-4.1 8-8.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="13" r="3" fill="#fff"/>
+        </svg>
+      </span>
+      <span class="brand-copy"><strong>VEREINSANKER</strong><small>Beitragsverwaltung</small></span>
+    </a>
+
+    <nav class="links" aria-label="Hauptnavigation">
+      <a href="#so-gehts">So geht's</a>
+      <a href="#funktionen">Funktionen</a>
+      <a href="#preis">Preis</a>
+      <a href="#faq">Fragen</a>
+    </nav>
+
+    <div class="nav-cta">
+      <a class="login" href="#preis">Anmelden</a>
+      <a class="btn btn-ghost" href="#preis">Kostenlos testen</a>
+      <button class="menu" aria-label="Menü öffnen" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+
+  <div class="mobile-nav" aria-hidden="true">
+    <a href="#so-gehts">So geht's</a>
+    <a href="#funktionen">Funktionen</a>
+    <a href="#preis">Preis</a>
+    <a href="#faq">Fragen</a>
+    <a class="btn btn-primary" href="#preis">Kostenlos testen</a>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <div class="pill"><i></i> Für Vereine, die es einfach wollen</div>
+      <h1>Beiträge erledigt.<br><span>Mehr Zeit für den Verein.</span></h1>
+      <p>Mitglieder importieren, Beiträge per SEPA einziehen, Zahlungen im Blick behalten und offene Beiträge nachfassen. Ohne Buchhaltungsmonster. Ohne unnötige Vereinssoftware.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#preis">14 Tage kostenlos testen <b>→</b></a>
+        <a class="jump" href="#so-gehts">So einfach geht's ↓</a>
+      </div>
+      <div class="proof">
+        <span>✓ Keine Kreditkarte</span>
+        <span>✓ Test endet automatisch</span>
+        <span>✓ Für jede Vereinsart</span>
+      </div>
+    </div>
+
+    <div class="mock-wrap" aria-label="Vorschau der Beitragsverwaltung">
+      <div class="float-chip chip-top">SEPA bereit ✓</div>
+      <div class="dashboard">
+        <div class="dash-head">
+          <div class="club">
+            <div class="club-badge"><strong>SV</strong><small>1928</small></div>
+            <div><span>Mein Verein</span><strong>SV Waldheim 1928 e.V.</strong></div>
+          </div>
+          <span class="dots">•••</span>
+        </div>
+        <div class="dash-year"><span>Beitragsjahr <b>2027</b></span><em>Läuft gut</em></div>
+
+        <div class="progress-row">
+          <div class="ring">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="49" class="rbg"></circle>
+              <circle cx="60" cy="60" r="49" class="rval"></circle>
+            </svg>
+            <div><strong>93%</strong><small>erledigt</small></div>
+          </div>
+          <div class="sum"><span>Eingezogen</span><strong>22.146 €</strong><small>von 23.810 € Jahresbeitrag</small></div>
+        </div>
+
+        <div class="stats">
+          <div><span>Mitglieder</span><strong>386</strong></div>
+          <div><span>Bezahlt</span><strong>362</strong></div>
+          <div class="open"><span>Offen</span><strong>24</strong></div>
+        </div>
+
+        <div class="open-list">
+          <div class="list-title"><strong>Offene Beiträge</strong><span>1.664 € offen</span></div>
+          <div class="person"><i>MK</i><div><strong>Martin Keller</strong><span>Herren · Jahresbeitrag</span></div><b>84 €</b></div>
+          <div class="person"><i>LS</i><div><strong>Leonie Schmid</strong><span>Jugend · Jahresbeitrag</span></div><b>48 €</b></div>
+          <button>Alle offenen Beiträge anzeigen</button>
+        </div>
+      </div>
+      <div class="float-chip chip-bottom"><i>€</i><div><strong>+ 1.932 €</strong><small>heute verbucht</small></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="club-strip">
+  <div class="wrap">
+    <p>Gemacht für kleine und große Vereine</p>
+    <div class="types">
+      <span>⚽ Sportvereine</span><span>🎺 Musikvereine</span><span>🤝 Fördervereine</span><span>🚒 Feuerwehrvereine</span><span>🎭 Kulturvereine</span><span>♥ Alle anderen</span>
+    </div>
+  </div>
+</section>
+
+<section class="section problem">
+  <div class="wrap split">
+    <div>
+      <span class="kicker">Schluss mit Beitragschaos</span>
+      <h2>Der Verein braucht Einsatz.<br>Nicht noch mehr Verwaltung.</h2>
+      <p class="lead">Excel-Listen, Kontoauszüge, Notizen und die Frage: „Hat der eigentlich schon bezahlt?“ VEREINSANKER bringt genau diesen Teil eurer Vereinsarbeit an einen Ort.</p>
+    </div>
+    <div class="before-after">
+      <div class="chaos">
+        <b>VORHER</b>
+        <div class="paper p1">Mitglieder_2027_final_neu.xlsx<small>Zeile 387 …</small></div>
+        <div class="paper p2">Wer hat bezahlt?<small>☐ Müller &nbsp; ☑ Maier &nbsp; ? Schmid</small></div>
+        <div class="paper p3">Bankexport März<small>1.248 Buchungen</small></div>
+      </div>
+      <div class="clean">
+        <b>MIT VEREINSANKER</b>
+        <div class="check">✓</div>
+        <strong>Alles auf einen Blick.</strong>
+        <span>362 bezahlt · 24 offen</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section how" id="so-gehts">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">In wenigen Schritten</span>
+      <h2>Vom Mitgliederblatt zum fertigen Beitragseinzug.</h2>
+      <p>Kein Einrichtungsprojekt. Kein Handbuch mit 80 Seiten. Einfach anfangen.</p>
+    </div>
+    <div class="steps">
+      <article><span>01</span><i>⇩</i><h3>Mitglieder rein</h3><p>CSV- oder Excel-Liste importieren oder Mitglieder einzeln anlegen.</p></article>
+      <article class="dark"><span>02</span><i>€</i><h3>Beiträge festlegen</h3><p>Beitragsarten, Gruppen, Beträge und Fälligkeiten sauber hinterlegen.</p></article>
+      <article><span>03</span><i>⇄</i><h3>SEPA erstellen</h3><p>Einzug vorbereiten und eine SEPA-XML-Datei fürs Online-Banking erzeugen.</p></article>
+      <article><span>04</span><i>✓</i><h3>Fertig.</h3><p>Bezahlt, offen oder überfällig sehen und gezielt nachfassen.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="section features" id="funktionen">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Nur was ihr braucht</span>
+      <h2>Beitragsverwaltung. Punkt.</h2>
+      <p>VEREINSANKER will nicht eure komplette Vereinswelt ersetzen. Es macht einen wichtigen Job – dafür richtig gut.</p>
+    </div>
+
+    <div class="feature-grid">
+      <article class="feature-wide">
+        <div>
+          <span class="tag">Mitglieder</span>
+          <h3>Bestehende Listen einfach mitnehmen.</h3>
+          <p>Keine stundenlange Neueingabe. Mitglieder aus CSV oder Excel übernehmen, Gruppen zuordnen und direkt weiterarbeiten.</p>
+          <ul><li>CSV-/Excel-Import</li><li>Eigene Gruppen</li><li>Individuelle Beiträge</li></ul>
+        </div>
+        <div class="import-box">
+          <div class="file"><b>X</b> mitglieder_verein.xlsx</div>
+          <div class="arrow">↓</div>
+          <div class="done"><strong>386 Mitglieder</strong><span>erfolgreich übernommen</span><i></i></div>
+        </div>
+      </article>
+
+      <article class="feature"><i>⇄</i><h3>SEPA-Datei erstellen</h3><p>Lastschriften vorbereiten und als XML-Datei für euer Online-Banking exportieren.</p></article>
+      <article class="feature"><i>✓</i><h3>Offen. Bezahlt. Erledigt.</h3><p>Jederzeit sehen, welche Beiträge eingegangen sind und wo noch etwas offen ist.</p></article>
+      <article class="feature"><i>✉</i><h3>Freundlich nachfassen</h3><p>Offene Beiträge filtern und Zahlungserinnerungen ohne Listen-Sucherei vorbereiten.</p></article>
+      <article class="feature"><i>⚑</i><h3>Passt zu eurem Verein</h3><p>Fußball, Musik oder Förderverein: Gruppen und Beitragsarten sind frei benennbar.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="section identity">
+  <div class="wrap identity-grid">
+    <div class="identity-card">
+      <div class="id-head"><div class="demo-badge">TV<small>1911</small></div><div><span>TV Beispielstadt 1911 e.V.</span><strong>Beitragszentrale</strong></div></div>
+      <div class="swatches">
+        <button class="swatch active" data-color="#237a55" style="--s:#237a55" aria-label="Grün"></button>
+        <button class="swatch" data-color="#225fa8" style="--s:#225fa8" aria-label="Blau"></button>
+        <button class="swatch" data-color="#a6323f" style="--s:#a6323f" aria-label="Rot"></button>
+        <button class="swatch" data-color="#72509d" style="--s:#72509d" aria-label="Lila"></button>
+        <span>Eure Vereinsfarbe</span>
+      </div>
+      <div class="mini"><div><span>Mitglieder</span><strong>248</strong></div><div><span>Beiträge bezahlt</span><strong>91%</strong></div><div class="bar"><i></i></div></div>
+    </div>
+    <div>
+      <span class="kicker">Euer Verein. Euer Look.</span>
+      <h2>Keine graue Verwaltungssoftware.</h2>
+      <p class="lead">Vereinslogo und Vereinsfarbe machen aus VEREINSANKER eure eigene Beitragszentrale. Vertraut, übersichtlich und passend zu eurem Verein.</p>
+      <div class="ticks"><span>✓ Vereinslogo hinterlegen</span><span>✓ Hauptfarbe auswählen</span><span>✓ Gruppen frei benennen</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section price" id="preis">
+  <div class="wrap">
+    <div class="section-head light">
+      <span class="kicker">Einfacher Preis</span>
+      <h2>Keine Pakete. Keine versteckten Module.</h2>
+      <p>Alles, was VEREINSANKER für eure Beitragsverwaltung kann, ist dabei.</p>
+    </div>
+
+    <div class="billing">
+      <button class="active" data-mode="month">Monatlich</button>
+      <button data-mode="year">Jährlich <span>2 Monate sparen</span></button>
+    </div>
+
+    <div class="price-card">
+      <div class="price-main">
+        <span>VEREINSANKER KOMPLETT</span>
+        <div class="amount"><strong data-month="7,90 €" data-year="79 €">7,90 €</strong><small data-month="/ Monat" data-year="/ Jahr">/ Monat</small></div>
+        <p>Für den ganzen Verein. Ohne komplizierte Preisstaffel nach Abteilungen.</p>
+        <a class="btn btn-primary full" href="#top">14 Tage kostenlos testen</a>
+        <em>Der Test endet automatisch. Erst danach entscheidet ihr.</em>
+      </div>
+      <div class="included">
+        <strong>Alles dabei:</strong>
+        <ul>
+          <li>✓ Mitgliederverwaltung & Import</li>
+          <li>✓ Gruppen & Beitragsarten</li>
+          <li>✓ SEPA-XML-Export</li>
+          <li>✓ Bezahlt / offen / überfällig</li>
+          <li>✓ Zahlungserinnerungen</li>
+          <li>✓ CSV-Export</li>
+          <li>✓ Vereinslogo & Vereinsfarbe</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section faq" id="faq">
+  <div class="wrap faq-grid">
+    <div class="faq-intro">
+      <span class="kicker">Kurz erklärt</span>
+      <h2>Fragen, die ein Kassierer stellen würde.</h2>
+      <p class="lead">Ohne Fachchinesisch beantwortet.</p>
+    </div>
+    <div class="accordion">
+      <article class="faq-item open"><button aria-expanded="true"><span>Ist VEREINSANKER eine Buchhaltungssoftware?</span><i>−</i></button><div><p>Nein. VEREINSANKER konzentriert sich bewusst auf Mitgliedsbeiträge: Mitglieder, Beitragshöhen, SEPA-Einzug, Zahlungsstatus und offene Beiträge.</p></div></article>
+      <article class="faq-item"><button aria-expanded="false"><span>Funktioniert das nur für Sportvereine?</span><i>+</i></button><div><p>Nein. Gruppen und Beitragsarten sind frei benennbar. Deshalb passt VEREINSANKER genauso zu Musik-, Förder-, Kultur-, Feuerwehr- und vielen anderen Vereinen.</p></div></article>
+      <article class="faq-item"><button aria-expanded="false"><span>Können wir unsere vorhandene Mitgliederliste übernehmen?</span><i>+</i></button><div><p>Ja. Mitglieder können aus einer vorbereiteten CSV- oder Excel-Liste übernommen werden, damit niemand hunderte Datensätze neu eintippen muss.</p></div></article>
+      <article class="faq-item"><button aria-expanded="false"><span>Wie funktioniert der SEPA-Einzug?</span><i>+</i></button><div><p>VEREINSANKER bereitet die Lastschriften vor und erzeugt eine SEPA-XML-Datei. Diese wird anschließend im Online-Banking des Vereins eingereicht.</p></div></article>
+      <article class="faq-item"><button aria-expanded="false"><span>Was passiert nach den 14 Testtagen?</span><i>+</i></button><div><p>Der kostenlose Test endet ohne automatische Verlängerung. Der Verein entscheidet danach selbst, ob er VEREINSANKER weiter nutzen möchte.</p></div></article>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <div class="cta-card">
+      <span class="crest big"><svg viewBox="0 0 48 54" aria-hidden="true"><path d="M24 2 44 9v15c0 13-8.6 23-20 28C12.6 47 4 37 4 24V9L24 2Z" fill="currentColor"/><path d="M24 12v24M17 22h14M16 34c2.2 4.2 5 6.5 8 8.3 3-1.8 5.8-4.1 8-8.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="13" r="3" fill="#fff"/></svg></span>
+      <b>BEREIT FÜR WENIGER BEITRAGSCHAOS?</b>
+      <h2>Mehr Verein.<br>Weniger Verwaltung.</h2>
+      <p>14 Tage kostenlos ausprobieren. Ohne Kreditkarte und ohne automatische Verlängerung des Tests.</p>
+      <a class="btn btn-white" href="#top">VEREINSANKER kostenlos testen</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap footer-grid">
+    <div>
+      <a class="brand" href="#top"><span class="crest"><svg viewBox="0 0 48 54"><path d="M24 2 44 9v15c0 13-8.6 23-20 28C12.6 47 4 37 4 24V9L24 2Z" fill="currentColor"/><path d="M24 12v24M17 22h14M16 34c2.2 4.2 5 6.5 8 8.3 3-1.8 5.8-4.1 8-8.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="13" r="3" fill="#fff"/></svg></span><span class="brand-copy"><strong>VEREINSANKER</strong><small>Beitragsverwaltung</small></span></a>
+      <p>Beiträge erledigt. Mehr Zeit für den Verein.</p>
+    </div>
+    <div class="footer-links"><div><strong>VEREINSANKER</strong><a href="#so-gehts">So geht's</a><a href="#funktionen">Funktionen</a><a href="#preis">Preis</a></div><div><strong>RECHTLICHES</strong><a href="#">Impressum</a><a href="#">Datenschutz</a></div></div>
+  </div>
+  <div class="wrap bottom"><span>© 2026 VEREINSANKER</span><span>Gemacht für Menschen, die ihren Verein am Laufen halten.</span></div>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>
