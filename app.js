@@ -413,11 +413,19 @@ async function initOnboarding() {
       updated_at: new Date().toISOString()
     };
 
-    const { data, error } = await sb
-      .from("clubs")
-      .upsert(payload, { onConflict: "owner_id" })
-      .select()
-      .single();
+    const saveQuery = existing
+      ? sb.from("clubs").update({
+          name: payload.name,
+          short_name: payload.short_name,
+          color: payload.color,
+          standard_fee: payload.standard_fee,
+          due_date: payload.due_date,
+          creditor_id: payload.creditor_id,
+          updated_at: payload.updated_at
+        }).eq("id", existing.id)
+      : sb.from("clubs").insert(payload);
+
+    const { data, error } = await saveQuery.select().single();
 
     if (error) {
       button.disabled = false;
