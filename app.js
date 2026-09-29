@@ -56,6 +56,13 @@ function closeBackdrop(el) {
   document.body.style.overflow = "";
 }
 
+function finishAppLoad() {
+  requestAnimationFrame(() => {
+    document.body.classList.remove("app-data-loading");
+    document.body.classList.add("app-data-ready");
+  });
+}
+
 async function getSession() {
   const { data, error } = await sb.auth.getSession();
   if (error) throw error;
@@ -837,13 +844,34 @@ function setupLogout() {
     setupLogout();
     setupMobileNavigation();
 
-    if ($("#finishSetup")) return initOnboarding();
-    if ($("#dashboardPage")) return initDashboard();
-    if ($("#membersPage")) return initMembers();
-    if ($("#contributionsPage")) return initContributions();
-    if ($("#settingsForm")) return initSettings();
+    if ($("#finishSetup")) {
+      await initOnboarding();
+      finishAppLoad();
+      return;
+    }
+    if ($("#dashboardPage")) {
+      await initDashboard();
+      finishAppLoad();
+      return;
+    }
+    if ($("#membersPage")) {
+      await initMembers();
+      finishAppLoad();
+      return;
+    }
+    if ($("#contributionsPage")) {
+      await initContributions();
+      finishAppLoad();
+      return;
+    }
+    if ($("#settingsForm")) {
+      await initSettings();
+      finishAppLoad();
+      return;
+    }
   } catch (error) {
     console.error(error);
+    finishAppLoad();
     showToast("Etwas ist schiefgelaufen. Bitte Seite neu laden.");
   }
 })();
