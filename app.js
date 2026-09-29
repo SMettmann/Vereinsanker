@@ -927,6 +927,13 @@ async function initContributions() {
     }
 
     contributions = await loadContributions();
+
+    const newTotal = contributions.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+    const newPaid = contributions.filter(c => c.status === "paid").reduce((sum, c) => sum + Number(c.amount || 0), 0);
+    $("#contribTotal").textContent = money(newTotal);
+    $("#contribPaid").textContent = money(newPaid);
+    $("#contribOpen").textContent = money(newTotal - newPaid);
+
     render();
     showToast("Zahlung als bezahlt markiert ✓");
   };
