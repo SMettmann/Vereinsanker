@@ -93,6 +93,13 @@ function applyClubBrand(club) {
 }
 
 async function initSignup() {
+  const existingSession = await getSession();
+  if (existingSession) {
+    vaSession = existingSession;
+    const club = await getClub();
+    location.replace(club ? "app.html" : "onboarding.html");
+    return;
+  }
   const form = $("#startForm");
   form.addEventListener("submit", async e => {
     e.preventDefault();
@@ -132,6 +139,13 @@ async function initSignup() {
 }
 
 async function initLogin() {
+  const existingSession = await getSession();
+  if (existingSession) {
+    vaSession = existingSession;
+    const club = await getClub();
+    location.replace(club ? "app.html" : "onboarding.html");
+    return;
+  }
   const form = $("#loginForm");
   form.addEventListener("submit", async e => {
     e.preventDefault();
