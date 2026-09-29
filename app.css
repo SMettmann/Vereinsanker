@@ -103,3 +103,47 @@ button:disabled{opacity:.58;cursor:not-allowed}
 .club-logo-fallback[hidden]{
   display:none !important;
 }
+
+
+/* App Ladezustand */
+body.app-data-loading{
+  overflow:hidden;
+}
+body.app-data-loading .app-shell,
+body.app-data-loading .mobile-top,
+body.app-data-loading .mobile-bottom-nav{
+  opacity:0;
+  pointer-events:none;
+}
+body.app-data-loading::before{
+  content:"VEREINSANKER";
+  position:fixed;
+  inset:0;
+  z-index:9998;
+  display:grid;
+  place-items:center;
+  background:var(--bg);
+  color:var(--dark);
+  font:800 16px/1 "Manrope",sans-serif;
+  letter-spacing:.08em;
+}
+body.app-data-loading::after{
+  content:"";
+  position:fixed;
+  left:50%;
+  top:calc(50% + 34px);
+  z-index:9999;
+  width:26px;
+  height:26px;
+  margin-left:-13px;
+  border:3px solid #dbe4dd;
+  border-top-color:var(--green);
+  border-radius:50%;
+  animation:va-spin .75s linear infinite;
+}
+body.app-data-ready .app-shell,
+body.app-data-ready .mobile-top{
+  animation:va-fade-in .16s ease-out;
+}
+@keyframes va-spin{to{transform:rotate(360deg)}}
+@keyframes va-fade-in{from{opacity:0}to{opacity:1}}
