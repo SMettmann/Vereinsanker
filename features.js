@@ -344,9 +344,15 @@ function correctionValue(member, key) {
   return value == null ? "" : String(value);
 }
 
+function correctionValue(member, key) {
+  const value = member?.[key];
+  return value == null ? "" : String(value);
+}
+
 function renderImportCorrections(items) {
   const box = $("#importCorrections");
   if (!box) return;
+
   if (!items.length) {
     box.hidden = true;
     box.innerHTML = "";
@@ -355,12 +361,46 @@ function renderImportCorrections(items) {
 
   box.hidden = false;
   box.innerHTML =
-    '<div class="correction-head"><div><strong>' + items.length + ' Zeile(n) brauchen deine Hilfe</strong><span>Korrigiere die roten Angaben direkt hier. Du musst Excel nicht erneut öffnen.</span></div></div>' +
+    '<div class="correction-head"><div><strong>' + items.length + ' Zeile(n) brauchen deine Hilfe</strong><span>Fehler korrigieren oder bei Dubletten bewusst entscheiden.</span></div></div>' +
     '<div class="correction-list">' +
     items.map((item, index) => {
       const m = item.member || {};
-      return '<section class="correction-card" data-correction-index="' + index + '">' +
-        '<div class="correction-card-head"><div><strong>Zeile ' + esc(item.row) + ' · ' + esc(memberFullName(m)) + '</strong><span>' + esc((item.reasons || []).join(" · ")) + '</span></div><button type="button" class="correction-skip" data-skip-correction="' + index + '">Überspringen</button></div>' +
+      const isDuplicate = item.kind === "duplicate";
+      const existing = item.existing_member || null;
+      const duplicateInfo = isDuplicate
+        ? (existing
+          ? '<div class="duplicate-found"><strong>Bereits vorhanden:</strong><span>' +
+              esc(memberFullName(existing)) +
+              (existing.member_number ? ' · Nr. ' + esc(existing.member_number) : '') +
+              (existing.email ? ' · ' + esc(existing.email) : '') +
+            '</span></div>'
+          : '<div class="duplicate-found"><strong>Dublette erkannt:</strong><span>' +
+              (item.duplicate_source === "file"
+                ? 'Dieser Datensatz kommt in der Importdatei bereits vor.'
+                : 'Mehrere vorhandene Mitglieder passen zu dieser Zeile.') +
+            '</span></div>')
+        : '';
+
+      const duplicateActions = isDuplicate
+        ? '<div class="duplicate-actions">' +
+            (item.existing_member_id
+              ? '<button type="button" class="duplicate-choice' + (item.resolution === "update" ? ' active' : '') + '" data-duplicate-action="update" data-correction-index="' + index + '">Bestehendes Mitglied aktualisieren</button>'
+              : '') +
+            '<button type="button" class="duplicate-choice skip' + (item.resolution === "skip" ? ' active' : '') + '" data-duplicate-action="skip" data-correction-index="' + index + '">Überspringen</button>' +
+            '<button type="button" class="duplicate-choice create' + (item.resolution === "create" ? ' active' : '') + '" data-duplicate-action="create" data-correction-index="' + index + '">Trotzdem neu anlegen</button>' +
+          '</div>' +
+          '<p class="duplicate-note">' +
+            (item.existing_member_id
+              ? 'Beim Aktualisieren werden die Angaben aus dieser Zeile übernommen. Ein noch offener Jahresbeitrag wird auf den neuen Betrag angepasst.'
+              : 'Bei „Trotzdem neu anlegen“ wird eine kollidierende Mitgliedsnummer automatisch durch eine freie Nummer ersetzt.') +
+          '</p>'
+        : '<button type="button" class="correction-skip" data-skip-correction="' + index + '">Zeile überspringen</button>';
+
+      return '<section class="correction-card' + (isDuplicate ? ' duplicate-card' : '') + '" data-correction-index="' + index + '">' +
+        '<div class="correction-card-head"><div><strong>Zeile ' + esc(item.row) + ' · ' + esc(memberFullName(m)) + '</strong><span>' + esc((item.reasons || []).join(" · ")) + '</span></div>' +
+          (!isDuplicate ? duplicateActions : '') +
+        '</div>' +
+        duplicateInfo +
         '<div class="correction-grid">' +
           '<label><span>Vorname</span><input data-correct="first_name" value="' + esc(correctionValue(m,"first_name")) + '"></label>' +
           '<label><span>Nachname</span><input data-correct="last_name" value="' + esc(correctionValue(m,"last_name")) + '"></label>' +
@@ -372,21 +412,28 @@ function renderImportCorrections(items) {
           '<label><span>Mandatsreferenz</span><input data-correct="mandate_reference" value="' + esc(correctionValue(m,"mandate_reference")) + '"></label>' +
           '<label><span>Mandatsdatum</span><input data-correct="mandate_signed_at" placeholder="TT.MM.JJJJ" value="' + esc(correctionValue(m,"mandate_signed_at")) + '"></label>' +
         '</div>' +
+        (isDuplicate ? duplicateActions : '') +
       '</section>';
     }).join("") +
     '</div>';
 }
 
 function collectImportCorrections() {
-  return $(".correction-card").map(card => {
-    const item = vaImportState.corrections[Number(card.dataset.correctionIndex)];
-    const result = { __row: item.row };
-    $("[data-correct]", card).forEach(input => { result[input.dataset.correct] = input.value; });
+  return $$(".correction-card").map(card => {
+    const index = Number(card.dataset.correctionIndex);
+    const item = vaImportState.corrections[index];
+    const result = {
+      __row: item.row,
+      __resolution: item.resolution || null,
+      __existing_member_id: item.existing_member_id || null,
+      __kind: item.kind || "error"
+    };
+    $$("[data-correct]", card).forEach(input => {
+      result[input.dataset.correct] = input.value;
+    });
     return result;
   });
 }
-
-
 
 async function readImportFile(file) {
   if (!window.XLSX) throw new Error("Excel-Import ist noch nicht geladen.");
