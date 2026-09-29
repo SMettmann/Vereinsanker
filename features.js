@@ -415,6 +415,8 @@ async function enhanceContributionPage() {
   if (missing.length) {
     $("#yearSetup").hidden = false;
     $("#yearSetupText").textContent = missing.length + " aktive Mitglieder haben noch keinen Beitrag für " + currentYear + ".";
+  } else {
+    $("#yearSetup").hidden = true;
   }
 
   $("#createYearContributions")?.addEventListener("click", async () => {
@@ -452,9 +454,12 @@ async function enhanceContributionPage() {
       return c.status !== "paid" && validIban(m.iban) && m.mandate_reference && m.mandate_signed_at;
     });
     const collectionDate = $("#collectionDate")?.value;
+    const openRows = all.filter(c => c.status !== "paid");
 
-    if (!currentClub.creditor_id) return showToast("Bitte zuerst die Gläubiger-ID eintragen");
-    if (!validIban(currentClub.iban)) return showToast("Bitte zuerst eine gültige Vereins-IBAN eintragen");
+    if (!openRows.length) return showToast("Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
+    if (!currentClub.creditor_id) return showToast("Gläubiger-ID fehlt. Bitte in Einstellungen → SEPA eintragen.");
+    if (!currentClub.iban) return showToast("Vereins-IBAN fehlt. Bitte in Einstellungen → SEPA eintragen.");
+    if (!validIban(currentClub.iban)) return showToast("Die gespeicherte Vereins-IBAN ist ungültig. Bitte in Einstellungen → SEPA korrigieren.");
     if (!collectionDate) return showToast("Bitte Einzugsdatum wählen");
     if (collectionDate < new Date().toISOString().slice(0,10)) return showToast("Einzugsdatum darf nicht in der Vergangenheit liegen");
     if (!ready.length) return showToast("Kein offener Beitrag mit vollständigem SEPA-Mandat");
