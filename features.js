@@ -7,18 +7,31 @@ function normalizeHeader(value) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function realDateIso(year, month, day) {
+  const y = Number(year), m = Number(month), d = Number(day);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (
+    date.getUTCFullYear() !== y ||
+    date.getUTCMonth() !== m - 1 ||
+    date.getUTCDate() !== d
+  ) return null;
+  return String(y).padStart(4, "0") + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+}
+
 function parseDateValue(value) {
   if (!value) return null;
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return realDateIso(value.getFullYear(), value.getMonth() + 1, value.getDate());
+  }
   if (typeof value === "number" && window.XLSX?.SSF?.parse_date_code) {
     const d = XLSX.SSF.parse_date_code(value);
-    if (d) return [d.y, String(d.m).padStart(2, "0"), String(d.d).padStart(2, "0")].join("-");
+    if (d) return realDateIso(d.y, d.m, d.d);
   }
   const raw = String(value).trim();
-  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (iso) return iso[1] + "-" + iso[2].padStart(2, "0") + "-" + iso[3].padStart(2, "0");
+  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (iso) return realDateIso(iso[1], iso[2], iso[3]);
   const de = raw.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
-  if (de) return de[3] + "-" + de[2].padStart(2, "0") + "-" + de[1].padStart(2, "0");
+  if (de) return realDateIso(de[3], de[2], de[1]);
   return null;
 }
 
