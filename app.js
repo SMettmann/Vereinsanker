@@ -1,174 +1,602 @@
-const $=(s)=>document.querySelector(s);
-const $$=(s)=>[...document.querySelectorAll(s)];
+const $ = (s, root = document) => root.querySelector(s);
+const $$ = (s, root = document) => [...root.querySelectorAll(s)];
+const sb = window.vaSupabase;
+const currentYear = new Date().getFullYear();
+let vaSession = null;
+let vaClub = null;
 
-const startForm=$("#startForm");
-if(startForm){
-  startForm.addEventListener("submit",e=>{
-    e.preventDefault();
-    localStorage.setItem("va_email",$("#email").value.trim());
-    location.href="onboarding.html";
-  });
+function esc(value = "") {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[ch]));
 }
 
-function showStep(n){
-  $$(".step").forEach(s=>s.classList.toggle("active",Number(s.dataset.step)===n));
-  const no=$("#stepNo"),bar=$("#progressBar");
-  if(no) no.textContent=n;
-  if(bar) bar.style.width=(n/3*100)+"%";
-}
-$$("[data-next]").forEach(btn=>btn.addEventListener("click",()=>showStep(Number(btn.dataset.next))));
-$$("[data-back]").forEach(btn=>btn.addEventListener("click",()=>showStep(Number(btn.dataset.back))));
-
-$$(".color-choice").forEach(btn=>btn.addEventListener("click",()=>{
-  $$(".color-choice").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  localStorage.setItem("va_color",btn.dataset.color);
-}));
-
-const finish=$("#finishSetup");
-if(finish){
-  finish.addEventListener("click",()=>{
-    const name=$("#clubName")?.value.trim()||localStorage.getItem("va_club")||"Mein Verein";
-    const short=$("#clubShort")?.value.trim().toUpperCase()||localStorage.getItem("va_short")||"VA";
-    localStorage.setItem("va_club",name);
-    localStorage.setItem("va_short",short);
-    localStorage.setItem("va_fee",$("#fee")?.value||"60");
-    localStorage.setItem("va_due",$("#due")?.value||"");
-    localStorage.setItem("va_creditor",$("#creditor")?.value.trim()||"");
-    location.href="app.html";
-  });
-  const name=$("#clubName"),short=$("#clubShort");
-  name?.addEventListener("input",()=>localStorage.setItem("va_club",name.value));
-  short?.addEventListener("input",()=>localStorage.setItem("va_short",short.value));
+function money(value) {
+  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
 
-const clubTitle=$("#clubTitle"),clubBadge=$("#clubBadge");
-if(clubTitle){
-  clubTitle.textContent=localStorage.getItem("va_club")||"SV Waldheim 1928 e.V.";
-  clubBadge.textContent=localStorage.getItem("va_short")||"SV";
-  const c=localStorage.getItem("va_color");
-  if(c){document.documentElement.style.setProperty("--green",c);clubBadge.style.background=c}
+function initials(first = "", last = "") {
+  return ((first.trim()[0] || "") + (last.trim()[0] || "")).toUpperCase() || "VA";
 }
 
-
-function initials(name){
-  return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]?.toUpperCase()||"").join("");
+function memberFullName(member) {
+  return [member?.first_name, member?.last_name].filter(Boolean).join(" ") || "Mitglied";
 }
-function showToast(message){
-  const toast=$("#toast"); if(!toast) return;
-  toast.textContent=message; toast.hidden=false;
+
+function setMessage(form, message, type = "info") {
+  if (!form) return;
+  let box = $(".auth-message", form);
+  if (!box) {
+    box = document.createElement("div");
+    box.className = "auth-message";
+    form.insertBefore(box, $(".secondary-link", form) || null);
+  }
+  box.className = "auth-message " + type;
+  box.textContent = message;
+}
+
+function showToast(message) {
+  const toast = $("#toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.hidden = false;
   clearTimeout(window.__vaToast);
-  window.__vaToast=setTimeout(()=>toast.hidden=true,2600);
+  window.__vaToast = setTimeout(() => { toast.hidden = true; }, 2600);
 }
-function openBackdrop(el){ if(el){el.hidden=false;document.body.style.overflow="hidden"} }
-function closeBackdrop(el){ if(el){el.hidden=true;document.body.style.overflow=""} }
 
-const memberSheet=$("#memberSheet");
-const addMemberSheet=$("#addMemberSheet");
-$("#addMemberBtn")?.addEventListener("click",()=>openBackdrop(addMemberSheet));
-$("#closeSheet")?.addEventListener("click",()=>closeBackdrop(memberSheet));
-$("#closeAddMember")?.addEventListener("click",()=>closeBackdrop(addMemberSheet));
-memberSheet?.addEventListener("click",e=>{if(e.target===memberSheet)closeBackdrop(memberSheet)});
-addMemberSheet?.addEventListener("click",e=>{if(e.target===addMemberSheet)closeBackdrop(addMemberSheet)});
+function openBackdrop(el) {
+  if (!el) return;
+  el.hidden = false;
+  document.body.style.overflow = "hidden";
+}
 
-function bindMemberRow(row){
-  row.addEventListener("click",()=>{
-    const name=row.dataset.name||"Mitglied";
-    $("#detailInitials").textContent=initials(name);
-    $("#sheetTitle").textContent=name;
-    $("#detailGroup").textContent=row.dataset.group||"–";
-    $("#detailEmail").textContent=row.dataset.email||"–";
-    $("#detailIban").textContent=row.dataset.iban||"–";
-    $("#detailFee").textContent=row.dataset.fee||"–";
-    $("#detailStatus").textContent=row.dataset.status||"–";
+function closeBackdrop(el) {
+  if (!el) return;
+  el.hidden = true;
+  document.body.style.overflow = "";
+}
+
+async function getSession() {
+  const { data, error } = await sb.auth.getSession();
+  if (error) throw error;
+  return data.session;
+}
+
+async function requireSession() {
+  vaSession = await getSession();
+  if (!vaSession) {
+    location.replace("login.html");
+    return null;
+  }
+  return vaSession;
+}
+
+async function getClub() {
+  const { data, error } = await sb
+    .from("clubs")
+    .select("*")
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  vaClub = data;
+  return data;
+}
+
+function applyClubBrand(club) {
+  if (!club) return;
+  if (club.color) document.documentElement.style.setProperty("--green", club.color);
+  $$("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
+  $$("#clubBadge").forEach(el => {
+    el.textContent = (club.short_name || "VA").slice(0, 4).toUpperCase();
+    if (club.color) el.style.background = club.color;
+  });
+}
+
+async function initSignup() {
+  const form = $("#startForm");
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const button = $("button[type='submit']", form);
+    const email = $("#email").value.trim();
+    const password = $("#password").value;
+    button.disabled = true;
+    button.textContent = "Konto wird angelegt …";
+    setMessage(form, "", "info");
+
+    const redirectTo = new URL("login.html", location.href).href;
+    const { data, error } = await sb.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: redirectTo }
+    });
+
+    if (error) {
+      setMessage(form, error.message || "Registrierung nicht möglich.", "error");
+      button.disabled = false;
+      button.textContent = "Weiter zur Einrichtung →";
+      return;
+    }
+
+    if (data.session) {
+      location.href = "onboarding.html";
+      return;
+    }
+
+    setMessage(
+      form,
+      "Bestätigungs-E-Mail ist unterwegs. Link anklicken und danach hier anmelden.",
+      "success"
+    );
+    button.textContent = "E-Mail gesendet ✓";
+  });
+}
+
+async function initLogin() {
+  const form = $("#loginForm");
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const button = $("button[type='submit']", form);
+    button.disabled = true;
+    button.textContent = "Anmelden …";
+
+    const { error } = await sb.auth.signInWithPassword({
+      email: $("#loginEmail").value.trim(),
+      password: $("#loginPassword").value
+    });
+
+    if (error) {
+      setMessage(form, "E-Mail oder Passwort stimmen nicht.", "error");
+      button.disabled = false;
+      button.textContent = "Anmelden →";
+      return;
+    }
+
+    const club = await getClub();
+    location.href = club ? "app.html" : "onboarding.html";
+  });
+}
+
+function showStep(n) {
+  $$(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
+  if ($("#stepNo")) $("#stepNo").textContent = n;
+  if ($("#progressBar")) $("#progressBar").style.width = (n / 3 * 100) + "%";
+}
+
+async function initOnboarding() {
+  const existing = await getClub();
+  if (existing) {
+    $("#clubName").value = existing.name || "";
+    $("#clubShort").value = existing.short_name || "";
+    $("#fee").value = Number(existing.standard_fee || 0);
+    $("#due").value = existing.due_date || "";
+    $("#creditor").value = existing.creditor_id || "";
+    $$(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === existing.color));
+  }
+
+  $$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
+    $$(".color-choice").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }));
+
+  $$("[data-next]").forEach(btn => btn.addEventListener("click", () => showStep(Number(btn.dataset.next))));
+  $$("[data-back]").forEach(btn => btn.addEventListener("click", () => showStep(Number(btn.dataset.back))));
+
+  $("#finishSetup").addEventListener("click", async () => {
+    const name = $("#clubName").value.trim();
+    if (!name) {
+      showStep(1);
+      $("#clubName").focus();
+      return;
+    }
+
+    const button = $("#finishSetup");
+    button.disabled = true;
+    button.textContent = "Wird eingerichtet …";
+
+    const activeColor = $(".color-choice.active")?.dataset.color || "#237a55";
+    const payload = {
+      owner_id: vaSession.user.id,
+      name,
+      short_name: ($("#clubShort").value.trim() || "VA").toUpperCase(),
+      color: activeColor,
+      standard_fee: Number($("#fee").value || 0),
+      due_date: $("#due").value || null,
+      creditor_id: $("#creditor").value.trim() || null,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await sb
+      .from("clubs")
+      .upsert(payload, { onConflict: "owner_id" })
+      .select()
+      .single();
+
+    if (error) {
+      button.disabled = false;
+      button.textContent = "Verein öffnen →";
+      alert("Einrichtung konnte nicht gespeichert werden: " + error.message);
+      return;
+    }
+
+    vaClub = data;
+    location.href = "app.html";
+  });
+}
+
+async function loadMembers() {
+  const { data, error } = await sb
+    .from("members")
+    .select("*")
+    .eq("active", true)
+    .order("last_name", { ascending: true })
+    .order("first_name", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+async function loadContributions(year = currentYear) {
+  const { data, error } = await sb
+    .from("contributions")
+    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,note,members(id,first_name,last_name,group_name,email,iban,member_number,annual_fee,mandate_reference,mandate_signed_at)")
+    .eq("contribution_year", year)
+    .order("due_date", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+async function initDashboard() {
+  const club = await getClub();
+  if (!club) {
+    location.replace("onboarding.html");
+    return;
+  }
+  applyClubBrand(club);
+
+  const [members, contributions] = await Promise.all([loadMembers(), loadContributions()]);
+  const total = contributions.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+  const paid = contributions.filter(c => c.status === "paid").reduce((sum, c) => sum + Number(c.amount || 0), 0);
+  const open = contributions.filter(c => c.status !== "paid");
+  const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+
+  $("#dashboardYear").textContent = currentYear;
+  $("#dashPercent").textContent = percent + " %";
+  $("#dashMembers").textContent = members.length;
+  $("#dashPaid").textContent = contributions.filter(c => c.status === "paid").length;
+  $("#dashOpen").textContent = open.length;
+  $("#dashProgress").style.width = percent + "%";
+
+  const openList = $("#dashboardOpenRows");
+  if (!open.length) {
+    openList.innerHTML = '<div class="empty-row"><strong>Alles erledigt ✓</strong><span>Aktuell sind keine Beiträge offen.</span></div>';
+  } else {
+    openList.innerHTML = open.slice(0, 3).map(c => {
+      const m = c.members || {};
+      return '<div class="member-row"><i class="avatar">' + esc(initials(m.first_name, m.last_name)) + '</i><div class="member-name"><strong>' + esc(memberFullName(m)) + '</strong><span>' + esc(m.group_name || "Ohne Gruppe") + '</span></div><span>Jahresbeitrag</span><span class="status">' + esc(money(c.amount)) + ' offen</span></div>';
+    }).join("");
+  }
+}
+
+function renderMemberRows(members, contributionMap) {
+  const rows = $("#memberRows");
+  if (!rows) return;
+
+  if (!members.length) {
+    rows.innerHTML = '<div class="empty-row"><strong>Noch keine Mitglieder</strong><span>Mit „Mitglied hinzufügen“ oder dem Import starten.</span></div>';
+    $("#visibleCount").textContent = "0";
+    return;
+  }
+
+  rows.innerHTML = members.map(m => {
+    const c = contributionMap.get(m.id);
+    const status = c?.status === "paid" ? "Bezahlt" : "Offen";
+    return '<button class="members-row" type="button" data-member-id="' + esc(m.id) + '">' +
+      '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.member_number || "ohne Mitgliedsnummer") + '</small></b></span>' +
+      '<span>' + esc(m.group_name || "Ohne Gruppe") + '</span>' +
+      '<span>' + esc(money(m.annual_fee)) + '</span>' +
+      '<em class="' + (status === "Bezahlt" ? "status-paid" : "status-open") + '">' + status + '</em>' +
+    '</button>';
+  }).join("");
+
+  $("#visibleCount").textContent = members.length;
+}
+
+async function initMembers() {
+  const club = await getClub();
+  if (!club) return location.replace("onboarding.html");
+  applyClubBrand(club);
+
+  let members = await loadMembers();
+  let contributions = await loadContributions();
+  let contributionMap = new Map(contributions.map(c => [c.member_id, c]));
+  renderMemberRows(members, contributionMap);
+
+  const memberSheet = $("#memberSheet");
+  const addMemberSheet = $("#addMemberSheet");
+
+  $("#addMemberBtn")?.addEventListener("click", () => openBackdrop(addMemberSheet));
+  $("#closeSheet")?.addEventListener("click", () => closeBackdrop(memberSheet));
+  $("#closeAddMember")?.addEventListener("click", () => closeBackdrop(addMemberSheet));
+  memberSheet?.addEventListener("click", e => { if (e.target === memberSheet) closeBackdrop(memberSheet); });
+  addMemberSheet?.addEventListener("click", e => { if (e.target === addMemberSheet) closeBackdrop(addMemberSheet); });
+
+  $("#memberRows").addEventListener("click", e => {
+    const row = e.target.closest(".members-row");
+    if (!row) return;
+    const member = members.find(m => m.id === row.dataset.memberId);
+    if (!member) return;
+    const c = contributionMap.get(member.id);
+
+    $("#detailInitials").textContent = initials(member.first_name, member.last_name);
+    $("#sheetTitle").textContent = memberFullName(member);
+    $("#detailGroup").textContent = member.group_name || "Ohne Gruppe";
+    $("#detailEmail").textContent = member.email || "–";
+    $("#detailIban").textContent = member.iban || "–";
+    $("#detailFee").textContent = money(member.annual_fee);
+    $("#detailStatus").textContent = c?.status === "paid" ? "Bezahlt" : "Offen";
     openBackdrop(memberSheet);
   });
-}
-$$(".members-row").forEach(bindMemberRow);
 
-function customMembers(){
-  try{return JSON.parse(localStorage.getItem("va_members")||"[]")}catch{return[]}
-}
-function saveMembers(list){localStorage.setItem("va_members",JSON.stringify(list))}
-function addMemberRow(member){
-  const rows=$("#memberRows"); if(!rows)return;
-  const row=document.createElement("button");
-  row.type="button"; row.className="members-row";
-  row.dataset.name=member.name; row.dataset.group=member.group||"Ohne Gruppe"; row.dataset.email=member.email||""; row.dataset.iban=member.iban||""; row.dataset.fee=member.fee+" €"; row.dataset.status="Offen";
-  const number=1006+customMembers().findIndex(m=>m.id===member.id);
-  row.innerHTML='<span class="member-main"><i>'+initials(member.name)+'</i><b>'+member.name+'<small>#'+number+'</small></b></span><span>'+(member.group||"Ohne Gruppe")+'</span><span>'+member.fee+' €</span><em class="status-open">Offen</em>';
-  rows.appendChild(row); bindMemberRow(row);
-}
-customMembers().forEach(addMemberRow);
-
-$("#addMemberForm")?.addEventListener("submit",e=>{
-  e.preventDefault();
-  const first=$("#firstName").value.trim(),last=$("#lastName").value.trim();
-  if(!first||!last)return;
-  const member={id:Date.now(),name:first+" "+last,group:$("#memberGroup").value.trim(),email:$("#memberEmail").value.trim(),iban:$("#memberIban").value.trim(),fee:Number($("#memberFee").value||0).toLocaleString("de-DE",{minimumFractionDigits:0,maximumFractionDigits:2})};
-  const list=customMembers(); list.push(member); saveMembers(list);
-  addMemberRow(member); e.target.reset(); $("#memberFee").value="60";
-  closeBackdrop(addMemberSheet); showToast("Mitglied gespeichert ✓");
-  $("#memberSearch")?.dispatchEvent(new Event("input"));
-});
-
-$("#memberSearch")?.addEventListener("input",e=>{
-  const q=e.target.value.trim().toLowerCase(); let count=0;
-  $$(".members-row").forEach(row=>{
-    const hit=(row.dataset.name+" "+row.dataset.group+" "+row.dataset.email).toLowerCase().includes(q);
-    row.hidden=!hit; if(hit)count++;
+  $("#memberSearch").addEventListener("input", e => {
+    const q = e.target.value.trim().toLowerCase();
+    let count = 0;
+    $$(".members-row").forEach(row => {
+      const member = members.find(m => m.id === row.dataset.memberId);
+      const text = member ? (memberFullName(member) + " " + (member.group_name || "") + " " + (member.email || "")).toLowerCase() : "";
+      const hit = text.includes(q);
+      row.hidden = !hit;
+      if (hit) count++;
+    });
+    $("#visibleCount").textContent = count;
   });
-  if($("#visibleCount"))$("#visibleCount").textContent=count;
-});
-if($("#visibleCount"))$("#visibleCount").textContent=$$(".members-row").length;
 
-$("#memberImport")?.addEventListener("change",e=>{
-  const file=e.target.files?.[0]; if(!file)return;
-  showToast(file.name+" ausgewählt ✓");
-});
-
-
-const sepaSheet=$("#sepaSheet");
-$("#openSepa")?.addEventListener("click",()=>openBackdrop(sepaSheet));
-$("#closeSepa")?.addEventListener("click",()=>closeBackdrop(sepaSheet));
-sepaSheet?.addEventListener("click",e=>{if(e.target===sepaSheet)closeBackdrop(sepaSheet)});
-$("#prepareSepa")?.addEventListener("click",()=>showToast("SEPA-Export wird später mit echten Vereinsdaten erzeugt."));
-
-$("#paymentSearch")?.addEventListener("input",e=>{
-  const q=e.target.value.trim().toLowerCase();
-  $$(".payment-row").forEach(row=>row.hidden=!row.dataset.search.includes(q));
-});
-
-$$(".mark-paid").forEach(btn=>btn.addEventListener("click",()=>{
-  const row=btn.closest(".payment-row");
-  btn.replaceWith(Object.assign(document.createElement("span"),{className:"paid-check",textContent:"✓ Bezahlt"}));
-  row.style.opacity=".72";
-  showToast("Zahlung als bezahlt markiert ✓");
-}));
-
-$$(".tiny-action").forEach(btn=>btn.addEventListener("click",()=>showToast("Zahlungserinnerung vorbereitet ✓")));
-$("#remindAll")?.addEventListener("click",()=>showToast("24 Zahlungserinnerungen vorbereitet ✓"));
-
-
-const settingsForm=$("#settingsForm");
-if(settingsForm){
-  const club=$("#settingsClub"),short=$("#settingsShort"),creditor=$("#settingsCreditor"),iban=$("#settingsIban"),fee=$("#settingsFee"),due=$("#settingsDue");
-  club.value=localStorage.getItem("va_club")||"";
-  short.value=localStorage.getItem("va_short")||"";
-  creditor.value=localStorage.getItem("va_creditor")||"";
-  iban.value=localStorage.getItem("va_iban")||"";
-  fee.value=localStorage.getItem("va_fee")||"60";
-  due.value=localStorage.getItem("va_due")||"";
-  const savedColor=localStorage.getItem("va_color")||"#237a55";
-  $$(".color-choice").forEach(btn=>btn.classList.toggle("active",btn.dataset.color===savedColor));
-  settingsForm.addEventListener("submit",e=>{
+  $("#addMemberForm").addEventListener("submit", async e => {
     e.preventDefault();
-    localStorage.setItem("va_club",club.value.trim());
-    localStorage.setItem("va_short",short.value.trim().toUpperCase());
-    localStorage.setItem("va_creditor",creditor.value.trim());
-    localStorage.setItem("va_iban",iban.value.trim());
-    localStorage.setItem("va_fee",fee.value||"60");
-    localStorage.setItem("va_due",due.value||"");
+    const button = $("button[type='submit']", e.currentTarget);
+    button.disabled = true;
+    button.textContent = "Wird gespeichert …";
+
+    const fee = Number($("#memberFee").value || club.standard_fee || 0);
+    const memberNumber = String(1001 + members.length);
+
+    const memberPayload = {
+      club_id: club.id,
+      member_number: memberNumber,
+      first_name: $("#firstName").value.trim(),
+      last_name: $("#lastName").value.trim(),
+      group_name: $("#memberGroup").value.trim() || null,
+      email: $("#memberEmail").value.trim() || null,
+      iban: $("#memberIban").value.trim() || null,
+      annual_fee: fee,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: member, error } = await sb.from("members").insert(memberPayload).select().single();
+    if (error) {
+      button.disabled = false;
+      button.textContent = "Mitglied speichern";
+      showToast("Speichern fehlgeschlagen");
+      return;
+    }
+
+    const dueDate = club.due_date
+      ? currentYear + club.due_date.slice(4)
+      : currentYear + "-03-01";
+
+    const { error: contributionError } = await sb.from("contributions").insert({
+      club_id: club.id,
+      member_id: member.id,
+      contribution_year: currentYear,
+      amount: fee,
+      due_date: dueDate,
+      status: "open"
+    });
+
+    if (contributionError) {
+      await sb.from("members").delete().eq("id", member.id);
+      button.disabled = false;
+      button.textContent = "Mitglied speichern";
+      showToast("Beitrag konnte nicht angelegt werden");
+      return;
+    }
+
+    e.currentTarget.reset();
+    $("#memberFee").value = Number(club.standard_fee || 0);
+    closeBackdrop(addMemberSheet);
+    showToast("Mitglied gespeichert ✓");
+
+    members = await loadMembers();
+    contributions = await loadContributions();
+    contributionMap = new Map(contributions.map(c => [c.member_id, c]));
+    renderMemberRows(members, contributionMap);
+    button.disabled = false;
+    button.textContent = "Mitglied speichern";
+  });
+
+  $("#memberImport")?.addEventListener("change", e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    showToast("Import-Assistent für " + file.name + " wird als Nächstes ergänzt.");
+    e.target.value = "";
+  });
+}
+
+function contributionMember(c) {
+  return c.members || {};
+}
+
+async function initContributions() {
+  const club = await getClub();
+  if (!club) return location.replace("onboarding.html");
+  applyClubBrand(club);
+
+  let contributions = await loadContributions();
+  const total = contributions.reduce((s, c) => s + Number(c.amount || 0), 0);
+  const paid = contributions.filter(c => c.status === "paid").reduce((s, c) => s + Number(c.amount || 0), 0);
+  const open = contributions.filter(c => c.status !== "paid");
+
+  $("#contribYear").textContent = currentYear;
+  $("#contribTotal").textContent = money(total);
+  $("#contribPaid").textContent = money(paid);
+  $("#contribOpen").textContent = money(total - paid);
+
+  const paymentList = $("#paymentList");
+  const openList = $("#openContributions");
+
+  const render = () => {
+    if (!contributions.length) {
+      paymentList.innerHTML = '<div class="empty-row"><strong>Noch keine Beiträge</strong><span>Lege zuerst Mitglieder an.</span></div>';
+      openList.innerHTML = '<div class="empty-row"><strong>Nichts offen</strong><span>Noch keine Beiträge vorhanden.</span></div>';
+      $("#openCount").textContent = "0";
+      return;
+    }
+
+    paymentList.innerHTML = contributions.map(c => {
+      const m = contributionMember(c);
+      return '<div class="payment-row" data-search="' + esc((memberFullName(m) + " " + (m.group_name || "")).toLowerCase()) + '">' +
+        '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.group_name || "Ohne Gruppe") + '</small></b></span>' +
+        '<strong>' + esc(money(c.amount)) + '</strong>' +
+        (c.status === "paid"
+          ? '<span class="paid-check">✓ Bezahlt</span>'
+          : '<button class="mark-paid" data-id="' + esc(c.id) + '">Als bezahlt markieren</button>') +
+      '</div>';
+    }).join("");
+
+    const openRows = contributions.filter(c => c.status !== "paid");
+    $("#openCount").textContent = openRows.length;
+    openList.innerHTML = openRows.length ? openRows.map(c => {
+      const m = contributionMember(c);
+      return '<div class="open-row"><span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc((m.group_name || "Ohne Gruppe") + " · Jahresbeitrag") + '</small></b></span><strong>' + esc(money(c.amount)) + '</strong><span>' + (c.due_date ? "Fällig " + new Date(c.due_date + "T00:00:00").toLocaleDateString("de-DE") : "Keine Fälligkeit") + '</span><button class="tiny-action">Erinnern</button></div>';
+    }).join("") : '<div class="empty-row"><strong>Alles erledigt ✓</strong><span>Keine offenen Beiträge.</span></div>';
+  };
+
+  render();
+
+  $("#paymentSearch")?.addEventListener("input", e => {
+    const q = e.target.value.trim().toLowerCase();
+    $$(".payment-row").forEach(row => { row.hidden = !row.dataset.search.includes(q); });
+  });
+
+  paymentList.addEventListener("click", async e => {
+    const button = e.target.closest(".mark-paid");
+    if (!button) return;
+    button.disabled = true;
+    const { error } = await sb.from("contributions").update({
+      status: "paid",
+      paid_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq("id", button.dataset.id);
+    if (error) {
+      button.disabled = false;
+      showToast("Zahlung konnte nicht gespeichert werden");
+      return;
+    }
+    contributions = await loadContributions();
+    showToast("Zahlung als bezahlt markiert ✓");
+    location.reload();
+  });
+
+  openList.addEventListener("click", e => {
+    if (e.target.closest(".tiny-action")) showToast("Zahlungserinnerung vorbereitet ✓");
+  });
+  $("#remindAll")?.addEventListener("click", () => showToast("Zahlungserinnerungen vorbereitet ✓"));
+
+  const sepaSheet = $("#sepaSheet");
+  $("#openSepa")?.addEventListener("click", () => {
+    const ready = contributions.filter(c => {
+      const m = contributionMember(c);
+      return c.status !== "paid" && m.iban && m.mandate_reference && m.mandate_signed_at;
+    });
+    $("#sepaReadyCount").textContent = ready.length + " Mitglieder";
+    $("#sepaReadySum").textContent = money(ready.reduce((s, c) => s + Number(c.amount || 0), 0));
+    $("#sepaMissing").textContent = club.creditor_id && club.iban
+      ? (ready.length ? "Die verfügbaren Mandatsdaten werden vor dem Export geprüft." : "Für den SEPA-Einzug fehlen bei den Mitgliedern noch Mandatsdaten.")
+      : "Bitte zuerst Gläubiger-ID und Vereinskonto in den Einstellungen ergänzen.";
+    openBackdrop(sepaSheet);
+  });
+  $("#closeSepa")?.addEventListener("click", () => closeBackdrop(sepaSheet));
+  sepaSheet?.addEventListener("click", e => { if (e.target === sepaSheet) closeBackdrop(sepaSheet); });
+  $("#prepareSepa")?.addEventListener("click", () => showToast("Der bankfähige SEPA-XML-Export folgt im nächsten Schritt."));
+}
+
+async function initSettings() {
+  const club = await getClub();
+  if (!club) return location.replace("onboarding.html");
+  applyClubBrand(club);
+
+  $("#settingsClub").value = club.name || "";
+  $("#settingsShort").value = club.short_name || "";
+  $("#settingsCreditor").value = club.creditor_id || "";
+  $("#settingsIban").value = club.iban || "";
+  $("#settingsFee").value = Number(club.standard_fee || 0);
+  $("#settingsDue").value = club.due_date || "";
+  $$(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === club.color));
+
+  $$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
+    $$(".color-choice").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }));
+
+  $("#settingsForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const button = $("button[type='submit']", e.currentTarget);
+    button.disabled = true;
+    button.textContent = "Wird gespeichert …";
+
+    const { data, error } = await sb.from("clubs").update({
+      name: $("#settingsClub").value.trim(),
+      short_name: $("#settingsShort").value.trim().toUpperCase(),
+      color: $(".color-choice.active")?.dataset.color || club.color,
+      creditor_id: $("#settingsCreditor").value.trim() || null,
+      iban: $("#settingsIban").value.trim() || null,
+      standard_fee: Number($("#settingsFee").value || 0),
+      due_date: $("#settingsDue").value || null,
+      updated_at: new Date().toISOString()
+    }).eq("id", club.id).select().single();
+
+    button.disabled = false;
+    button.textContent = "Änderungen speichern";
+    if (error) {
+      showToast("Speichern fehlgeschlagen");
+      return;
+    }
+    vaClub = data;
+    applyClubBrand(data);
     showToast("Einstellungen gespeichert ✓");
   });
 }
+
+function setupLogout() {
+  const sideBottom = $(".side-bottom");
+  if (!sideBottom) return;
+  sideBottom.innerHTML = '<button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
+  $("#logoutButton").addEventListener("click", async () => {
+    await sb.auth.signOut();
+    location.replace("login.html");
+  });
+}
+
+(async function boot() {
+  try {
+    if ($("#startForm")) {
+      await initSignup();
+      return;
+    }
+    if ($("#loginForm")) {
+      await initLogin();
+      return;
+    }
+
+    const session = await requireSession();
+    if (!session) return;
+    setupLogout();
+
+    if ($("#finishSetup")) return initOnboarding();
+    if ($("#dashboardPage")) return initDashboard();
+    if ($("#membersPage")) return initMembers();
+    if ($("#contributionsPage")) return initContributions();
+    if ($("#settingsForm")) return initSettings();
+  } catch (error) {
+    console.error(error);
+    showToast("Etwas ist schiefgelaufen. Bitte Seite neu laden.");
+  }
+})();
