@@ -876,9 +876,56 @@ async function enhanceMemberPage() {
   $("#closeImport")?.addEventListener("click", () => closeBackdrop(importSheet));
   importSheet?.addEventListener("click", e => { if (e.target === importSheet) closeBackdrop(importSheet); });
 
+  correctionsBox?.addEventListener("input", e => {
+    const input = e.target.closest("[data-correct]");
+    const card = e.target.closest(".correction-card");
+    if (!input || !card || !vaImportState?.corrections) return;
+
+    const index = Number(card.dataset.correctionIndex);
+    const item = vaImportState.corrections[index];
+    if (!item) return;
+    item.member = item.member || {};
+    item.member[input.dataset.correct] = input.value;
+  });
+
   correctionsBox?.addEventListener("click", e => {
+    if (!vaImportState?.corrections) return;
+
+    const duplicateChoice = e.target.closest("[data-duplicate-action]");
+    if (duplicateChoice) {
+      const index = Number(duplicateChoice.dataset.correctionIndex);
+      const item = vaImportState.corrections[index];
+      if (!item) return;
+
+      const action = duplicateChoice.dataset.duplicateAction;
+
+      if (action === "skip") {
+        vaImportState.corrections.splice(index, 1);
+      } else {
+        item.resolution = action;
+      }
+
+      renderImportCorrections(vaImportState.corrections);
+
+      const ready = vaImportState.valid?.length || 0;
+      const unresolved = vaImportState.corrections.filter(item =>
+        item.kind !== "duplicate" || !item.resolution
+      ).length;
+      const decidedDuplicates = vaImportState.corrections.filter(item =>
+        item.kind === "duplicate" && ["update","create"].includes(item.resolution)
+      ).length;
+
+      importHint.innerHTML = unresolved
+        ? '<strong>' + ready + ' bereit · ' + unresolved + ' Entscheidung/Korrektur noch offen.</strong>'
+        : '<strong>' + ready + ' neue Zeile(n) bereit · ' + decidedDuplicates + ' Dublette(n) entschieden.</strong>';
+
+      runImport.disabled = ready === 0 && vaImportState.corrections.length === 0;
+      runImport.textContent = vaImportState.corrections.length ? "Korrekturen prüfen" : ready + " Mitglieder importieren";
+      return;
+    }
+
     const skip = e.target.closest("[data-skip-correction]");
-    if (!skip || !vaImportState?.corrections) return;
+    if (!skip) return;
 
     const index = Number(skip.dataset.skipCorrection);
     vaImportState.corrections.splice(index, 1);
@@ -913,27 +960,36 @@ async function enhanceMemberPage() {
 
         vaImportState.valid = review.valid;
         vaImportState.corrections = review.corrections;
+        vaImportState.duplicateActions = review.duplicateActions || [];
         renderImportCorrections(review.corrections);
 
         if (review.corrections.length) {
           importHint.innerHTML =
             '<strong>' + review.valid.length + ' bereit · ' +
-            review.corrections.length + ' müssen noch korrigiert oder übersprungen werden.</strong>';
+            review.corrections.length + ' müssen noch korrigiert oder entschieden werden.</strong>';
           runImport.disabled = false;
           runImport.textContent = "Korrekturen prüfen";
           return;
         }
 
         preview.innerHTML = "";
+        const creates = vaImportState.duplicateActions.filter(x => x.action === "create").length;
+        const updates = vaImportState.duplicateActions.filter(x => x.action === "update").length;
+        const parts = [review.valid.length + " neu"];
+        if (updates) parts.push(updates + " aktualisieren");
+        if (creates) parts.push(creates + " zusätzlich neu");
+
         importHint.innerHTML =
-          '<strong>Alles geprüft ✓ · ' + review.valid.length + ' Mitglieder bereit zum Import.</strong>';
+          '<strong>Alles geprüft ✓ · ' + esc(parts.join(" · ")) + '.</strong>';
         runImport.disabled = false;
-        runImport.textContent = review.valid.length + " Mitglieder importieren";
+        runImport.textContent = "Import jetzt durchführen";
         return;
       }
 
       const candidates = vaImportState.valid || [];
-      if (!candidates.length) {
+      const duplicateActions = vaImportState.duplicateActions || [];
+
+      if (!candidates.length && !duplicateActions.length) {
         showToast("Keine Mitglieder zum Importieren vorhanden");
         runImport.disabled = false;
         runImport.textContent = "Mitglieder importieren";
@@ -941,10 +997,14 @@ async function enhanceMemberPage() {
       }
 
       runImport.textContent = "Wird importiert …";
-      const result = await importCorrectedMembers(candidates, club);
+
+      const result = candidates.length
+        ? await importCorrectedMembers(candidates, club)
+        : { inserted: 0, errors: [], duplicates: [] };
 
       if (result.errors.length || result.duplicates.length) {
         vaImportState.valid = [];
+        vaImportState.duplicateActions = [];
         vaImportState.corrections = [...result.errors, ...result.duplicates];
         renderImportCorrections(vaImportState.corrections);
         importHint.innerHTML =
@@ -955,16 +1015,22 @@ async function enhanceMemberPage() {
         return;
       }
 
+      const duplicateResult = await applyDuplicateActions(duplicateActions, club);
+      const messages = [];
+      if (result.inserted) messages.push(result.inserted + " neu importiert");
+      if (duplicateResult.updated) messages.push(duplicateResult.updated + " aktualisiert");
+      if (duplicateResult.created) messages.push(duplicateResult.created + " zusätzlich neu angelegt");
+
       closeBackdrop(importSheet);
-      showToast(result.inserted + " Mitglieder importiert ✓");
-      setTimeout(() => location.reload(), 500);
+      showToast((messages.join(" · ") || "Import abgeschlossen") + " ✓");
+      setTimeout(() => location.reload(), 700);
     } catch (error) {
       console.error(error);
-      showToast("Import fehlgeschlagen");
+      showToast(error?.message || "Import fehlgeschlagen");
       runImport.disabled = false;
       runImport.textContent = vaImportState?.corrections?.length
         ? "Korrekturen prüfen"
-        : ((vaImportState?.valid?.length || 0) + " Mitglieder importieren");
+        : "Import jetzt durchführen";
     }
   });
 
