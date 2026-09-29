@@ -192,3 +192,9 @@ body.trial-expired .settings-form select{
   .trial-expired-banner{align-items:flex-start;flex-direction:column}
   .trial-expired-banner a{width:100%;justify-content:center}
 }
+
+
+/* Beitragsjahr nur anzeigen, wenn wirklich Beiträge fehlen */
+.year-setup[hidden]{display:none!important}
+.contribution-action.no-sepa-needed{opacity:.62}
+.contribution-action.no-sepa-needed:hover{transform:none;box-shadow:none}
