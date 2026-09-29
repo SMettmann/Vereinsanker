@@ -234,7 +234,15 @@ async function initResetPassword() {
 
     const { error } = await sb.auth.updateUser({ password });
     if (error) {
-      setMessage(form, "Passwort konnte nicht geändert werden. Bitte fordere einen neuen Reset-Link an.", "error");
+      if (error.code === "same_password") {
+        setMessage(form, "Das neue Passwort darf nicht dem bisherigen Passwort entsprechen.", "error");
+      } else if (error.code === "weak_password") {
+        setMessage(form, "Das neue Passwort erfüllt die Sicherheitsanforderungen noch nicht. Bitte wähle ein stärkeres Passwort.", "error");
+      } else if (error.code === "session_not_found" || error.code === "session_expired") {
+        setMessage(form, "Der Reset-Link ist abgelaufen. Bitte fordere einen neuen an.", "error");
+      } else {
+        setMessage(form, "Das Passwort konnte nicht geändert werden. Bitte versuche es erneut.", "error");
+      }
       button.disabled = false;
       button.textContent = "Passwort speichern →";
       return;
