@@ -56,3 +56,15 @@ button:disabled{opacity:.58;cursor:not-allowed}
 .year-setup{display:flex;align-items:center;justify-content:space-between;gap:20px;background:#fff8e9;border:1px solid #eadcb9;border-radius:16px;padding:15px 17px;margin-bottom:14px}.year-setup>div{display:grid;gap:4px}.year-setup strong{font-size:13px}.year-setup span{font-size:11px;color:#776d55}.year-setup button{height:38px;border:0;border-radius:9px;background:var(--dark);color:#fff;padding:0 13px;font-size:11px;font-weight:800;cursor:pointer}
 .reminder-text{width:100%;min-height:250px;resize:vertical;border:1px solid var(--line);border-radius:13px;padding:14px;font:14px/1.6 "DM Sans",sans-serif;outline:none;margin-bottom:14px}.reminder-text:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(35,122,85,.1)}.reminder-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mail-link{display:flex;align-items:center;justify-content:center;text-decoration:none}.disabled-link{opacity:.45;cursor:not-allowed}
 @media(max-width:760px){.mapping-grid{grid-template-columns:1fr}.year-setup{align-items:flex-start;flex-direction:column}.year-setup button{width:100%}.reminder-actions{grid-template-columns:1fr}.member-tools .import-button{width:100%;justify-content:center}}
+
+
+/* Mobile App Navigation */
+.mobile-bottom-nav{display:none}
+@media(max-width:900px){
+  .app-main{padding-bottom:92px}
+  .mobile-bottom-nav{position:fixed;left:10px;right:10px;bottom:10px;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid var(--line);border-radius:16px;padding:7px;box-shadow:0 14px 40px rgba(18,32,25,.15)}
+  .mobile-bottom-nav a{min-height:52px;border-radius:11px;display:grid;place-content:center;text-align:center;gap:3px;color:#87918b}
+  .mobile-bottom-nav a.active{background:var(--soft);color:var(--green)}
+  .mobile-bottom-nav i{font-style:normal;font-size:18px;line-height:1}
+  .mobile-bottom-nav span{font-size:9px;font-weight:800}
+}
