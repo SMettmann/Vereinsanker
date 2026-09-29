@@ -124,3 +124,25 @@ $("#memberImport")?.addEventListener("change",e=>{
   const file=e.target.files?.[0]; if(!file)return;
   showToast(file.name+" ausgewählt ✓");
 });
+
+
+const sepaSheet=$("#sepaSheet");
+$("#openSepa")?.addEventListener("click",()=>openBackdrop(sepaSheet));
+$("#closeSepa")?.addEventListener("click",()=>closeBackdrop(sepaSheet));
+sepaSheet?.addEventListener("click",e=>{if(e.target===sepaSheet)closeBackdrop(sepaSheet)});
+$("#prepareSepa")?.addEventListener("click",()=>showToast("SEPA-Export wird später mit echten Vereinsdaten erzeugt."));
+
+$("#paymentSearch")?.addEventListener("input",e=>{
+  const q=e.target.value.trim().toLowerCase();
+  $$(".payment-row").forEach(row=>row.hidden=!row.dataset.search.includes(q));
+});
+
+$$(".mark-paid").forEach(btn=>btn.addEventListener("click",()=>{
+  const row=btn.closest(".payment-row");
+  btn.replaceWith(Object.assign(document.createElement("span"),{className:"paid-check",textContent:"✓ Bezahlt"}));
+  row.style.opacity=".72";
+  showToast("Zahlung als bezahlt markiert ✓");
+}));
+
+$$(".tiny-action").forEach(btn=>btn.addEventListener("click",()=>showToast("Zahlungserinnerung vorbereitet ✓")));
+$("#remindAll")?.addEventListener("click",()=>showToast("24 Zahlungserinnerungen vorbereitet ✓"));
