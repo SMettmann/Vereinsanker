@@ -33,6 +33,8 @@ if(finish){
     localStorage.setItem("va_club",name);
     localStorage.setItem("va_short",short);
     localStorage.setItem("va_fee",$("#fee")?.value||"60");
+    localStorage.setItem("va_due",$("#due")?.value||"");
+    localStorage.setItem("va_creditor",$("#creditor")?.value.trim()||"");
     location.href="app.html";
   });
   const name=$("#clubName"),short=$("#clubShort");
