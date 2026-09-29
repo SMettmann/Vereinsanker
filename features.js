@@ -629,14 +629,25 @@ async function enhanceOnboardingImport() {
     if (!file) return;
     try {
       const state = await readImportFile(file);
+      const mappingOkay = state.mapping.full_name || (state.mapping.first_name && state.mapping.last_name);
+      const mapped = mappingOkay
+        ? state.rows.map(row => mapImportRow(row, state.mapping, 0))
+        : [];
+      const errorCount = mapped.filter(member => validateImportedMember(member).length).length;
+
+      state.blocked = !mappingOkay || errorCount > 0;
       window.vaOnboardingImportState = state;
+
       const drop = $(".drop");
       if (drop) {
-        const mappingOkay = state.mapping.full_name || (state.mapping.first_name && state.mapping.last_name);
         $("strong", drop).textContent = file.name;
-        $("span", drop).textContent = mappingOkay
-          ? state.rows.length + " Zeilen erkannt ✓"
-          : "Namensspalten nicht sicher erkannt – später im Import zuordnen";
+        if (!mappingOkay) {
+          $("span", drop).textContent = "Namensspalten nicht erkannt · Liste nach der Einrichtung unter „Mitglieder“ importieren.";
+        } else if (errorCount) {
+          $("span", drop).textContent = errorCount + " Zeile(n) mit Fehlern · bitte nach der Einrichtung unter „Mitglieder“ prüfen.";
+        } else {
+          $("span", drop).textContent = state.rows.length + " Mitglieder erkannt und geprüft ✓";
+        }
       }
     } catch (error) {
       showToast?.(error.message || "Liste konnte nicht gelesen werden");
