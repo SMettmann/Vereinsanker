@@ -1,0 +1,64 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VEREINSANKER – Beiträge</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="app.css"></head><body>
+<div class="mobile-top"><a class="simple-brand" href="app.html"><svg viewBox="0 0 48 54"><path d="M24 2 44 9v15c0 13-8.6 23-20 28C12.6 47 4 37 4 24V9L24 2Z" fill="currentColor"/><path d="M24 12v24M17 22h14M16 34c2.2 4.2 5 6.5 8 8.3 3-1.8 5.8-4.1 8-8.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="24" cy="13" r="3" fill="#fff"/></svg>VEREINSANKER</a><span>Beiträge</span></div>
+<div class="app-shell">
+  <aside class="side">
+    <a class="simple-brand" href="app.html"><svg viewBox="0 0 48 54"><path d="M24 2 44 9v15c0 13-8.6 23-20 28C12.6 47 4 37 4 24V9L24 2Z" fill="currentColor"/><path d="M24 12v24M17 22h14M16 34c2.2 4.2 5 6.5 8 8.3 3-1.8 5.8-4.1 8-8.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="24" cy="13" r="3" fill="#fff"/></svg>VEREINSANKER</a>
+    <div class="club-mini"><i id="clubBadge">SV</i><div><strong id="clubTitle">Mein Verein</strong><span>Beitragsverwaltung</span></div></div>
+    <nav class="nav-list"><a href="app.html">Übersicht</a><a href="members.html">Mitglieder</a><a class="active" href="contributions.html">Beiträge</a><a href="#">Einstellungen</a></nav>
+    <div class="side-bottom">14 Tage kostenlos testen</div>
+  </aside>
+
+  <main class="app-main">
+    <div class="topline"><div><h1>Beiträge</h1><p>Einziehen, verbuchen, offene Beiträge klären. Mehr nicht.</p></div><div class="year-pill">Beitragsjahr 2027</div></div>
+
+    <section class="contribution-summary">
+      <div><span>Jahresbeiträge</span><strong>23.810 €</strong></div>
+      <div><span>Bezahlt</span><strong>22.146 €</strong></div>
+      <div class="open-money"><span>Offen</span><strong>1.664 €</strong></div>
+    </section>
+
+    <section class="contribution-actions">
+      <button class="contribution-action primary-action" id="openSepa"><i>⇄</i><div><strong>SEPA-Datei erstellen</strong><span>Beiträge für den Bankeinzug vorbereiten.</span></div><b>→</b></button>
+      <a class="contribution-action" href="#zahlungen"><i>✓</i><div><strong>Zahlungen verbuchen</strong><span>Eingänge als bezahlt markieren.</span></div><b>↓</b></a>
+      <a class="contribution-action" href="#offen"><i>!</i><div><strong>Offene Beiträge</strong><span>Sehen, bei wem noch etwas fehlt.</span></div><b>↓</b></a>
+    </section>
+
+    <section class="simple-section" id="zahlungen">
+      <div class="simple-section-head"><div><span class="eyebrow">ZAHLUNGEN</span><h2>Neue Zahlung verbuchen</h2><p>Mitglied suchen und mit einem Klick als bezahlt markieren.</p></div></div>
+      <div class="payment-search"><label class="searchbox"><span>⌕</span><input id="paymentSearch" type="search" placeholder="Name suchen …"></label></div>
+      <div class="payment-list" id="paymentList">
+        <div class="payment-row" data-search="martin keller herren"><span class="member-main"><i>MK</i><b>Martin Keller<small>Herren</small></b></span><strong>84 €</strong><button class="mark-paid">Als bezahlt markieren</button></div>
+        <div class="payment-row" data-search="leonie schmid jugend"><span class="member-main"><i>LS</i><b>Leonie Schmid<small>Jugend</small></b></span><strong>48 €</strong><button class="mark-paid">Als bezahlt markieren</button></div>
+        <div class="payment-row" data-search="thomas weber fördermitglied"><span class="member-main"><i>TW</i><b>Thomas Weber<small>Fördermitglied</small></b></span><strong>60 €</strong><span class="paid-check">✓ Bezahlt</span></div>
+      </div>
+    </section>
+
+    <section class="simple-section" id="offen">
+      <div class="simple-section-head"><div><span class="eyebrow">OFFEN</span><h2>Noch 24 offene Beiträge</h2><p>Nur die Fälle, um die ihr euch noch kümmern müsst.</p></div><button class="outline-button" id="remindAll">Zahlungserinnerungen vorbereiten</button></div>
+      <div class="open-contributions">
+        <div class="open-row"><span class="member-main"><i>MK</i><b>Martin Keller<small>Herren · Jahresbeitrag</small></b></span><strong>84 €</strong><span>Fällig 01.03.2027</span><button class="tiny-action">Erinnern</button></div>
+        <div class="open-row"><span class="member-main"><i>LS</i><b>Leonie Schmid<small>Jugend · Jahresbeitrag</small></b></span><strong>48 €</strong><span>Fällig 01.03.2027</span><button class="tiny-action">Erinnern</button></div>
+        <div class="open-row"><span class="member-main"><i>JK</i><b>Jürgen Koch<small>Fördermitglied</small></b></span><strong>60 €</strong><span>Fällig 01.03.2027</span><button class="tiny-action">Erinnern</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="sheet-backdrop" id="sepaSheet" hidden>
+  <section class="side-sheet" role="dialog" aria-modal="true" aria-labelledby="sepaTitle">
+    <button class="sheet-close" id="closeSepa" type="button">×</button>
+    <small class="sheet-kicker">SEPA-EINZUG</small>
+    <h2 id="sepaTitle">SEPA-Datei vorbereiten</h2>
+    <p class="sheet-intro">VEREINSANKER nimmt nur Mitglieder mit gültiger IBAN und Einzugsermächtigung auf.</p>
+    <div class="sepa-check">
+      <div><span>Bereit für Einzug</span><strong>362 Mitglieder</strong></div>
+      <div><span>Gesamtsumme</span><strong>22.146 €</strong></div>
+    </div>
+    <div class="notice"><b>Vor dem Export</b><span>Gläubiger-ID und Mandatsdaten werden geprüft. Fehlende Angaben werden euch vorher angezeigt.</span></div>
+    <button class="primary" id="prepareSepa" type="button">SEPA-Export vorbereiten</button>
+    <p class="micro">Im Prototyp wird noch keine echte Bankdatei erzeugt.</p>
+  </section>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<script src="app.js"></script></body></html>
