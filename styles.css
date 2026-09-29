@@ -36,3 +36,54 @@ footer{background:#0b1712;color:#fff;padding:56px 0 25px}.footer-grid{display:gr
   .wrap{width:min(100% - 28px,1180px)}.header{padding-top:16px}.crest{width:34px;height:38px}.brand-copy strong{font-size:13px}.hero{padding:122px 0 72px}.hero:after{height:48px}.hero h1{font-size:clamp(42px,12.5vw,58px)}.hero-copy>p{font-size:16px}.hero-actions{align-items:stretch;flex-direction:column;gap:16px}.hero-actions .btn{width:100%}.jump{text-align:center}.proof{flex-direction:column;gap:10px}.mock-wrap{padding:15px 8px 36px}.dashboard{padding:18px;transform:none}.chip-top{top:-2px}.chip-bottom{bottom:17px}.club strong{font-size:11px}.progress-row{gap:13px}.ring{width:88px;height:88px}.sum strong{font-size:21px}.section{padding:78px 0}.section-head{margin-bottom:36px}.split,.identity-grid,.feature-wide,.price-card,.footer-grid{grid-template-columns:1fr}.split,.identity-grid{gap:45px}.before-after{min-height:360px}.chaos{width:76%}.clean{width:54%}.steps{grid-template-columns:1fr}.steps article{min-height:230px}.steps i{margin-top:34px;margin-bottom:22px}.feature-grid{grid-template-columns:1fr}.feature-wide{grid-column:auto}.feature-wide h3{font-size:27px}.feature{min-height:auto}.identity-card{order:2}.price-main,.included{padding:30px 24px}.amount strong{font-size:44px}.cta-card{padding:58px 22px;border-radius:24px}.footer-links{margin-top:10px}.bottom{align-items:flex-start;flex-direction:column}.types{justify-content:flex-start;overflow:auto;flex-wrap:nowrap;padding-bottom:5px;scrollbar-width:none}.types span{white-space:nowrap}
 }
 @media(max-width:430px){.hero h1{font-size:43px}.stats{gap:5px}.stats>div{padding:10px 8px}.stats strong{font-size:16px}.chaos{width:81%}.clean{width:59%;padding:18px}}
+
+
+/* Lesbarkeit: nur kleine Texte leicht vergroessert */
+.brand-copy small{font-size:11px}
+.pill{font-size:13px}
+.proof{font-size:12px}
+.club-badge small,.demo-badge small{font-size:8px}
+.club span{font-size:11px}
+.dash-year span{font-size:12px}
+.dash-year em{font-size:11px}
+.ring small{font-size:10px}
+.sum span{font-size:11px}
+.sum small{font-size:10px}
+.stats span{font-size:10px}
+.list-title strong{font-size:12px}
+.list-title span{font-size:10px}
+.person i{font-size:10px}
+.person strong{font-size:11px}
+.person span{font-size:9px}
+.person b{font-size:11px}
+.open-list button{font-size:10px}
+.float-chip{font-size:12px}
+.chip-bottom small{font-size:9px}
+.club-strip p{font-size:12px}
+.types span{font-size:13px}
+.kicker{font-size:13px}
+.chaos>b,.clean>b{font-size:10px}
+.paper{font-size:12px}
+.paper small{font-size:10px}
+.clean>span{font-size:12px}
+.steps p,.feature p{font-size:14px}
+.tag{font-size:11px}
+.feature-wide li{font-size:12px}
+.file{font-size:12px}
+.done span{font-size:10px}
+.id-head span{font-size:11px}
+.swatches span{font-size:11px}
+.mini span{font-size:10px}
+.ticks span{font-size:14px}
+.billing button{font-size:12px}
+.billing button span{font-size:10px}
+.price-main>span{font-size:11px}
+.price-main p{font-size:13px}
+.price-main em{font-size:10px}
+.included li{font-size:13px}
+.faq-item>div p{font-size:14px}
+.cta-card>b{font-size:11px}
+.footer-grid>div:first-child>p{font-size:13px}
+.footer-links strong{font-size:11px}
+.footer-links a{font-size:13px}
+.bottom{font-size:11px}
