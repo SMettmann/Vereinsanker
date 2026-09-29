@@ -15,6 +15,22 @@ function money(value) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(value || 0));
 }
 
+function normalizeIbanValue(value) {
+  return String(value || "").replace(/\s+/g, "").toUpperCase();
+}
+
+function isValidIbanValue(value) {
+  const iban = normalizeIbanValue(value);
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+  const rearranged = iban.slice(4) + iban.slice(0, 4);
+  let remainder = 0;
+  for (const ch of rearranged) {
+    const part = /[A-Z]/.test(ch) ? String(ch.charCodeAt(0) - 55) : ch;
+    for (const digit of part) remainder = (remainder * 10 + Number(digit)) % 97;
+  }
+  return remainder === 1;
+}
+
 function initials(first = "", last = "") {
   return ((first.trim()[0] || "") + (last.trim()[0] || "")).toUpperCase() || "VA";
 }
@@ -583,6 +599,15 @@ async function initMembers() {
 
     const fee = Number($("#memberFee").value || club.standard_fee || 0);
     const memberNumber = String(1001 + members.length);
+    const memberIban = normalizeIbanValue($("#memberIban").value);
+
+    if (memberIban && !isValidIbanValue(memberIban)) {
+      button.disabled = false;
+      button.textContent = "Mitglied speichern";
+      $("#memberIban").focus();
+      showToast("Die IBAN des Mitglieds ist ungültig. Bitte Eingabe prüfen.");
+      return;
+    }
 
     const memberPayload = {
       club_id: club.id,
@@ -591,7 +616,7 @@ async function initMembers() {
       last_name: $("#lastName").value.trim(),
       group_name: $("#memberGroup").value.trim() || null,
       email: $("#memberEmail").value.trim() || null,
-      iban: $("#memberIban").value.replace(/\s+/g, "").toUpperCase() || null,
+      iban: memberIban || null,
       annual_fee: fee,
       mandate_reference: $("#memberMandate")?.value.trim() || null,
       mandate_signed_at: $("#memberMandateDate")?.value || null,
@@ -721,16 +746,50 @@ async function initContributions() {
 
 
   const sepaSheet = $("#sepaSheet");
-  $("#openSepa")?.addEventListener("click", () => {
-    const ready = contributions.filter(c => {
+  const sepaAction = $("#openSepa");
+  const openContributions = contributions.filter(c => c.status !== "paid");
+
+  if (sepaAction && !openContributions.length) {
+    sepaAction.classList.add("no-sepa-needed");
+    const sub = $("span", sepaAction);
+    if (sub) sub.textContent = "Alle Beiträge sind bereits bezahlt.";
+  }
+
+  sepaAction?.addEventListener("click", () => {
+    if (!openContributions.length) {
+      showToast("Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
+      return;
+    }
+
+    const invalidIban = openContributions.filter(c => {
       const m = contributionMember(c);
-      return c.status !== "paid" && m.iban && m.mandate_reference && m.mandate_signed_at;
+      return m.iban && !isValidIbanValue(m.iban);
     });
-    $("#sepaReadyCount").textContent = ready.length + " Mitglieder";
+    const missingIban = openContributions.filter(c => !contributionMember(c).iban);
+    const missingMandate = openContributions.filter(c => {
+      const m = contributionMember(c);
+      return !m.mandate_reference || !m.mandate_signed_at;
+    });
+    const ready = openContributions.filter(c => {
+      const m = contributionMember(c);
+      return isValidIbanValue(m.iban) && m.mandate_reference && m.mandate_signed_at;
+    });
+
+    $("#sepaReadyCount").textContent = ready.length + (ready.length === 1 ? " Mitglied" : " Mitglieder");
     $("#sepaReadySum").textContent = money(ready.reduce((s, c) => s + Number(c.amount || 0), 0));
-    $("#sepaMissing").textContent = club.creditor_id && club.iban
-      ? (ready.length ? "Die verfügbaren Mandatsdaten werden vor dem Export geprüft." : "Für den SEPA-Einzug fehlen bei den Mitgliedern noch Mandatsdaten.")
-      : "Bitte zuerst Gläubiger-ID und Vereinskonto in den Einstellungen ergänzen.";
+
+    const issues = [];
+    if (!club.iban) issues.push("Vereins-IBAN fehlt.");
+    else if (!isValidIbanValue(club.iban)) issues.push("Vereins-IBAN ist ungültig.");
+    if (!club.creditor_id) issues.push("Gläubiger-ID fehlt.");
+    if (missingIban.length) issues.push(missingIban.length + " Mitglied(er) ohne IBAN.");
+    if (invalidIban.length) issues.push(invalidIban.length + " Mitglied(er) mit ungültiger IBAN.");
+    if (missingMandate.length) issues.push(missingMandate.length + " Mitglied(er) ohne vollständiges SEPA-Mandat.");
+
+    $("#sepaMissing").textContent = issues.length
+      ? issues.join(" ")
+      : "Alles vollständig. Die Datei kann erstellt werden.";
+
     openBackdrop(sepaSheet);
   });
   $("#closeSepa")?.addEventListener("click", () => closeBackdrop(sepaSheet));
@@ -849,6 +908,14 @@ async function initSettings() {
   $("#settingsForm").addEventListener("submit", async e => {
     e.preventDefault();
     const button = $("button[type='submit']", e.currentTarget);
+    const clubIban = normalizeIbanValue($("#settingsIban").value);
+
+    if (clubIban && !isValidIbanValue(clubIban)) {
+      $("#settingsIban").focus();
+      showToast("Die Vereins-IBAN ist ungültig. Bitte IBAN prüfen.");
+      return;
+    }
+
     button.disabled = true;
     button.textContent = "Wird gespeichert …";
 
@@ -857,7 +924,7 @@ async function initSettings() {
       short_name: $("#settingsShort").value.trim().toUpperCase(),
       color: $(".color-choice.active")?.dataset.color || club.color,
       creditor_id: $("#settingsCreditor").value.trim() || null,
-      iban: $("#settingsIban").value.trim() || null,
+      iban: clubIban || null,
       standard_fee: Number($("#settingsFee").value || 0),
       due_date: $("#settingsDue").value || null,
       updated_at: new Date().toISOString()
