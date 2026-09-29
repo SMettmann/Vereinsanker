@@ -407,6 +407,7 @@ async function enhanceMemberPage() {
   const importSheet = $("#importSheet");
   const mappingBox = $("#importMapping");
   const preview = $("#importPreview");
+  const correctionsBox = $("#importCorrections");
   const runImport = $("#runImport");
   const importHint = $("#importHint");
 
@@ -425,17 +426,25 @@ async function enhanceMemberPage() {
     if (!file) return;
     try {
       vaImportState = await readImportFile(file);
+      vaImportState.corrections = [];
+      vaImportState.totalInserted = 0;
       mappingBox.innerHTML = importMappingHtml(vaImportState.columns, vaImportState.mapping);
       preview.innerHTML = importPreviewHtml(vaImportState.rows, vaImportState.mapping, vaClub?.standard_fee || 0);
+      renderImportCorrections([]);
+
       const initialMapped = vaImportState.rows.map(row => mapImportRow(row, vaImportState.mapping, vaClub?.standard_fee || 0));
       const initialErrors = initialMapped.filter(m => validateImportedMember(m).length).length;
       importHint.textContent = vaImportState.rows.length + " Zeilen erkannt" + (initialErrors ? " · " + initialErrors + " mit Fehlern" : " · bereit zur Prüfung") + ".";
       runImport.disabled = false;
+      runImport.textContent = "Mitglieder importieren";
       openBackdrop(importSheet);
 
       $$("[data-map]", mappingBox).forEach(select => select.addEventListener("change", () => {
         vaImportState.mapping[select.dataset.map] = select.value || null;
+        vaImportState.corrections = [];
+        renderImportCorrections([]);
         preview.innerHTML = importPreviewHtml(vaImportState.rows, vaImportState.mapping, vaClub?.standard_fee || 0);
+        runImport.textContent = "Mitglieder importieren";
       }));
     } catch (error) {
       showToast(error.message || "Datei konnte nicht gelesen werden");
@@ -447,41 +456,75 @@ async function enhanceMemberPage() {
   $("#closeImport")?.addEventListener("click", () => closeBackdrop(importSheet));
   importSheet?.addEventListener("click", e => { if (e.target === importSheet) closeBackdrop(importSheet); });
 
+  correctionsBox?.addEventListener("click", e => {
+    const skip = e.target.closest("[data-skip-correction]");
+    if (!skip || !vaImportState?.corrections) return;
+    const index = Number(skip.dataset.skipCorrection);
+    vaImportState.corrections.splice(index, 1);
+    renderImportCorrections(vaImportState.corrections);
+
+    if (!vaImportState.corrections.length) {
+      closeBackdrop(importSheet);
+      showToast((vaImportState.totalInserted || 0) + " Mitglieder importiert ✓");
+      setTimeout(() => location.reload(), 500);
+    } else {
+      importHint.textContent = vaImportState.corrections.length + " Zeile(n) noch zu korrigieren oder zu überspringen.";
+    }
+  });
+
   runImport?.addEventListener("click", async () => {
     if (!vaImportState) return;
-    const m = vaImportState.mapping;
-    if (!(m.full_name || (m.first_name && m.last_name))) {
-      showToast("Bitte Namen-Spalten zuordnen");
-      return;
+
+    const correcting = Array.isArray(vaImportState.corrections) && vaImportState.corrections.length > 0;
+
+    if (!correcting) {
+      const m = vaImportState.mapping;
+      if (!(m.full_name || (m.first_name && m.last_name))) {
+        showToast("Bitte Namen-Spalten zuordnen");
+        return;
+      }
     }
+
     runImport.disabled = true;
-    runImport.textContent = "Wird importiert …";
+    runImport.textContent = correcting ? "Korrekturen werden geprüft …" : "Wird importiert …";
+
     try {
       const club = vaClub || await getClub();
-      const result = await importPreparedMembers(vaImportState.rows, vaImportState.mapping, club);
-      const skipped = result.errors.length + result.duplicates.length;
+      const result = correcting
+        ? await importCorrectedMembers(collectImportCorrections(), club)
+        : await importPreparedMembers(vaImportState.rows, vaImportState.mapping, club);
 
-      if (skipped) {
+      vaImportState.totalInserted = (vaImportState.totalInserted || 0) + result.inserted;
+
+      const unresolved = [...result.errors, ...result.duplicates];
+      vaImportState.corrections = unresolved;
+
+      if (unresolved.length) {
+        renderImportCorrections(unresolved);
+        preview.innerHTML = "";
+
         const parts = [];
         if (result.errors.length) parts.push(result.errors.length + " fehlerhaft");
         if (result.duplicates.length) parts.push(result.duplicates.length + " Dubletten");
-        importHint.innerHTML = '<strong>' + result.inserted + ' importiert.</strong> ' + esc(parts.join(" · ")) + ' wurden nicht übernommen.' +
-          (result.errors.length
-            ? '<br><span class="import-error-list">' + result.errors.slice(0, 5).map(x => 'Zeile ' + x.row + ': ' + esc(x.reasons.join(", "))).join("<br>") + (result.errors.length > 5 ? '<br>…' : '') + '</span>'
-            : '');
+
+        importHint.innerHTML =
+          '<strong>' + vaImportState.totalInserted + ' Mitglied(er) bereits importiert.</strong> ' +
+          esc(parts.join(" · ")) +
+          '. Bitte unten korrigieren oder bewusst überspringen.';
+
         runImport.disabled = false;
-        runImport.textContent = result.inserted ? "Import abgeschlossen" : "Mitglieder importieren";
-        if (result.inserted) setTimeout(() => location.reload(), 2200);
+        runImport.textContent = "Korrekturen prüfen & importieren";
       } else {
+        renderImportCorrections([]);
         closeBackdrop(importSheet);
-        showToast(result.inserted + " Mitglieder importiert ✓");
-        setTimeout(() => location.reload(), 650);
+        showToast(vaImportState.totalInserted + " Mitglieder importiert ✓");
+        setTimeout(() => location.reload(), 500);
       }
     } catch (error) {
       console.error(error);
       showToast("Import fehlgeschlagen");
       runImport.disabled = false;
-      runImport.textContent = "Mitglieder importieren";
+      runImport.textContent = correcting ? "Korrekturen prüfen & importieren" : "Mitglieder importieren";
     }
   });
 
