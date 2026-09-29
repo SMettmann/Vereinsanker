@@ -1091,13 +1091,41 @@ const VA_PAYMENT_LINKS = {
   yearly: "https://buy.stripe.com/5kQ7sNakj6tO34r6mNes002"
 };
 
+const VA_PORTAL_LOGIN_URL = "https://billing.stripe.com/p/login/28EbJ3dwv9G0fRd6mNes000";
+
 async function initBilling() {
   const club = await getClub();
   if (!club) return location.replace("onboarding.html");
   applyClubBrand(club);
   applyTrialUI(club);
 
-  $("[data-checkout]").forEach(button => button.addEventListener("click", () => {
+  const choiceWrap = $(".billing-choice-wrap");
+  const billingNote = $(".billing-note");
+
+  if (hasPaidAccess(club) || club.subscription_status === "payment_failed") {
+    if (choiceWrap) choiceWrap.hidden = true;
+
+    const current = document.createElement("section");
+    current.className = "billing-current-card";
+
+    if (club.subscription_status === "payment_failed") {
+      current.innerHTML = '<span class="billing-state bad">Zahlung fehlgeschlagen</span><h2>Zahlungsart aktualisieren</h2><p>Öffne den sicheren Stripe-Kundenbereich. Sobald Stripe die Zahlung bestätigt, wird VEREINSANKER automatisch wieder freigeschaltet.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Stripe-Kundenbereich öffnen →</a>';
+    } else if (club.stripe_cancel_at_period_end) {
+      current.innerHTML = '<span class="billing-state warning">Kündigung vorgemerkt</span><h2>Zugang bleibt aktiv</h2><p>Das Abo läuft noch bis ' + esc(formatBillingDate(club.stripe_current_period_end) || "zum Laufzeitende") + '. Im Stripe-Kundenbereich kannst du Zahlungsart, Rechnungen und Kündigung verwalten.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Abo verwalten →</a>';
+    } else {
+      current.innerHTML = '<span class="billing-state good">Abo aktiv</span><h2>' + (club.subscription_status === "active_yearly" ? "79 € / Jahr" : "7,90 € / Monat") + '</h2><p>VEREINSANKER ist freigeschaltet. Zahlungsart, Rechnungen und Kündigung verwaltest du sicher bei Stripe.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Abo verwalten →</a>';
+    }
+
+    if (billingNote) billingNote.before(current);
+    return;
+  }
+
+  $$("[data-checkout]").forEach(button => button.addEventListener("click", () => {
+    if (hasPaidAccess(club)) {
+      location.href = portalUrl();
+      return;
+    }
+
     const plan = button.dataset.checkout;
     const base = VA_PAYMENT_LINKS[plan];
     if (!base) return;
@@ -1112,6 +1140,53 @@ async function initBilling() {
     button.textContent = "Stripe wird geöffnet …";
     location.href = url.toString();
   }));
+}
+
+async function initBillingSuccess() {
+  const club = await getClub();
+  if (!club) return location.replace("onboarding.html");
+
+  const title = $("#billingSuccessTitle");
+  const text = $("#billingSuccessText");
+  const note = $("#billingSuccessNote");
+  const icon = $("#billingSuccessIcon");
+
+  const showState = (current) => {
+    if (hasPaidAccess(current)) {
+      if (icon) icon.textContent = "✓";
+      if (title) title.textContent = "VEREINSANKER ist freigeschaltet";
+      if (text) text.textContent = current.subscription_status === "active_yearly"
+        ? "Dein Jahresabo ist aktiv."
+        : "Dein Monatsabo ist aktiv.";
+      if (note) note.textContent = "Die Zahlung wurde von Stripe bestätigt.";
+      return true;
+    }
+
+    if (current.subscription_status === "payment_failed") {
+      if (icon) icon.textContent = "!";
+      if (title) title.textContent = "Zahlung konnte nicht abgeschlossen werden";
+      if (text) text.textContent = "Bitte prüfe deine Zahlungsart im Stripe-Kundenbereich.";
+      if (note) note.textContent = "VEREINSANKER wird nach erfolgreicher Zahlung automatisch freigeschaltet.";
+      return true;
+    }
+
+    return false;
+  };
+
+  if (showState(club)) return;
+
+  if (title) title.textContent = "Zahlung wird bestätigt …";
+  if (text) text.textContent = "Stripe meldet die Zahlung gerade an VEREINSANKER zurück.";
+
+  for (let i = 0; i < 8; i++) {
+    await new Promise(resolve => setTimeout(resolve, 1250));
+    const fresh = await getClub();
+    if (fresh && showState(fresh)) return;
+  }
+
+  if (title) title.textContent = "Zahlung wird noch verarbeitet";
+  if (text) text.textContent = "Das kann je nach Zahlungsart etwas länger dauern. Du musst nichts erneut bezahlen.";
+  if (note) note.textContent = "Sobald Stripe die Zahlung bestätigt, wird der Zugang automatisch freigeschaltet.";
 }
 
 function setupMobileNavigation() {
@@ -1193,6 +1268,11 @@ function setupLogout() {
     }
     if ($("#billingPage")) {
       await initBilling();
+      finishAppLoad();
+      return;
+    }
+    if ($("#billingSuccessPage")) {
+      await initBillingSuccess();
       finishAppLoad();
       return;
     }
