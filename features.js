@@ -153,7 +153,7 @@ function importPreviewHtml(rows, mapping, fallbackFee) {
 }
 
 async function importPreparedMembers(rows, mapping, club) {
-  const existing = await loadMembers();
+  const existing = await loadAllMembersForImport();
   const existingKeys = new Set(existing.flatMap(m => [
     m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
     m.email ? "e:" + m.email.toLowerCase() : null,
@@ -252,7 +252,7 @@ async function importPreparedMembers(rows, mapping, club) {
 window.importPreparedMembers = importPreparedMembers;
 
 async function importCorrectedMembers(members, club) {
-  const existing = await loadMembers();
+  const existing = await loadAllMembersForImport();
   const existingKeys = new Set(existing.flatMap(m => [
     m.member_number ? "n:" + String(m.member_number).toLowerCase() : null,
     m.email ? "e:" + m.email.toLowerCase() : null,
@@ -337,6 +337,138 @@ async function importCorrectedMembers(members, club) {
   }
 
   return { inserted: created.length, errors, duplicates };
+}
+
+async function applyDuplicateActions(actions, club) {
+  if (!actions?.length) return { updated: 0, created: 0, renumbered: 0 };
+
+  let existing = await loadAllMembersForImport();
+  const usedNumbers = new Set(existing.map(m => String(m.member_number || "")).filter(Boolean));
+  let nextNumber = 1001;
+
+  const nextFreeNumber = () => {
+    while (usedNumbers.has(String(nextNumber))) nextNumber++;
+    const value = String(nextNumber++);
+    usedNumbers.add(value);
+    return value;
+  };
+
+  let updated = 0;
+  let created = 0;
+  let renumbered = 0;
+  const dueDate = club.due_date ? currentYear + club.due_date.slice(4) : currentYear + "-03-01";
+
+  for (const action of actions) {
+    const source = action.member || {};
+    const member = {
+      first_name: String(source.first_name || "").trim(),
+      last_name: String(source.last_name || "").trim(),
+      group_name: String(source.group_name || "").trim() || null,
+      email: String(source.email || "").trim() || null,
+      iban: normalizeIban(source.iban) || null,
+      annual_fee: parseFee(source.annual_fee, club.standard_fee),
+      member_number: String(source.member_number || "").trim() || null,
+      mandate_reference: String(source.mandate_reference || "").trim() || null,
+      mandate_signed_at: source.mandate_signed_at ? parseDateValue(source.mandate_signed_at) : null
+    };
+
+    const errors = validateImportedMember(member);
+    if (errors.length) throw new Error("Importzeile " + action.row + ": " + errors.join(", "));
+
+    if (action.action === "update") {
+      const target = existing.find(m => m.id === action.target_id);
+      if (!target) throw new Error("Bestehendes Mitglied für Zeile " + action.row + " wurde nicht gefunden.");
+
+      if (member.member_number) {
+        const numberOwner = existing.find(m =>
+          m.id !== target.id &&
+          String(m.member_number || "").toLowerCase() === member.member_number.toLowerCase()
+        );
+        if (numberOwner) {
+          member.member_number = target.member_number || nextFreeNumber();
+          renumbered++;
+        }
+      } else {
+        member.member_number = target.member_number || nextFreeNumber();
+      }
+
+      const { error } = await sb.from("members").update({
+        ...member,
+        active: true,
+        updated_at: new Date().toISOString()
+      }).eq("id", target.id);
+      if (error) throw error;
+
+      const { data: currentContribution, error: contributionLoadError } = await sb
+        .from("contributions")
+        .select("id,status")
+        .eq("member_id", target.id)
+        .eq("contribution_year", currentYear)
+        .maybeSingle();
+      if (contributionLoadError) throw contributionLoadError;
+
+      if (currentContribution) {
+        if (currentContribution.status !== "paid") {
+          const { error: amountError } = await sb.from("contributions").update({
+            amount: Number(member.annual_fee || 0),
+            updated_at: new Date().toISOString()
+          }).eq("id", currentContribution.id);
+          if (amountError) throw amountError;
+        }
+      } else {
+        const { error: contributionError } = await sb.from("contributions").insert({
+          club_id: club.id,
+          member_id: target.id,
+          contribution_year: currentYear,
+          amount: Number(member.annual_fee || 0),
+          due_date: dueDate,
+          status: "open"
+        });
+        if (contributionError) throw contributionError;
+      }
+
+      updated++;
+      existing = existing.map(m => m.id === target.id ? { ...m, ...member, active: true } : m);
+      usedNumbers.add(String(member.member_number || ""));
+      continue;
+    }
+
+    if (action.action === "create") {
+      if (!member.member_number || usedNumbers.has(String(member.member_number))) {
+        member.member_number = nextFreeNumber();
+        renumbered++;
+      } else {
+        usedNumbers.add(String(member.member_number));
+      }
+
+      const { data: createdMember, error } = await sb.from("members").insert({
+        ...member,
+        club_id: club.id,
+        active: true,
+        updated_at: new Date().toISOString()
+      }).select().single();
+      if (error) throw error;
+
+      const { error: contributionError } = await sb.from("contributions").insert({
+        club_id: club.id,
+        member_id: createdMember.id,
+        contribution_year: currentYear,
+        amount: Number(member.annual_fee || 0),
+        due_date: dueDate,
+        status: "open"
+      });
+
+      if (contributionError) {
+        await sb.from("members").delete().eq("id", createdMember.id);
+        throw contributionError;
+      }
+
+      existing.push(createdMember);
+      created++;
+    }
+  }
+
+  return { updated, created, renumbered };
 }
 
 function correctionValue(member, key) {
@@ -450,6 +582,16 @@ async function readImportFile(file) {
 }
 
 
+async function loadAllMembersForImport() {
+  const { data, error } = await sb
+    .from("members")
+    .select("*")
+    .order("last_name", { ascending: true })
+    .order("first_name", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
 function importDuplicateKeys(member) {
   return [
     member?.member_number ? "n:" + String(member.member_number).trim().toLowerCase() : null,
@@ -509,7 +651,7 @@ function duplicateCorrectionItem(rowNo, member, matches = [], source = "existing
 }
 
 async function prepareImportReview(rows, mapping, club) {
-  const existing = await loadMembers();
+  const existing = await loadAllMembersForImport();
   const existingIndex = buildDuplicateIndex(existing);
   const seenImport = new Map();
 
@@ -560,7 +702,7 @@ async function prepareImportReview(rows, mapping, club) {
 }
 
 async function reviewCorrectedCandidates(sources, club) {
-  const existing = await loadMembers();
+  const existing = await loadAllMembersForImport();
   const existingIndex = buildDuplicateIndex(existing);
   const seenImport = new Map();
 
