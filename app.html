@@ -4,23 +4,23 @@
   <aside class="side">
     <a class="simple-brand" href="app.html"><svg viewBox="0 0 48 54"><path d="M24 2 44 9v15c0 13-8.6 23-20 28C12.6 47 4 37 4 24V9L24 2Z" fill="currentColor"/><path d="M24 12v24M17 22h14M16 34c2.2 4.2 5 6.5 8 8.3 3-1.8 5.8-4.1 8-8.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="24" cy="13" r="3" fill="#fff"/></svg>VEREINSANKER</a>
     <div class="club-mini"><i id="clubBadge">SV</i><div><strong id="clubTitle">Mein Verein</strong><span>Beitragsverwaltung</span></div></div>
-    <nav class="nav-list"><a class="active" href="#">Übersicht</a><a href="#">Mitglieder</a><a href="#">Beiträge</a><a href="#">Einstellungen</a></nav>
+    <nav class="nav-list"><a class="active" href="app.html">Übersicht</a><a href="members.html">Mitglieder</a><a href="contributions.html">Beiträge</a><a href="#">Einstellungen</a></nav>
     <div class="side-bottom">14 Tage kostenlos testen</div>
   </aside>
   <main class="app-main">
     <div class="topline"><div><h1>Guten Morgen 👋</h1><p>Hier siehst du sofort, was bei euren Beiträgen los ist.</p></div><div class="year-pill">Beitragsjahr 2027</div></div>
     <section class="summary">
       <div class="progress-card"><span>Beiträge erledigt</span><strong>93 %</strong><div class="progressbar"><i></i></div></div>
-      <div><span>Mitglieder</span><strong>386</strong></div>
+      <a class="summary-link" href="members.html"><span>Mitglieder</span><strong>386</strong></a>
       <div><span>Bezahlt</span><strong>362</strong></div>
       <div><span>Offen</span><strong style="color:#a85b25">24</strong></div>
     </section>
     <section class="big-actions">
-      <button class="action-card"><i>⇄</i><strong>Beiträge einziehen</strong><span>SEPA-Datei für eure Bank erstellen.</span></button>
-      <button class="action-card"><i>✓</i><strong>Zahlungen verbuchen</strong><span>Eingegangene Beiträge schnell als bezahlt markieren.</span></button>
-      <button class="action-card warning"><i>!</i><strong>Offene Beiträge</strong><span>24 offene Zahlungen ansehen und nachfassen.</span></button>
+      <a class="action-card" href="contributions.html"><i>⇄</i><strong>Beiträge einziehen</strong><span>SEPA-Datei für eure Bank erstellen.</span></a>
+      <a class="action-card" href="contributions.html#zahlungen"><i>✓</i><strong>Zahlungen verbuchen</strong><span>Eingegangene Beiträge schnell als bezahlt markieren.</span></a>
+      <a class="action-card warning" href="contributions.html#offen"><i>!</i><strong>Offene Beiträge</strong><span>24 offene Zahlungen ansehen und nachfassen.</span></a>
     </section>
-    <section class="table-card"><div class="table-head"><strong>Noch offene Beiträge</strong><a href="#">Alle anzeigen →</a></div>
+    <section class="table-card"><div class="table-head"><strong>Noch offene Beiträge</strong><a href="contributions.html#offen">Alle anzeigen →</a></div>
       <div class="member-row"><i class="avatar">MK</i><div class="member-name"><strong>Martin Keller</strong><span>Herren</span></div><span>Jahresbeitrag</span><span class="status">84 € offen</span></div>
       <div class="member-row"><i class="avatar">LS</i><div class="member-name"><strong>Leonie Schmid</strong><span>Jugend</span></div><span>Jahresbeitrag</span><span class="status">48 € offen</span></div>
       <div class="member-row"><i class="avatar">TW</i><div class="member-name"><strong>Thomas Weber</strong><span>Fördermitglied</span></div><span>Förderbeitrag</span><span class="status">60 € offen</span></div>
