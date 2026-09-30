@@ -1173,7 +1173,93 @@ function safeSepaText(value, max = 70) {
 }
 
 function compactId(value, max = 35) {
-  return String(value || "").replace(/[^A-Za-z0-9+?/:().,'\-]/g, "-").slice(0, max);
+  let id = String(value || "")
+    .replace(/[^A-Za-z0-9+?/:().,'\-]/g, "-")
+    .replace(/\/{2,}/g, "/")
+    .replace(/^\/+|\/+$/g, "")
+    .slice(0, max);
+
+  id = id.replace(/\/+$/g, "");
+  return id || "NOTPROVIDED";
+}
+
+function validSepaDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
+  const d = new Date(String(value) + "T00:00:00Z");
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0,10) === value;
+}
+
+function validateSepaRows(club, rows, collectionDate) {
+  const errors = [];
+  const creditorName = safeSepaText(club?.name, 70);
+
+  if (!creditorName) errors.push("Vereinsname ist für SEPA nicht verwendbar.");
+  if (!validIban(club?.iban)) errors.push("Vereins-IBAN ist ungültig.");
+  if (!isValidCreditorIdValue(club?.creditor_id)) errors.push("Gläubiger-ID ist ungültig.");
+  if (!validSepaDate(collectionDate)) errors.push("Einzugsdatum ist ungültig.");
+  if (!rows.length) errors.push("Keine Lastschriften vorhanden.");
+  if (rows.length > 100000) errors.push("Eine SEPA-Datei darf höchstens 100.000 Lastschriften enthalten.");
+
+  const today = new Date().toISOString().slice(0,10);
+  if (validSepaDate(collectionDate) && collectionDate < today) {
+    errors.push("Einzugsdatum darf nicht in der Vergangenheit liegen.");
+  }
+
+  rows.forEach((c, index) => {
+    const m = c.members || {};
+    const label = memberFullName(m) || ("Zeile " + (index + 1));
+    const amount = Number(c.amount || 0);
+    const mandate = safeSepaText(m.mandate_reference, 35);
+    const debtorName = safeSepaText(memberFullName(m), 70);
+
+    if (!Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99) {
+      errors.push(label + ": Betrag muss zwischen 0,01 € und 999.999.999,99 € liegen.");
+    }
+    if (!validIban(m.iban)) errors.push(label + ": IBAN ungültig.");
+    if (!debtorName) errors.push(label + ": Name ist für SEPA nicht verwendbar.");
+    if (!mandate) errors.push(label + ": Mandatsreferenz fehlt oder enthält keine zulässigen Zeichen.");
+    if (!validSepaDate(m.mandate_signed_at)) errors.push(label + ": Mandatsdatum ungültig.");
+    else if (m.mandate_signed_at > today) errors.push(label + ": Mandatsdatum liegt in der Zukunft.");
+  });
+
+  return [...new Set(errors)];
+}
+
+function validateGeneratedSepaXml(xml, rows) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, "application/xml");
+  if (doc.querySelector("parsererror")) throw new Error("XML ist syntaktisch ungültig.");
+
+  const ns = "urn:iso:std:iso:20022:tech:xsd:pain.008.001.08";
+  if (doc.documentElement?.localName !== "Document" || doc.documentElement?.namespaceURI !== ns) {
+    throw new Error("Falscher pain.008.001.08-Namespace.");
+  }
+
+  const getAll = name => Array.from(doc.getElementsByTagNameNS(ns, name));
+  const txs = getAll("DrctDbtTxInf");
+  if (txs.length !== rows.length) throw new Error("Anzahl der Lastschriften stimmt nicht.");
+
+  const expectedTotal = rows.reduce((sum, c) => sum + Number(c.amount || 0), 0).toFixed(2);
+
+  for (const node of getAll("NbOfTxs")) {
+    if (Number(node.textContent) !== rows.length) throw new Error("NbOfTxs stimmt nicht.");
+  }
+  for (const node of getAll("CtrlSum")) {
+    if (Number(node.textContent).toFixed(2) !== expectedTotal) throw new Error("CtrlSum stimmt nicht.");
+  }
+  for (const node of getAll("InstdAmt")) {
+    if (node.getAttribute("Ccy") !== "EUR") throw new Error("Lastschriftbetrag ist nicht in EUR.");
+    const amount = Number(node.textContent);
+    if (!Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99) {
+      throw new Error("Ungültiger Lastschriftbetrag in der XML.");
+    }
+  }
+
+  if (getAll("PmtId").length !== rows.length) throw new Error("Payment-ID fehlt.");
+  if (getAll("MndtId").some(node => !String(node.textContent || "").trim())) throw new Error("Leere Mandatsreferenz.");
+  if (getAll("EndToEndId").some(node => !String(node.textContent || "").trim())) throw new Error("Leere End-to-End-ID.");
+
+  return true;
 }
 
 function downloadBlob(content, filename, type = "application/octet-stream") {
@@ -1197,23 +1283,27 @@ function buildSepaXml(club, rows, collectionDate) {
   const total = rows.reduce((sum, c) => sum + Number(c.amount || 0), 0).toFixed(2);
   const creditorIban = normalizeIban(club.iban);
   const creditorName = safeSepaText(club.name, 70);
+  const creditorId = normalizeCreditorIdValue(club.creditor_id);
 
   const txs = rows.map((c, index) => {
     const m = c.members || {};
     const endToEnd = compactId("VA-" + (m.member_number || String(index + 1)) + "-" + contributionYear);
+    const mandateId = safeSepaText(m.mandate_reference, 35);
+    const debtorName = safeSepaText(memberFullName(m), 70);
+
     return `<DrctDbtTxInf>
-< PmtId><EndToEndId>${xmlEscape(endToEnd)}</EndToEndId></PmtId>
-<InstdAmt Ccy="EUR">${Number(c.amount || 0).toFixed(2)}</InstdAmt>
-<DrctDbtTx><MndtRltdInf><MndtId>${xmlEscape(safeSepaText(m.mandate_reference, 35))}</MndtId><DtOfSgntr>${xmlEscape(m.mandate_signed_at)}</DtOfSgntr></MndtRltdInf></DrctDbtTx>
+<PmtId><EndToEndId>${xmlEscape(endToEnd)}</EndToEndId></PmtId>
+<InstdAmt Ccy="EUR">${Number(c.amount).toFixed(2)}</InstdAmt>
+<DrctDbtTx><MndtRltdInf><MndtId>${xmlEscape(mandateId)}</MndtId><DtOfSgntr>${xmlEscape(m.mandate_signed_at)}</DtOfSgntr></MndtRltdInf></DrctDbtTx>
 <DbtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></DbtrAgt>
-<Dbtr><Nm>${xmlEscape(safeSepaText(memberFullName(m), 70))}</Nm></Dbtr>
+<Dbtr><Nm>${xmlEscape(debtorName)}</Nm></Dbtr>
 <DbtrAcct><Id><IBAN>${xmlEscape(normalizeIban(m.iban))}</IBAN></Id></DbtrAcct>
 <RmtInf><Ustrd>${xmlEscape(safeSepaText("Mitgliedsbeitrag " + contributionYear, 140))}</Ustrd></RmtInf>
-</DrctDbtTx>`.replace("< PmtId>", "<PmtId>");
+</DrctDbtTxInf>`;
   }).join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.008.001.08" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.008.001.08">
 <CstmrDrctDbtInitn>
 <GrpHdr><MsgId>${xmlEscape(msgId)}</MsgId><CreDtTm>${now.toISOString()}</CreDtTm><NbOfTxs>${rows.length}</NbOfTxs><CtrlSum>${total}</CtrlSum><InitgPty><Nm>${xmlEscape(creditorName)}</Nm></InitgPty></GrpHdr>
 <PmtInf>
@@ -1224,7 +1314,7 @@ function buildSepaXml(club, rows, collectionDate) {
 <CdtrAcct><Id><IBAN>${xmlEscape(creditorIban)}</IBAN></Id></CdtrAcct>
 <CdtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></CdtrAgt>
 <ChrgBr>SLEV</ChrgBr>
-<CdtrSchmeId><Id><PrvtId><Othr><Id>${xmlEscape(safeSepaText(club.creditor_id, 35))}</Id><SchmeNm><Prtry>SEPA</Prtry></SchmeNm></Othr></PrvtId></Id></CdtrSchmeId>
+<CdtrSchmeId><Id><PrvtId><Othr><Id>${xmlEscape(creditorId)}</Id><SchmeNm><Prtry>SEPA</Prtry></SchmeNm></Othr></PrvtId></Id></CdtrSchmeId>
 ${txs}
 </PmtInf>
 </CstmrDrctDbtInitn>
