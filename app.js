@@ -641,6 +641,24 @@ async function loadMembers() {
   return data || [];
 }
 
+async function nextMemberNumber(clubId) {
+  const { data, error } = await sb
+    .from("members")
+    .select("member_number")
+    .eq("club_id", clubId);
+  if (error) throw error;
+
+  const used = new Set(
+    (data || [])
+      .map(row => String(row.member_number || "").trim())
+      .filter(Boolean)
+  );
+
+  let number = 1001;
+  while (used.has(String(number))) number++;
+  return String(number);
+}
+
 async function loadContributions(year = currentYear) {
   const { data, error } = await sb
     .from("contributions")
@@ -696,12 +714,12 @@ function renderMemberRows(members, contributionMap) {
 
   rows.innerHTML = members.map(m => {
     const c = contributionMap.get(m.id);
-    const status = c?.status === "paid" ? "Bezahlt" : "Offen";
+    const status = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
     return '<button class="members-row" type="button" data-member-id="' + esc(m.id) + '">' +
       '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.member_number || "ohne Mitgliedsnummer") + '</small></b></span>' +
       '<span>' + esc(m.group_name || "Ohne Gruppe") + '</span>' +
       '<span>' + esc(money(m.annual_fee)) + '</span>' +
-      '<em class="' + (status === "Bezahlt" ? "status-paid" : "status-open") + '">' + status + '</em>' +
+      '<em class="' + (status === "Bezahlt" ? "status-paid" : status === "Offen" ? "status-open" : "status-none") + '">' + status + '</em>' +
     '</button>';
   }).join("");
 
@@ -739,10 +757,11 @@ async function initMembers() {
     $("#detailInitials").textContent = initials(member.first_name, member.last_name);
     $("#sheetTitle").textContent = memberFullName(member);
     $("#detailGroup").textContent = member.group_name || "Ohne Gruppe";
+    $("#detailMemberNumber").textContent = member.member_number || "–";
     $("#detailEmail").textContent = member.email || "–";
     $("#detailIban").textContent = member.iban || "–";
     $("#detailFee").textContent = money(member.annual_fee);
-    $("#detailStatus").textContent = c?.status === "paid" ? "Bezahlt" : "Offen";
+    $("#detailStatus").textContent = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
     openBackdrop(memberSheet);
   });
 
@@ -751,7 +770,7 @@ async function initMembers() {
     let count = 0;
     $$(".members-row").forEach(row => {
       const member = members.find(m => m.id === row.dataset.memberId);
-      const text = member ? (memberFullName(member) + " " + (member.group_name || "") + " " + (member.email || "")).toLowerCase() : "";
+      const text = member ? (memberFullName(member) + " " + (member.member_number || "") + " " + (member.group_name || "") + " " + (member.email || "")).toLowerCase() : "";
       const hit = text.includes(q);
       row.hidden = !hit;
       if (hit) count++;
@@ -764,7 +783,6 @@ async function initMembers() {
     const form = e.currentTarget;
     const button = $("button[type='submit']", form);
     const fee = Number($("#memberFee").value || club.standard_fee || 0);
-    const memberNumber = String(1001 + members.length);
     const memberIban = normalizeIbanValue($("#memberIban").value);
 
     if (memberIban && !isValidIbanValue(memberIban)) {
@@ -780,6 +798,7 @@ async function initMembers() {
 
     let createdMemberId = null;
     try {
+      const memberNumber = await nextMemberNumber(club.id);
       const memberPayload = {
         club_id: club.id,
         member_number: memberNumber,
@@ -821,9 +840,12 @@ async function initMembers() {
         await sb.from("members").delete().eq("id", createdMemberId);
       }
       const invalidIban = String(error?.message || "").includes("INVALID_IBAN");
+      const duplicateNumber = error?.code === "23505";
       showToast(invalidIban
         ? "IBAN ungültig – Mitglied wurde nicht gespeichert."
-        : "Mitglied konnte nicht gespeichert werden. Bitte erneut versuchen.");
+        : duplicateNumber
+          ? "Mitgliedsnummer bereits vergeben. Bitte erneut speichern."
+          : "Mitglied konnte nicht gespeichert werden. Bitte erneut versuchen.");
       button.disabled = false;
       button.textContent = "Mitglied speichern";
     }
