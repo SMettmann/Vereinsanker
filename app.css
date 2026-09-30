@@ -62,7 +62,7 @@ button:disabled{opacity:.58;cursor:not-allowed}
 .mobile-bottom-nav{display:none}
 @media(max-width:900px){
   .app-main{padding-bottom:92px}
-  .mobile-bottom-nav{position:fixed;left:10px;right:10px;bottom:10px;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid var(--line);border-radius:16px;padding:7px;box-shadow:0 14px 40px rgba(18,32,25,.15)}
+  .mobile-bottom-nav{position:fixed;left:10px;right:10px;bottom:10px;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border:1px solid var(--line);border-radius:16px;padding:7px;box-shadow:0 14px 40px rgba(18,32,25,.15)}
   .mobile-bottom-nav a{min-height:52px;border-radius:11px;display:grid;place-content:center;text-align:center;gap:3px;color:#87918b}
   .mobile-bottom-nav a.active{background:var(--soft);color:var(--green)}
   .mobile-bottom-nav i{font-style:normal;font-size:18px;line-height:1}
