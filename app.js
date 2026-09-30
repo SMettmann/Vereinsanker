@@ -634,6 +634,15 @@ async function initOnboarding() {
       return;
     }
 
+    const creditorId = normalizeCreditorIdValue($("#creditor").value);
+
+    if (creditorId && !isValidCreditorIdValue(creditorId)) {
+      showStep(3);
+      $("#creditor").focus();
+      showToast("Die Gläubiger-ID ist ungültig. Deutsche Gläubiger-IDs haben 18 Stellen und eine gültige Prüfziffer.");
+      return;
+    }
+
     const button = $("#finishSetup");
     button.disabled = true;
     button.textContent = "Wird eingerichtet …";
@@ -646,7 +655,7 @@ async function initOnboarding() {
       color: activeColor,
       standard_fee: Number($("#fee").value || 0),
       due_date: $("#due").value || null,
-      creditor_id: $("#creditor").value.trim() || null,
+      creditor_id: creditorId || null,
       updated_at: new Date().toISOString()
     };
 
@@ -1186,11 +1195,20 @@ async function initContributions() {
     const missingIban = openContributions.filter(c => !contributionMember(c).iban);
     const missingMandate = openContributions.filter(c => {
       const m = contributionMember(c);
-      return !m.mandate_reference || !m.mandate_signed_at;
+      return !String(m.mandate_reference || "").trim() || !m.mandate_signed_at;
+    });
+    const invalidAmount = openContributions.filter(c => {
+      const amount = Number(c.amount || 0);
+      return !Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99;
     });
     const ready = openContributions.filter(c => {
       const m = contributionMember(c);
-      return isValidIbanValue(m.iban) && m.mandate_reference && m.mandate_signed_at;
+      const amount = Number(c.amount || 0);
+      return amount >= 0.01 &&
+        amount <= 999999999.99 &&
+        isValidIbanValue(m.iban) &&
+        String(m.mandate_reference || "").trim() &&
+        m.mandate_signed_at;
     });
 
     $("#sepaReadyCount").textContent = ready.length + (ready.length === 1 ? " Mitglied" : " Mitglieder");
@@ -1200,6 +1218,8 @@ async function initContributions() {
     if (!club.iban) issues.push("Vereins-IBAN fehlt.");
     else if (!isValidIbanValue(club.iban)) issues.push("Vereins-IBAN ist ungültig.");
     if (!club.creditor_id) issues.push("Gläubiger-ID fehlt.");
+    else if (!isValidCreditorIdValue(club.creditor_id)) issues.push("Gläubiger-ID ist ungültig.");
+    if (invalidAmount.length) issues.push(invalidAmount.length + " Beitrag/Beiträge mit ungültigem Betrag.");
     if (missingIban.length) issues.push(missingIban.length + " Mitglied(er) ohne IBAN.");
     if (invalidIban.length) issues.push(invalidIban.length + " Mitglied(er) mit ungültiger IBAN.");
     if (missingMandate.length) issues.push(missingMandate.length + " Mitglied(er) ohne vollständiges SEPA-Mandat.");
