@@ -62,6 +62,29 @@ function isValidIbanValue(value) {
   return remainder === 1;
 }
 
+function normalizeCreditorIdValue(value) {
+  return String(value || "").replace(/\s+/g, "").toUpperCase();
+}
+
+function isValidCreditorIdValue(value) {
+  const id = normalizeCreditorIdValue(value);
+  if (!id) return false;
+
+  // VEREINSANKER richtet sich an deutsche Vereine.
+  if (!/^DE[0-9]{2}[A-Z0-9]{3}[A-Z0-9]{11}$/.test(id)) return false;
+
+  // Die Geschäftsbereichskennung (Stellen 5-7) wird bei der Prüfziffer ignoriert.
+  const checkBase = id.slice(7) + id.slice(0, 2) + "00";
+  let remainder = 0;
+  for (const ch of checkBase) {
+    const part = /[A-Z]/.test(ch) ? String(ch.charCodeAt(0) - 55) : ch;
+    for (const digit of part) remainder = (remainder * 10 + Number(digit)) % 97;
+  }
+
+  const expected = String(98 - remainder).padStart(2, "0");
+  return expected === id.slice(2, 4);
+}
+
 function bindIbanValidation(input) {
   if (!input || input.dataset.ibanBound) return;
   input.dataset.ibanBound = "1";
@@ -1305,10 +1328,17 @@ async function initSettings() {
     e.preventDefault();
     const button = $("button[type='submit']", e.currentTarget);
     const clubIban = normalizeIbanValue($("#settingsIban").value);
+    const creditorId = normalizeCreditorIdValue($("#settingsCreditor").value);
 
     if (clubIban && !isValidIbanValue(clubIban)) {
       $("#settingsIban").focus();
       showToast("Die Vereins-IBAN ist ungültig. Bitte IBAN prüfen.");
+      return;
+    }
+
+    if (creditorId && !isValidCreditorIdValue(creditorId)) {
+      $("#settingsCreditor").focus();
+      showToast("Die Gläubiger-ID ist ungültig. Eine deutsche Gläubiger-ID hat 18 Stellen und eine gültige Prüfziffer.");
       return;
     }
 
@@ -1319,7 +1349,7 @@ async function initSettings() {
       name: $("#settingsClub").value.trim(),
       short_name: $("#settingsShort").value.trim().toUpperCase(),
       color: $(".color-choice.active")?.dataset.color || club.color,
-      creditor_id: $("#settingsCreditor").value.trim() || null,
+      creditor_id: creditorId || null,
       iban: clubIban || null,
       standard_fee: Number($("#settingsFee").value || 0),
       due_date: $("#settingsDue").value || null,
