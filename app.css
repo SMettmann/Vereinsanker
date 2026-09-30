@@ -933,3 +933,5 @@ body.trial-expired .settings-form select{
 }
 
 .legal-side-links{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 10px}.legal-side-links a{color:rgba(255,255,255,.46);font-size:10px;text-decoration:none}.legal-side-links a:hover{color:#fff}
+
+.legal-check{display:flex;align-items:flex-start;gap:10px;margin:16px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8faf8;font-size:12px;line-height:1.55;color:#3f4b44}.legal-check input{width:18px;height:18px;margin-top:1px;flex:0 0 auto;accent-color:var(--green)}.legal-check a{color:var(--green);font-weight:800}.avv-settings-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 0}.avv-settings-row>div{display:grid;gap:4px}.avv-settings-row strong{font-size:13px}.avv-settings-row span{font-size:11px;color:var(--muted);line-height:1.5}.avv-settings-row a{font-size:11px;font-weight:800;color:var(--green);white-space:nowrap}@media(max-width:650px){.avv-settings-row{align-items:flex-start;flex-direction:column}.avv-settings-row a{white-space:normal}}
