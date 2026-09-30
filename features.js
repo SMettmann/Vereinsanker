@@ -111,6 +111,7 @@ function validateImportedMember(member) {
   if (!member.last_name) errors.push("Nachname fehlt");
   if (member.email && !validEmail(member.email)) errors.push("E-Mail ungültig");
   if (member.iban && !validIban(member.iban)) errors.push("IBAN ungültig");
+  if (member.mandate_reference && !isValidSepaReferenceValue(member.mandate_reference)) errors.push("Mandatsreferenz ungültig");
   if (member.mandate_reference && !member.mandate_signed_at) errors.push("Mandatsdatum fehlt/ungültig");
   if (member.mandate_signed_at && !member.mandate_reference) errors.push("Mandatsreferenz fehlt");
   return errors;
@@ -596,6 +597,7 @@ function importDuplicateKeys(member) {
   return [
     member?.member_number ? "n:" + String(member.member_number).trim().toLowerCase() : null,
     member?.email ? "e:" + String(member.email).trim().toLowerCase() : null,
+    member?.mandate_reference ? "m:" + String(member.mandate_reference).trim().toLowerCase() : null,
     member?.first_name && member?.last_name
       ? "x:" + (memberFullName(member) + "|" + (member.group_name || "")).toLowerCase()
       : null
@@ -1076,9 +1078,15 @@ async function enhanceMemberPage() {
     const id = $("#editMemberId").value;
     const amount = Number($("#editMemberFee").value || 0);
     const editIban = normalizeIban($("#editMemberIban").value);
+    const editMandate = $("#editMemberMandate").value.trim();
     if (editIban && !validIban(editIban)) {
       $("#editMemberIban").focus();
       showToast("Die IBAN des Mitglieds ist ungültig. Bitte Eingabe prüfen.");
+      return;
+    }
+    if (editMandate && !isValidSepaReferenceValue(editMandate)) {
+      $("#editMemberMandate").focus();
+      showToast("Mandatsreferenz ungültig: maximal 35 Zeichen, kein / am Anfang oder Ende und kein //.");
       return;
     }
     const payload = {
@@ -1089,12 +1097,16 @@ async function enhanceMemberPage() {
       email: $("#editMemberEmail").value.trim() || null,
       annual_fee: amount,
       iban: editIban || null,
-      mandate_reference: $("#editMemberMandate").value.trim() || null,
+      mandate_reference: editMandate || null,
       mandate_signed_at: $("#editMemberMandateDate").value || null,
       updated_at: new Date().toISOString()
     };
     const { error } = await sb.from("members").update(payload).eq("id", id);
     if (error) {
+      const message = String(error?.message || "") + " " + String(error?.details || "");
+      if (error.code === "23505" && /mandate_reference|members_club_mandate_reference_uidx/i.test(message)) {
+        return showToast("Diese Mandatsreferenz ist bereits vergeben.");
+      }
       if (error.code === "23505") return showToast("Diese Mitgliedsnummer ist bereits vergeben.");
       return showToast("Änderung konnte nicht gespeichert werden");
     }
