@@ -270,6 +270,8 @@ window.initFinancesPage = async function () {
         if (result.error) throw result.error;
         saved = result.data;
       }
+      $("#financeId").value = saved.id;
+      $("#financeOldReceipt").value = saved.receipt_path || $("#financeOldReceipt").value || "";
       const file = $("#financeReceipt").files[0];
       if (file) await uploadReceipt(saved.id, file, $("#financeOldReceipt").value || saved.receipt_path);
       closeBackdrop(sheet);
