@@ -569,6 +569,12 @@ async function initSignup() {
     const button = $("button[type='submit']", form);
     const email = $("#email").value.trim();
     const password = $("#password").value;
+
+    if (password.length < 12) {
+      setMessage(form, "Das Passwort muss mindestens 12 Zeichen haben.", "error");
+      return;
+    }
+
     button.disabled = true;
     button.textContent = "Konto wird angelegt …";
     setMessage(form, "", "info");
@@ -713,8 +719,8 @@ async function initResetPassword() {
     const password = $("#newPassword").value;
     const confirmPassword = $("#newPasswordConfirm").value;
 
-    if (password.length < 8) {
-      setMessage(form, "Das Passwort muss mindestens 8 Zeichen haben.", "error");
+    if (password.length < 12) {
+      setMessage(form, "Das Passwort muss mindestens 12 Zeichen haben.", "error");
       return;
     }
     if (password !== confirmPassword) {
