@@ -1247,34 +1247,73 @@ ${vaClub?.name || "Euer Verein"}`;
 
 async function enhanceContributionPage() {
   const club = vaClub || await getClub();
-  const [members, contributions] = await Promise.all([loadMembers(), loadContributions()]);
-  const existingIds = new Set(contributions.map(c => c.member_id));
-  const missing = members.filter(m => !existingIds.has(m.id));
+  const selectedYear = contributionYearFromUrl();
+  const [members, contributions] = await Promise.all([
+    loadMembers(),
+    loadContributions(selectedYear)
+  ]);
 
-  if (missing.length) {
+  const existingIds = new Set(contributions.map(c => c.member_id));
+  const missing = selectedYear === currentYear
+    ? members.filter(m => !existingIds.has(m.id))
+    : [];
+
+  if (selectedYear === currentYear && missing.length) {
     $("#yearSetup").hidden = false;
-    $("#yearSetupText").textContent = missing.length + " aktive Mitglieder haben noch keinen Beitrag für " + currentYear + ".";
+    $("#yearSetupText").textContent =
+      missing.length + " aktive Mitglieder haben noch keinen Beitrag für " + selectedYear + ".";
   } else {
     $("#yearSetup").hidden = true;
   }
 
   $("#createYearContributions")?.addEventListener("click", async () => {
+    if (selectedYear !== currentYear) {
+      showToast("Vergangene Beitragsjahre werden nicht neu angelegt.");
+      return;
+    }
+
     const btn = $("#createYearContributions");
     btn.disabled = true;
     btn.textContent = "Wird angelegt …";
-    const dueDate = club.due_date ? currentYear + club.due_date.slice(4) : currentYear + "-03-01";
-    const rows = missing.map(m => ({
-      club_id: club.id, member_id: m.id, contribution_year: currentYear,
-      amount: Number(m.annual_fee || club.standard_fee || 0), due_date: dueDate, status: "open"
+
+    const [freshMembers, freshContributions] = await Promise.all([
+      loadMembers(),
+      loadContributions(selectedYear)
+    ]);
+    const freshExistingIds = new Set(freshContributions.map(c => c.member_id));
+    const freshMissing = freshMembers.filter(m => !freshExistingIds.has(m.id));
+
+    if (!freshMissing.length) {
+      showToast("Alle Beiträge für " + selectedYear + " sind bereits angelegt.");
+      setTimeout(() => location.reload(), 350);
+      return;
+    }
+
+    const dueDate = dueDateForContributionYear(club, selectedYear);
+    const rows = freshMissing.map(m => ({
+      club_id: club.id,
+      member_id: m.id,
+      contribution_year: selectedYear,
+      amount: Number(m.annual_fee || club.standard_fee || 0),
+      due_date: dueDate,
+      status: "open"
     }));
-    const { error } = rows.length ? await sb.from("contributions").insert(rows) : { error: null };
+
+    const { error } = await sb.from("contributions").insert(rows);
+
     if (error) {
+      if (error.code === "23505") {
+        showToast("Einige Beiträge waren bereits vorhanden. Seite wird aktualisiert.");
+        setTimeout(() => location.reload(), 450);
+        return;
+      }
       showToast("Beiträge konnten nicht angelegt werden");
       btn.disabled = false;
       btn.textContent = "Fehlende Beiträge anlegen";
       return;
     }
-    showToast(rows.length + " Beiträge angelegt ✓");
+
+    showToast(rows.length + " Beiträge für " + selectedYear + " angelegt ✓");
     setTimeout(() => location.reload(), 500);
   });
 
@@ -1287,7 +1326,7 @@ async function enhanceContributionPage() {
 
   $("#prepareSepa")?.addEventListener("click", async () => {
     const currentClub = await getClub();
-    const all = await loadContributions();
+    const all = await loadContributions(selectedYear);
     const ready = all.filter(c => {
       const m = c.members || {};
       return c.status !== "paid" && validIban(m.iban) && m.mandate_reference && m.mandate_signed_at;
@@ -1304,20 +1343,27 @@ async function enhanceContributionPage() {
     if (!ready.length) return showToast("Kein offener Beitrag mit vollständigem SEPA-Mandat");
 
     const xml = buildSepaXml(currentClub, ready, collectionDate);
-    downloadBlob(xml, "VEREINSANKER_SEPA_" + collectionDate + ".xml", "application/xml;charset=utf-8");
-    showToast("SEPA-XML erstellt ✓");
+    downloadBlob(
+      xml,
+      "VEREINSANKER_SEPA_" + selectedYear + "_" + collectionDate + ".xml",
+      "application/xml;charset=utf-8"
+    );
+    showToast("SEPA-Datei für " + selectedYear + " erstellt ✓");
   });
 
   const reminderSheet = $("#reminderSheet");
   $("#closeReminder")?.addEventListener("click", () => closeBackdrop(reminderSheet));
-  reminderSheet?.addEventListener("click", e => { if (e.target === reminderSheet) closeBackdrop(reminderSheet); });
+  reminderSheet?.addEventListener("click", e => {
+    if (e.target === reminderSheet) closeBackdrop(reminderSheet);
+  });
 
   $("#openContributions")?.addEventListener("click", async e => {
     const button = e.target.closest(".tiny-action");
     if (!button) return;
+
     const buttons = $$(".tiny-action", $("#openContributions"));
     const index = buttons.indexOf(button);
-    const openRows = (await loadContributions()).filter(c => c.status !== "paid");
+    const openRows = (await loadContributions(selectedYear)).filter(c => c.status !== "paid");
     const contribution = openRows[index];
     if (!contribution) return;
 
@@ -1326,7 +1372,9 @@ async function enhanceContributionPage() {
     $("#reminderText").value = text;
     $("#reminderTitle").textContent = memberFullName(m) + " erinnern";
     $("#mailReminder").href = m.email
-      ? "mailto:" + encodeURIComponent(m.email) + "?subject=" + encodeURIComponent("Mitgliedsbeitrag " + currentYear) + "&body=" + encodeURIComponent(text)
+      ? "mailto:" + encodeURIComponent(m.email) +
+        "?subject=" + encodeURIComponent("Mitgliedsbeitrag " + selectedYear) +
+        "&body=" + encodeURIComponent(text)
       : "#";
     $("#mailReminder").classList.toggle("disabled-link", !m.email);
     openBackdrop(reminderSheet);
@@ -1345,15 +1393,33 @@ async function enhanceContributionPage() {
   });
 
   $("#remindAll")?.addEventListener("click", async () => {
-    const openRows = (await loadContributions()).filter(c => c.status !== "paid");
+    const openRows = (await loadContributions(selectedYear)).filter(c => c.status !== "paid");
     if (!openRows.length) return showToast("Keine offenen Beiträge");
-    const csvRows = [["Name","E-Mail","Betrag","Fälligkeit","Erinnerung"], ...openRows.map(c => {
-      const m = c.members || {};
-      return [memberFullName(m),m.email||"",Number(c.amount||0).toFixed(2),c.due_date||"",friendlyReminder(c)];
-    })];
-    const csv = csvRows.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";")).join("\r\n");
-    downloadBlob("\uFEFF" + csv, "VEREINSANKER_Zahlungserinnerungen_" + currentYear + ".csv", "text/csv;charset=utf-8");
-    showToast("Erinnerungsliste erstellt ✓");
+
+    const csvRows = [
+      ["Name","E-Mail","Betrag","Fälligkeit","Erinnerung"],
+      ...openRows.map(c => {
+        const m = c.members || {};
+        return [
+          memberFullName(m),
+          m.email || "",
+          Number(c.amount || 0).toFixed(2),
+          c.due_date || "",
+          friendlyReminder(c)
+        ];
+      })
+    ];
+
+    const csv = csvRows
+      .map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";"))
+      .join("\r\n");
+
+    downloadBlob(
+      "\uFEFF" + csv,
+      "VEREINSANKER_Zahlungserinnerungen_" + selectedYear + ".csv",
+      "text/csv;charset=utf-8"
+    );
+    showToast("Erinnerungsliste für " + selectedYear + " erstellt ✓");
   });
 }
 
