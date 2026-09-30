@@ -294,7 +294,21 @@ function finishAppLoad() {
 async function getSession() {
   const { data, error } = await sb.auth.getSession();
   if (error) throw error;
-  return data.session;
+  if (!data.session) return null;
+
+  // getSession() reads from browser storage. Verify the identity against Supabase
+  // before the app trusts the embedded user object.
+  const { data: userData, error: userError } = await sb.auth.getUser();
+  if (userError) {
+    if (isSessionAppError(userError)) {
+      try { await sb.auth.signOut({ scope: "local" }); } catch {}
+      return null;
+    }
+    throw userError;
+  }
+  if (!userData?.user) return null;
+
+  return { ...data.session, user: userData.user };
 }
 
 async function requireSession() {
@@ -1550,6 +1564,92 @@ async function initSettings() {
     $$(".color-choice").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
   }));
+
+  $("#exportAllData")?.addEventListener("click", async e => {
+    const button = e.currentTarget;
+    button.disabled = true;
+    button.textContent = "Export wird erstellt …";
+
+    try {
+      if (!window.XLSX) throw new Error("Excel-Export ist noch nicht geladen.");
+
+      const [membersResult, contributionsResult, financeResult] = await Promise.all([
+        sb.from("members").select("*").eq("club_id", club.id).order("last_name").order("first_name"),
+        sb.from("contributions").select("*").eq("club_id", club.id).order("contribution_year", { ascending: false }),
+        sb.from("finance_transactions").select("*").eq("club_id", club.id).order("transaction_date", { ascending: false })
+      ]);
+
+      if (membersResult.error) throw membersResult.error;
+      if (contributionsResult.error) throw contributionsResult.error;
+      if (financeResult.error) throw financeResult.error;
+
+      const members = membersResult.data || [];
+      const contributions = contributionsResult.data || [];
+      const finances = financeResult.data || [];
+      const memberById = new Map(members.map(member => [member.id, member]));
+
+      const workbook = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([{
+        "Vereinsname": club.name || "",
+        "Kürzel": club.short_name || "",
+        "Vereinsfarbe": club.color || "",
+        "Gläubiger-ID": club.creditor_id || "",
+        "IBAN": club.iban || "",
+        "Standardbeitrag": Number(club.standard_fee || 0),
+        "Fälligkeit": club.due_date || "",
+        "Erstellt am": club.created_at || ""
+      }]), "Verein");
+
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(members.map(member => ({
+        "Mitgliedsnummer": member.member_number || "",
+        "Vorname": member.first_name || "",
+        "Nachname": member.last_name || "",
+        "Gruppe": member.group_name || "",
+        "E-Mail": member.email || "",
+        "IBAN": member.iban || "",
+        "Jahresbeitrag": Number(member.annual_fee || 0),
+        "Mandatsreferenz": member.mandate_reference || "",
+        "Mandat unterschrieben am": member.mandate_signed_at || "",
+        "Aktiv": member.active ? "Ja" : "Nein",
+        "Erstellt am": member.created_at || ""
+      }))), "Mitglieder");
+
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(contributions.map(entry => {
+        const member = memberById.get(entry.member_id) || {};
+        return {
+          "Mitgliedsnummer": member.member_number || "",
+          "Vorname": member.first_name || "",
+          "Nachname": member.last_name || "",
+          "Jahr": entry.contribution_year,
+          "Betrag": Number(entry.amount || 0),
+          "Fälligkeit": entry.due_date || "",
+          "Status": entry.status || "",
+          "Bezahlt am": entry.paid_at || "",
+          "Notiz": entry.note || ""
+        };
+      })), "Beiträge");
+
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(finances.map(entry => ({
+        "Datum": entry.transaction_date || "",
+        "Typ": entry.type === "income" ? "Einnahme" : "Ausgabe",
+        "Kategorie": entry.category || "",
+        "Beschreibung": entry.description || "",
+        "Betrag": Number(entry.amount || 0),
+        "Zahlungsart": entry.payment_method === "cash" ? "Bar" : "Bank",
+        "Beleg vorhanden": entry.receipt_path ? "Ja" : "Nein"
+      }))), "Finanzen");
+
+      const stamp = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, "VEREINSANKER_Datenexport_" + stamp + ".xlsx");
+      showToast("Kompletter Datenexport erstellt ✓");
+    } catch (error) {
+      await handleAppError(error, "Datenexport konnte nicht erstellt werden.");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Alle Vereinsdaten herunterladen";
+    }
+  });
 
   $("#settingsForm").addEventListener("submit", async e => {
     e.preventDefault();
