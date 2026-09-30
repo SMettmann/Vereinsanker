@@ -1656,13 +1656,32 @@ function setupMobileNavigation() {
 }
 
 function setupLogout() {
-  const sideBottom = $(".side-bottom");
-  if (!sideBottom) return;
-  sideBottom.innerHTML = '<div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><a id="billingSideAction" class="billing-side-action" href="billing.html">Tarif wählen →</a><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
-  $("#logoutButton").addEventListener("click", async () => {
-    await sb.auth.signOut();
+  const doLogout = async button => {
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Wird abgemeldet …";
+    }
+
+    const { error } = await sb.auth.signOut();
+    if (error) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Abmelden";
+      }
+      await handleAppError(error, "Abmelden konnte nicht abgeschlossen werden.");
+      return;
+    }
+
     location.replace("login.html");
-  });
+  };
+
+  const sideBottom = $(".side-bottom");
+  if (sideBottom) {
+    sideBottom.innerHTML = '<div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><a id="billingSideAction" class="billing-side-action" href="billing.html">Tarif wählen →</a><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
+    $("#logoutButton")?.addEventListener("click", e => doLogout(e.currentTarget));
+  }
+
+  $("#mobileLogoutButton")?.addEventListener("click", e => doLogout(e.currentTarget));
 }
 
 (async function boot() {
