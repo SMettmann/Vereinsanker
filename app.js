@@ -1836,7 +1836,7 @@ function setupLogout() {
 
   const sideBottom = $(".side-bottom");
   if (sideBottom) {
-    sideBottom.innerHTML = '<div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><a id="billingSideAction" class="billing-side-action" href="billing.html">Tarif wählen →</a><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
+    sideBottom.innerHTML = '<div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><a id="billingSideAction" class="billing-side-action" href="billing.html">Tarif wählen →</a><div class="legal-side-links"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a></div><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
     $("#logoutButton")?.addEventListener("click", e => doLogout(e.currentTarget));
   }
 
