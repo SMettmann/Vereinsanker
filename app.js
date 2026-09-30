@@ -1412,11 +1412,35 @@ async function initContributions() {
 
 }
 
+async function cleanupOrphanClubLogos(club) {
+  if (!club?.id || accessIsBlocked(club)) return;
+
+  const { data, error } = await sb.storage
+    .from("club-logos")
+    .list(club.id, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
+
+  if (error) {
+    console.warn("Alte Logos konnten nicht geprüft werden:", error);
+    return;
+  }
+
+  const keep = club.logo_path ? club.logo_path.split("/").pop() : null;
+  const stale = (data || [])
+    .filter(file => file?.name && file.name !== keep)
+    .map(file => club.id + "/" + file.name);
+
+  if (!stale.length) return;
+
+  const { error: removeError } = await sb.storage.from("club-logos").remove(stale);
+  if (removeError) console.warn("Alte Logos konnten nicht vollständig entfernt werden:", removeError);
+}
+
 async function initSettings() {
   let club = await getClub();
   if (!club) return location.replace("onboarding.html");
   applyClubBrand(club);
   applyTrialUI(club);
+  cleanupOrphanClubLogos(club);
 
   const logoInput = $("#clubLogoInput");
   const removeLogoButton = $("#removeClubLogo");
