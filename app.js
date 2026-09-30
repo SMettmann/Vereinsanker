@@ -933,31 +933,23 @@ async function initDashboard() {
   applyClubBrand(club);
   applyTrialUI(club);
 
-  const [members, contributions, financeRows, paidFinanceContributions] = await Promise.all([
+  const [members, contributions] = await Promise.all([
     loadMembers(),
-    loadContributions(),
-    loadFinanceTransactions(),
-    loadPaidContributionsForFinance()
+    loadContributions()
   ]);
 
-  const manualIncome = financeRows
-    .filter(row => row.type === "income")
-    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
-  const expenses = financeRows
-    .filter(row => row.type === "expense")
-    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
-  const contributionIncome = paidFinanceContributions
-    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
-  const income = manualIncome + contributionIncome;
-  const balance = income - expenses;
+  const paid = contributions.filter(c => c.status === "paid");
   const open = contributions.filter(c => c.status !== "paid");
-  const openAmount = open.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+  const completedPercent = contributions.length
+    ? Math.round((paid.length / contributions.length) * 100)
+    : 0;
 
   $("#dashboardYear").textContent = currentYear;
-  $("#dashBalance").textContent = money(balance);
-  $("#dashIncome").textContent = money(income);
-  $("#dashExpenses").textContent = money(expenses);
-  $("#dashOpen").textContent = money(openAmount);
+  $("#dashMembers").textContent = String(members.length);
+  $("#dashPaid").textContent = String(paid.length);
+  $("#dashOpen").textContent = String(open.length);
+  $("#dashPercent").textContent = completedPercent + " %";
+  $("#dashProgress").style.width = completedPercent + "%";
 
   const openList = $("#dashboardOpenRows");
   if (members.length && !contributions.length) {
