@@ -1027,7 +1027,7 @@ async function initContributions() {
         '</b></span>' +
         '<strong>' + esc(money(c.amount)) + '</strong>' +
         '<span>' + (c.due_date ? "Fällig " + new Date(c.due_date + "T00:00:00").toLocaleDateString("de-DE") : "Keine Fälligkeit") + '</span>' +
-        '<span class="open-actions"><button class="mark-paid" data-id="' + esc(c.id) + '">Als bezahlt markieren</button><button class="tiny-action">Erinnern</button></span>' +
+        '<span class="open-actions"><button class="mark-paid" data-id="' + esc(c.id) + '">Als bezahlt markieren</button><button class="tiny-action" data-id="' + esc(c.id) + '">Erinnern</button></span>' +
       '</div>';
     }).join("") : '<div class="empty-row"><strong>Alles erledigt ✓</strong><span>Keine offenen Beiträge.</span></div>';
 
