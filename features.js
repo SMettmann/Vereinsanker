@@ -1055,6 +1055,7 @@ async function enhanceMemberPage() {
     if (error) return showToast("Mitglied konnte nicht geladen werden");
     $("#editMemberId").value = data.id;
     $("#editMemberTitle").textContent = memberFullName(data);
+    $("#editMemberNumber").value = data.member_number || "";
     $("#editFirstName").value = data.first_name || "";
     $("#editLastName").value = data.last_name || "";
     $("#editMemberGroup").value = data.group_name || "";
@@ -1081,6 +1082,7 @@ async function enhanceMemberPage() {
       return;
     }
     const payload = {
+      member_number: $("#editMemberNumber").value.trim() || null,
       first_name: $("#editFirstName").value.trim(),
       last_name: $("#editLastName").value.trim(),
       group_name: $("#editMemberGroup").value.trim() || null,
@@ -1092,8 +1094,23 @@ async function enhanceMemberPage() {
       updated_at: new Date().toISOString()
     };
     const { error } = await sb.from("members").update(payload).eq("id", id);
-    if (error) return showToast("Änderung konnte nicht gespeichert werden");
-    await sb.from("contributions").update({ amount, updated_at: new Date().toISOString() }).eq("member_id", id).eq("contribution_year", currentYear).neq("status", "paid");
+    if (error) {
+      if (error.code === "23505") return showToast("Diese Mitgliedsnummer ist bereits vergeben.");
+      return showToast("Änderung konnte nicht gespeichert werden");
+    }
+
+    const { error: contributionError } = await sb
+      .from("contributions")
+      .update({ amount, updated_at: new Date().toISOString() })
+      .eq("member_id", id)
+      .eq("contribution_year", currentYear)
+      .neq("status", "paid");
+
+    if (contributionError) {
+      showToast("Mitglied gespeichert, Beitrag konnte aber nicht angepasst werden.");
+      return;
+    }
+
     showToast("Mitglied aktualisiert ✓");
     closeBackdrop(editSheet);
     setTimeout(() => location.reload(), 500);
@@ -1104,7 +1121,20 @@ async function enhanceMemberPage() {
     if (!id || !confirm("Mitglied aus der aktiven Mitgliederliste entfernen? Vergangene Beitragsdaten bleiben erhalten.")) return;
     const { error } = await sb.from("members").update({ active: false, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return showToast("Mitglied konnte nicht entfernt werden");
-    await sb.from("contributions").delete().eq("member_id", id).eq("contribution_year", currentYear).neq("status", "paid");
+
+    const { error: contributionDeleteError } = await sb
+      .from("contributions")
+      .delete()
+      .eq("member_id", id)
+      .eq("contribution_year", currentYear)
+      .neq("status", "paid");
+
+    if (contributionDeleteError) {
+      await sb.from("members").update({ active: true, updated_at: new Date().toISOString() }).eq("id", id);
+      showToast("Mitglied konnte nicht vollständig entfernt werden.");
+      return;
+    }
+
     closeBackdrop(memberSheet);
     showToast("Mitglied entfernt ✓");
     setTimeout(() => location.reload(), 500);
