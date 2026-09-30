@@ -85,6 +85,15 @@ function isValidCreditorIdValue(value) {
   return expected === id.slice(2, 4);
 }
 
+function isValidSepaReferenceValue(value, max = 35) {
+  const raw = String(value || "").trim();
+  if (!raw) return true;
+  if (raw.length > max) return false;
+  if (!/^[A-Za-z0-9 .,'+?/:()\-]+$/.test(raw)) return false;
+  if (raw.startsWith("/") || raw.endsWith("/") || raw.includes("//")) return false;
+  return true;
+}
+
 function bindIbanValidation(input) {
   if (!input || input.dataset.ibanBound) return;
   input.dataset.ibanBound = "1";
@@ -848,12 +857,19 @@ async function initMembers() {
     const button = $("button[type='submit']", form);
     const fee = Number($("#memberFee").value || club.standard_fee || 0);
     const memberIban = normalizeIbanValue($("#memberIban").value);
+    const memberMandate = $("#memberMandate")?.value.trim() || "";
 
     if (memberIban && !isValidIbanValue(memberIban)) {
       bindIbanValidation($("#memberIban"));
       $("#memberIban").classList.add("input-invalid");
       $("#memberIban").focus();
       showToast("IBAN ungültig – Mitglied wurde nicht gespeichert.");
+      return;
+    }
+
+    if (memberMandate && !isValidSepaReferenceValue(memberMandate)) {
+      $("#memberMandate").focus();
+      showToast("Mandatsreferenz ungültig: maximal 35 Zeichen, kein / am Anfang oder Ende und kein //.");
       return;
     }
 
@@ -872,7 +888,7 @@ async function initMembers() {
         email: $("#memberEmail").value.trim() || null,
         iban: memberIban || null,
         annual_fee: fee,
-        mandate_reference: $("#memberMandate")?.value.trim() || null,
+        mandate_reference: memberMandate || null,
         mandate_signed_at: $("#memberMandateDate")?.value || null,
         updated_at: new Date().toISOString()
       };
@@ -901,13 +917,17 @@ async function initMembers() {
       if (createdMemberId) {
         await sb.from("members").delete().eq("id", createdMemberId);
       }
-      const invalidIban = String(error?.message || "").includes("INVALID_IBAN");
-      const duplicateNumber = error?.code === "23505";
+      const message = String(error?.message || "") + " " + String(error?.details || "");
+      const invalidIban = message.includes("INVALID_IBAN");
+      const duplicateMandate = error?.code === "23505" && /mandate_reference|members_club_mandate_reference_uidx/i.test(message);
+      const duplicateNumber = error?.code === "23505" && !duplicateMandate;
       showToast(invalidIban
         ? "IBAN ungültig – Mitglied wurde nicht gespeichert."
-        : duplicateNumber
-          ? "Mitgliedsnummer bereits vergeben. Bitte erneut speichern."
-          : "Mitglied konnte nicht gespeichert werden. Bitte erneut versuchen.");
+        : duplicateMandate
+          ? "Diese Mandatsreferenz ist bereits vergeben."
+          : duplicateNumber
+            ? "Mitgliedsnummer bereits vergeben. Bitte erneut speichern."
+            : "Mitglied konnte nicht gespeichert werden. Bitte erneut versuchen.");
       button.disabled = false;
       button.textContent = "Mitglied speichern";
     }
