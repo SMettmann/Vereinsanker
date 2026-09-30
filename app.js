@@ -164,6 +164,114 @@ function showToast(message) {
   window.__vaToast = setTimeout(() => { toast.hidden = true; }, 2600);
 }
 
+function appErrorText(error) {
+  return [
+    error?.code,
+    error?.message,
+    error?.details,
+    error?.hint,
+    error?.status,
+    error?.statusCode
+  ].filter(Boolean).join(" ");
+}
+
+function isNetworkAppError(error) {
+  const text = appErrorText(error);
+  return !navigator.onLine || /failed to fetch|networkerror|network request failed|load failed|fetch failed|connection/i.test(text);
+}
+
+function isSessionAppError(error) {
+  const text = appErrorText(error);
+  return error?.status === 401 ||
+    ["session_not_found","session_expired","refresh_token_not_found","refresh_token_already_used","PGRST301","PGRST303"].includes(error?.code) ||
+    /jwt expired|invalid jwt|refresh token|session.*expired|not authenticated/i.test(text);
+}
+
+function showNetworkStatus(online) {
+  let banner = $("#networkStatus");
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "networkStatus";
+    banner.className = "network-status";
+    document.body.prepend(banner);
+  }
+
+  banner.hidden = false;
+  banner.classList.toggle("online", online);
+  banner.textContent = online
+    ? "Verbindung wieder da ✓"
+    : "Keine Internetverbindung – Änderungen können gerade nicht gespeichert werden.";
+
+  clearTimeout(window.__vaNetworkStatus);
+  if (online) {
+    window.__vaNetworkStatus = setTimeout(() => { banner.hidden = true; }, 1800);
+  }
+}
+
+function setupNetworkStatus() {
+  window.addEventListener("offline", () => showNetworkStatus(false));
+  window.addEventListener("online", () => {
+    showNetworkStatus(true);
+    if (document.body.dataset.loadFailed === "1") {
+      setTimeout(() => location.reload(), 700);
+    }
+  });
+
+  if (!navigator.onLine) showNetworkStatus(false);
+}
+
+function showPageLoadError(message) {
+  document.body.dataset.loadFailed = "1";
+  const main = $(".app-main");
+  if (!main || $("#appLoadError")) return;
+
+  const card = document.createElement("section");
+  card.id = "appLoadError";
+  card.className = "app-load-error";
+  card.innerHTML =
+    '<strong>Daten konnten nicht geladen werden</strong>' +
+    '<span>' + esc(message || "Bitte Verbindung prüfen und erneut versuchen.") + '</span>' +
+    '<button type="button">Erneut versuchen</button>';
+
+  card.querySelector("button").addEventListener("click", () => location.reload());
+  main.insertBefore(card, main.firstChild);
+}
+
+async function handleAppError(error, fallback = "Aktion konnte nicht ausgeführt werden.") {
+  console.error("VEREINSANKER:", error);
+
+  if (isNetworkAppError(error)) {
+    showNetworkStatus(false);
+    showToast("Keine Internetverbindung. Es wurde nichts gespeichert.");
+    return "network";
+  }
+
+  if (isSessionAppError(error)) {
+    showToast("Deine Sitzung ist abgelaufen. Bitte erneut anmelden.");
+    try { await sb.auth.signOut({ scope: "local" }); } catch {}
+    setTimeout(() => location.replace("login.html?reason=session"), 650);
+    return "session";
+  }
+
+  if (error?.code === "42501" || error?.status === 403) {
+    try {
+      const club = await getClub();
+      if (club) {
+        applyTrialUI(club);
+        if (accessIsBlocked(club)) {
+          showToast("Bearbeiten ist aktuell gesperrt. Bitte Tarif- oder Zahlungsstatus prüfen.");
+          return "access";
+        }
+      }
+    } catch {}
+    showToast("Diese Aktion ist aktuell nicht erlaubt.");
+    return "permission";
+  }
+
+  showToast(fallback);
+  return "error";
+}
+
 function openBackdrop(el) {
   if (!el) return;
   el.hidden = false;
@@ -494,6 +602,12 @@ async function initSignup() {
 }
 
 async function initLogin() {
+  const form = $("#loginForm");
+  if (new URLSearchParams(location.search).get("reason") === "session") {
+    setMessage(form, "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.", "error");
+    history.replaceState(null, "", "login.html");
+  }
+
   const existingSession = await getSession();
   if (existingSession) {
     vaSession = existingSession;
@@ -501,7 +615,6 @@ async function initLogin() {
     location.replace(club ? "app.html" : "onboarding.html");
     return;
   }
-  const form = $("#loginForm");
   form.addEventListener("submit", async e => {
     e.preventDefault();
     const button = $("button[type='submit']", form);
@@ -876,58 +989,40 @@ async function initMembers() {
     button.disabled = true;
     button.textContent = "Wird gespeichert …";
 
-    let createdMemberId = null;
     try {
       const memberNumber = await nextMemberNumber(club.id);
-      const memberPayload = {
-        club_id: club.id,
-        member_number: memberNumber,
-        first_name: $("#firstName").value.trim(),
-        last_name: $("#lastName").value.trim(),
-        group_name: $("#memberGroup").value.trim() || null,
-        email: $("#memberEmail").value.trim() || null,
-        iban: memberIban || null,
-        annual_fee: fee,
-        mandate_reference: memberMandate || null,
-        mandate_signed_at: $("#memberMandateDate")?.value || null,
-        updated_at: new Date().toISOString()
-      };
-
-      const { data: member, error } = await sb.from("members").insert(memberPayload).select().single();
-      if (error) throw error;
-      createdMemberId = member.id;
-
       const dueDate = dueDateForContributionYear(club, currentYear);
 
-      const { error: contributionError } = await sb.from("contributions").insert({
-        club_id: club.id,
-        member_id: member.id,
-        contribution_year: currentYear,
-        amount: fee,
-        due_date: dueDate,
-        status: "open"
+      const { error } = await sb.rpc("create_member_with_contribution", {
+        p_club_id: club.id,
+        p_member_number: memberNumber,
+        p_first_name: $("#firstName").value.trim(),
+        p_last_name: $("#lastName").value.trim(),
+        p_group_name: $("#memberGroup").value.trim() || null,
+        p_email: $("#memberEmail").value.trim() || null,
+        p_iban: memberIban || null,
+        p_annual_fee: fee,
+        p_mandate_reference: memberMandate || null,
+        p_mandate_signed_at: $("#memberMandateDate")?.value || null,
+        p_contribution_year: currentYear,
+        p_due_date: dueDate
       });
-      if (contributionError) throw contributionError;
+      if (error) throw error;
 
       closeBackdrop(addMemberSheet);
       showToast("Mitglied gespeichert ✓");
       setTimeout(() => location.reload(), 250);
     } catch (error) {
-      console.error("Mitglied speichern:", error);
-      if (createdMemberId) {
-        await sb.from("members").delete().eq("id", createdMemberId);
-      }
-      const message = String(error?.message || "") + " " + String(error?.details || "");
+      const message = appErrorText(error);
       const invalidIban = message.includes("INVALID_IBAN");
       const duplicateMandate = error?.code === "23505" && /mandate_reference|members_club_mandate_reference_uidx/i.test(message);
       const duplicateNumber = error?.code === "23505" && !duplicateMandate;
-      showToast(invalidIban
-        ? "IBAN ungültig – Mitglied wurde nicht gespeichert."
-        : duplicateMandate
-          ? "Diese Mandatsreferenz ist bereits vergeben."
-          : duplicateNumber
-            ? "Mitgliedsnummer bereits vergeben. Bitte erneut speichern."
-            : "Mitglied konnte nicht gespeichert werden. Bitte erneut versuchen.");
+
+      if (invalidIban) showToast("IBAN ungültig – Mitglied wurde nicht gespeichert.");
+      else if (duplicateMandate) showToast("Diese Mandatsreferenz ist bereits vergeben.");
+      else if (duplicateNumber) showToast("Mitgliedsnummer bereits vergeben. Bitte erneut speichern.");
+      else await handleAppError(error, "Mitglied konnte nicht gespeichert werden. Es wurde nichts angelegt.");
+
       button.disabled = false;
       button.textContent = "Mitglied speichern";
     }
@@ -1134,8 +1229,7 @@ async function initContributions() {
     button.textContent = paymentSheet.dataset.mode === "edit" ? "Änderung speichern" : "Zahlung verbuchen";
 
     if (error) {
-      console.error(error);
-      showToast("Zahlung konnte nicht gespeichert werden");
+      await handleAppError(error, "Zahlung konnte nicht gespeichert werden.");
       return;
     }
 
@@ -1174,8 +1268,7 @@ async function initContributions() {
     button.textContent = "Zahlung wieder auf offen setzen";
 
     if (error) {
-      console.error(error);
-      showToast("Zahlung konnte nicht zurückgenommen werden");
+      await handleAppError(error, "Zahlung konnte nicht zurückgenommen werden.");
       return;
     }
 
@@ -1399,7 +1492,7 @@ async function initSettings() {
     button.disabled = false;
     button.textContent = "Änderungen speichern";
     if (error) {
-      showToast("Speichern fehlgeschlagen");
+      await handleAppError(error, "Einstellungen konnten nicht gespeichert werden.");
       return;
     }
     club = data;
@@ -1545,6 +1638,7 @@ function setupLogout() {
 }
 
 (async function boot() {
+  setupNetworkStatus();
   try {
     if ($("#startForm")) {
       await initSignup();
@@ -1604,8 +1698,12 @@ function setupLogout() {
       return;
     }
   } catch (error) {
-    console.error(error);
     finishAppLoad();
-    showToast("Etwas ist schiefgelaufen. Bitte Seite neu laden.");
+    const type = await handleAppError(error, "Daten konnten nicht geladen werden.");
+    if (type !== "session") {
+      showPageLoadError(type === "network"
+        ? "Keine Verbindung zum Server. Sobald du wieder online bist, lädt die Seite automatisch neu."
+        : "Bitte erneut versuchen. Wenn der Fehler bleibt, Seite neu laden.");
+    }
   }
 })();
