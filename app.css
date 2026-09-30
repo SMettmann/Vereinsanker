@@ -521,3 +521,49 @@ body.trial-expired .settings-form select{
   .reminder-batch-contact{justify-content:flex-start}
   .reminder-email-ok{max-width:190px}
 }
+
+
+/* Fehlerzustände */
+.network-status{
+  position:fixed;
+  left:50%;
+  top:12px;
+  transform:translateX(-50%);
+  z-index:9999;
+  max-width:min(560px,calc(100vw - 28px));
+  padding:10px 14px;
+  border-radius:11px;
+  background:#8f3f2e;
+  color:#fff;
+  box-shadow:0 8px 30px rgba(0,0,0,.14);
+  font-size:11px;
+  font-weight:800;
+  text-align:center;
+}
+.network-status.online{background:#237a55}
+.network-status[hidden]{display:none!important}
+
+.app-load-error{
+  display:grid;
+  gap:7px;
+  margin:0 0 18px;
+  padding:17px 18px;
+  border:1px solid #e3b6aa;
+  border-radius:15px;
+  background:#fff7f3;
+}
+.app-load-error strong{font-size:13px;color:#873d2e}
+.app-load-error span{font-size:11px;line-height:1.5;color:#735f58}
+.app-load-error button{
+  justify-self:start;
+  min-height:38px;
+  margin-top:3px;
+  padding:0 12px;
+  border:0;
+  border-radius:9px;
+  background:var(--dark);
+  color:#fff;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+}
