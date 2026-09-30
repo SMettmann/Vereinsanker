@@ -1190,16 +1190,17 @@ function downloadBlob(content, filename, type = "application/octet-stream") {
 
 function buildSepaXml(club, rows, collectionDate) {
   const now = new Date();
+  const contributionYear = Number(rows?.[0]?.contribution_year || contributionYearFromUrl() || currentYear);
   const stamp = now.toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
   const msgId = compactId("VA-" + stamp);
-  const pmtId = compactId("VA-DD-" + currentYear + "-" + stamp.slice(-6));
+  const pmtId = compactId("VA-DD-" + contributionYear + "-" + stamp.slice(-6));
   const total = rows.reduce((sum, c) => sum + Number(c.amount || 0), 0).toFixed(2);
   const creditorIban = normalizeIban(club.iban);
   const creditorName = safeSepaText(club.name, 70);
 
   const txs = rows.map((c, index) => {
     const m = c.members || {};
-    const endToEnd = compactId("VA-" + (m.member_number || String(index + 1)) + "-" + currentYear);
+    const endToEnd = compactId("VA-" + (m.member_number || String(index + 1)) + "-" + contributionYear);
     return `<DrctDbtTxInf>
 < PmtId><EndToEndId>${xmlEscape(endToEnd)}</EndToEndId></PmtId>
 <InstdAmt Ccy="EUR">${Number(c.amount || 0).toFixed(2)}</InstdAmt>
@@ -1207,7 +1208,7 @@ function buildSepaXml(club, rows, collectionDate) {
 <DbtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></DbtrAgt>
 <Dbtr><Nm>${xmlEscape(safeSepaText(memberFullName(m), 70))}</Nm></Dbtr>
 <DbtrAcct><Id><IBAN>${xmlEscape(normalizeIban(m.iban))}</IBAN></Id></DbtrAcct>
-<RmtInf><Ustrd>${xmlEscape(safeSepaText("Mitgliedsbeitrag " + currentYear, 140))}</Ustrd></RmtInf>
+<RmtInf><Ustrd>${xmlEscape(safeSepaText("Mitgliedsbeitrag " + contributionYear, 140))}</Ustrd></RmtInf>
 </DrctDbtTx>`.replace("< PmtId>", "<PmtId>");
   }).join("");
 
@@ -1232,10 +1233,11 @@ ${txs}
 
 function friendlyReminder(c) {
   const m = c.members || {};
+  const contributionYear = Number(c.contribution_year || contributionYearFromUrl() || currentYear);
   const due = c.due_date ? new Date(c.due_date + "T00:00:00").toLocaleDateString("de-DE") : "";
   return `Hallo ${memberFullName(m)},
 
-bei unserem Mitgliedsbeitrag für ${currentYear} ist noch ein Betrag von ${money(c.amount)} offen${due ? ", fällig seit " + due : ""}.
+bei unserem Mitgliedsbeitrag für ${contributionYear} ist noch ein Betrag von ${money(c.amount)} offen${due ? ", fällig seit " + due : ""}.
 
 Falls die Zahlung bereits unterwegs ist, kannst du diese Nachricht einfach ignorieren.
 
