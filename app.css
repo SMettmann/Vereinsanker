@@ -424,3 +424,100 @@ body.trial-expired .settings-form select{
 @media(max-width:520px){
   .payment-booking-summary{grid-template-columns:1fr}
 }
+
+
+/* Zahlungserinnerungen */
+.reminder-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px 12px;
+  margin:0 0 10px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:700;
+}
+.reminder-text{
+  width:100%;
+  min-height:250px;
+  resize:vertical;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:13px;
+  font:12px/1.55 "DM Sans",sans-serif;
+  outline:none;
+}
+.reminder-text:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(35,122,85,.08)}
+.reminder-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.disabled-link{opacity:.48;cursor:not-allowed!important}
+.reminder-batch-sheet{width:min(650px,100%)}
+.reminder-batch-stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:0 0 14px;
+}
+.reminder-batch-stats>div{
+  display:grid;
+  gap:4px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#fafbf8;
+}
+.reminder-batch-stats span{font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.reminder-batch-stats strong{font:800 20px/1 "Manrope"}
+.reminder-batch-list{
+  display:grid;
+  max-height:390px;
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:12px;
+  margin:0 0 14px;
+}
+.reminder-batch-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(220px,auto);
+  gap:12px;
+  align-items:center;
+  padding:12px 13px;
+  border-bottom:1px solid #edf0ec;
+}
+.reminder-batch-row:last-child{border-bottom:0}
+.reminder-batch-row>div:first-child{display:grid;gap:3px}
+.reminder-batch-row strong{font-size:11px}
+.reminder-batch-row>div:first-child span{font-size:9px;color:var(--muted);font-weight:700}
+.reminder-batch-contact{display:flex;justify-content:flex-end;align-items:center;gap:8px;min-width:0}
+.reminder-email-ok{
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:9px;
+  color:#426b57;
+  font-weight:700;
+}
+.reminder-email-missing{
+  padding:4px 7px;
+  border-radius:999px;
+  background:#fff0e9;
+  color:#a54831;
+  font-size:9px;
+  font-weight:800;
+}
+.reminder-batch-contact button{
+  min-height:32px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  color:var(--green);
+  font-size:9px;
+  font-weight:800;
+  cursor:pointer;
+}
+@media(max-width:650px){
+  .reminder-actions{grid-template-columns:1fr}
+  .reminder-batch-stats{grid-template-columns:1fr}
+  .reminder-batch-row{grid-template-columns:1fr}
+  .reminder-batch-contact{justify-content:flex-start}
+  .reminder-email-ok{max-width:190px}
+}
