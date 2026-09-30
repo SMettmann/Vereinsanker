@@ -2,6 +2,7 @@ const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 const sb = window.vaSupabase;
 const currentYear = new Date().getFullYear();
+const VA_AVV_VERSION = "2026-09-30-v1";
 
 function contributionYearFromUrl() {
   const raw = Number(new URLSearchParams(location.search).get("year"));
@@ -331,6 +332,19 @@ async function getClub() {
   return data;
 }
 
+function hasCurrentAvv(club) {
+  return Boolean(
+    club &&
+    club.avv_version === VA_AVV_VERSION &&
+    club.avv_accepted_at
+  );
+}
+
+function clubEntryPage(club) {
+  if (!club) return "onboarding.html";
+  return hasCurrentAvv(club) ? "app.html" : "avv-accept.html";
+}
+
 function clubLogoPublicUrl(path) {
   if (!path) return "";
   const { data } = sb.storage.from("club-logos").getPublicUrl(path);
@@ -574,7 +588,7 @@ async function initSignup() {
   if (existingSession) {
     vaSession = existingSession;
     const club = await getClub();
-    location.replace(club ? "app.html" : "onboarding.html");
+    location.replace(clubEntryPage(club));
     return;
   }
   const form = $("#startForm");
@@ -641,7 +655,7 @@ async function initLogin() {
   if (existingSession) {
     vaSession = existingSession;
     const club = await getClub();
-    location.replace(club ? "app.html" : "onboarding.html");
+    location.replace(clubEntryPage(club));
     return;
   }
   form.addEventListener("submit", async e => {
@@ -672,7 +686,7 @@ async function initLogin() {
     }
 
     const club = await getClub();
-    location.href = club ? "app.html" : "onboarding.html";
+    location.href = clubEntryPage(club);
   });
 }
 
@@ -772,9 +786,9 @@ async function initResetPassword() {
 }
 
 function showStep(n) {
-  $$(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
+  $(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
   if ($("#stepNo")) $("#stepNo").textContent = n;
-  if ($("#progressBar")) $("#progressBar").style.width = (n / 3 * 100) + "%";
+  if ($("#progressBar")) $("#progressBar").style.width = (n / 4 * 100) + "%";
 }
 
 async function initOnboarding() {
@@ -785,8 +799,11 @@ async function initOnboarding() {
     $("#fee").value = Number(existing.standard_fee || 0);
     $("#due").value = existing.due_date || "";
     $("#creditor").value = existing.creditor_id || "";
-    $$(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === existing.color));
+    $("#controllerAddress").value = existing.controller_address || "";
+    $("#controllerContact").value = existing.controller_contact_name || "";
+    $(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === existing.color));
   }
+  if ($("#controllerEmail")) $("#controllerEmail").value = vaSession?.user?.email || "";
 
   $$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
     $$(".color-choice").forEach(b => b.classList.remove("active"));
@@ -805,11 +822,34 @@ async function initOnboarding() {
     }
 
     const creditorId = normalizeCreditorIdValue($("#creditor").value);
+    const controllerAddress = $("#controllerAddress").value.trim();
+    const controllerContact = $("#controllerContact").value.trim();
+    const avvAccepted = $("#acceptAvv")?.checked;
 
     if (creditorId && !isValidCreditorIdValue(creditorId)) {
       showStep(3);
       $("#creditor").focus();
       showToast("Die Gläubiger-ID ist ungültig. Deutsche Gläubiger-IDs haben 18 Stellen und eine gültige Prüfziffer.");
+      return;
+    }
+
+    if (controllerAddress.length < 5) {
+      showStep(4);
+      $("#controllerAddress").focus();
+      showToast("Bitte die Vereinsanschrift eintragen.");
+      return;
+    }
+
+    if (controllerContact.length < 2) {
+      showStep(4);
+      $("#controllerContact").focus();
+      showToast("Bitte einen Ansprechpartner eintragen.");
+      return;
+    }
+
+    if (!avvAccepted) {
+      showStep(4);
+      showToast("Bitte den AV-Vertrag bestätigen.");
       return;
     }
 
@@ -850,7 +890,26 @@ async function initOnboarding() {
       return;
     }
 
+    const { error: avvError } = await sb.rpc("accept_current_avv", {
+      p_club_id: data.id,
+      p_version: VA_AVV_VERSION,
+      p_controller_address: controllerAddress,
+      p_controller_contact_name: controllerContact
+    });
+
+    if (avvError) {
+      button.disabled = false;
+      button.textContent = "Verein öffnen →";
+      await handleAppError(avvError, "AV-Vertrag konnte nicht gespeichert werden.");
+      return;
+    }
+
+    data.controller_address = controllerAddress;
+    data.controller_contact_name = controllerContact;
+    data.avv_version = VA_AVV_VERSION;
+    data.avv_accepted_at = new Date().toISOString();
     vaClub = data;
+
     if (window.vaOnboardingImportState && window.importPreparedMembers) {
       const state = window.vaOnboardingImportState;
       const mappingOkay = state.mapping.full_name || (state.mapping.first_name && state.mapping.last_name);
@@ -922,6 +981,62 @@ async function loadPaidContributionsForFinance(year = currentYear) {
     .lt("paid_at", end);
   if (error) throw error;
   return data || [];
+}
+
+async function initAvvAccept() {
+  const club = await getClub();
+  if (!club) return location.replace("onboarding.html");
+  if (hasCurrentAvv(club)) return location.replace("app.html");
+
+  if ($("#avvClubName")) $("#avvClubName").textContent = club.name || "Euer Verein";
+  if ($("#avvAccountEmail")) $("#avvAccountEmail").textContent = vaSession?.user?.email || "–";
+  if ($("#avvControllerAddress")) $("#avvControllerAddress").value = club.controller_address || "";
+  if ($("#avvControllerContact")) $("#avvControllerContact").value = club.controller_contact_name || "";
+
+  const form = $("#avvAcceptForm");
+  form?.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const address = $("#avvControllerAddress").value.trim();
+    const contact = $("#avvControllerContact").value.trim();
+    const accepted = $("#avvAcceptCheckbox").checked;
+    const button = $("button[type='submit']", form);
+
+    if (address.length < 5) {
+      $("#avvControllerAddress").focus();
+      setMessage(form, "Bitte die Vereinsanschrift eintragen.", "error");
+      return;
+    }
+    if (contact.length < 2) {
+      $("#avvControllerContact").focus();
+      setMessage(form, "Bitte einen Ansprechpartner eintragen.", "error");
+      return;
+    }
+    if (!accepted) {
+      setMessage(form, "Bitte den AV-Vertrag bestätigen.", "error");
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "AV-Vertrag wird gespeichert …";
+
+    const { error } = await sb.rpc("accept_current_avv", {
+      p_club_id: club.id,
+      p_version: VA_AVV_VERSION,
+      p_controller_address: address,
+      p_controller_contact_name: contact
+    });
+
+    if (error) {
+      button.disabled = false;
+      button.textContent = "AV-Vertrag abschließen →";
+      setMessage(form, "Der AV-Vertrag konnte nicht gespeichert werden. Bitte erneut versuchen.", "error");
+      console.error("AVV:", error);
+      return;
+    }
+
+    location.replace("app.html");
+  });
 }
 
 async function initDashboard() {
@@ -1865,14 +1980,32 @@ function setupLogout() {
 
     const session = await requireSession();
     if (!session) return;
-    setupLogout();
-    setupMobileNavigation();
+
+    if ($("#avvAcceptPage")) {
+      await initAvvAccept();
+      finishAppLoad();
+      return;
+    }
 
     if ($("#finishSetup")) {
       await initOnboarding();
       finishAppLoad();
       return;
     }
+
+    const guardedClub = await getClub();
+    if (!guardedClub) {
+      location.replace("onboarding.html");
+      return;
+    }
+    if (!hasCurrentAvv(guardedClub)) {
+      location.replace("avv-accept.html");
+      return;
+    }
+
+    setupLogout();
+    setupMobileNavigation();
+
     if ($("#dashboardPage")) {
       await initDashboard();
       finishAppLoad();
