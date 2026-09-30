@@ -1333,13 +1333,40 @@ ${txs}
 </Document>`;
 }
 
+function reminderTodayIso() {
+  const d = new Date();
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function reminderDueText(c) {
+  if (!c?.due_date) return "";
+  const formatted = new Date(c.due_date + "T00:00:00").toLocaleDateString("de-DE");
+  const today = reminderTodayIso();
+
+  if (c.due_date < today) return ", fällig seit " + formatted;
+  if (c.due_date === today) return ", heute fällig";
+  return ", fällig am " + formatted;
+}
+
+function reminderSubject(c) {
+  const year = Number(c?.contribution_year || contributionYearFromUrl() || currentYear);
+  return "Mitgliedsbeitrag " + year + " – " + (vaClub?.name || "Verein");
+}
+
 function friendlyReminder(c) {
   const m = c.members || {};
   const contributionYear = Number(c.contribution_year || contributionYearFromUrl() || currentYear);
-  const due = c.due_date ? new Date(c.due_date + "T00:00:00").toLocaleDateString("de-DE") : "";
+  const dueText = reminderDueText(c);
+
   return `Hallo ${memberFullName(m)},
 
-bei unserem Mitgliedsbeitrag für ${contributionYear} ist noch ein Betrag von ${money(c.amount)} offen${due ? ", fällig seit " + due : ""}.
+für deinen Mitgliedsbeitrag ${contributionYear} sind noch ${money(c.amount)} offen${dueText}.
+
+Wir möchten dich freundlich daran erinnern, den Beitrag zu überweisen bzw. den Zahlungseingang zu prüfen.
 
 Falls die Zahlung bereits unterwegs ist, kannst du diese Nachricht einfach ignorieren.
 
@@ -1464,59 +1491,178 @@ async function enhanceContributionPage() {
   });
 
   const reminderSheet = $("#reminderSheet");
-  $("#closeReminder")?.addEventListener("click", () => closeBackdrop(reminderSheet));
+  const reminderBatchSheet = $("#reminderBatchSheet");
+  let activeReminderContribution = null;
+
+  const openReminderForContribution = contribution => {
+    if (!contribution) return;
+
+    activeReminderContribution = contribution;
+    const m = contribution.members || {};
+    const text = friendlyReminder(contribution);
+    const email = String(m.email || "").trim();
+
+    $("#reminderText").value = text;
+    $("#reminderTitle").textContent = memberFullName(m) + " erinnern";
+    $("#reminderRecipient").textContent = email
+      ? "E-Mail: " + email
+      : "Keine E-Mail hinterlegt – Text kann kopiert werden.";
+    $("#reminderContributionInfo").textContent =
+      money(contribution.amount) + reminderDueText(contribution);
+
+    const mail = $("#mailReminder");
+    mail.href = "#";
+    mail.classList.toggle("disabled-link", !email);
+    mail.textContent = email ? "E-Mail öffnen" : "Keine E-Mail hinterlegt";
+
+    openBackdrop(reminderSheet);
+  };
+
+  $("#closeReminder")?.addEventListener("click", () => {
+    activeReminderContribution = null;
+    closeBackdrop(reminderSheet);
+  });
+
   reminderSheet?.addEventListener("click", e => {
-    if (e.target === reminderSheet) closeBackdrop(reminderSheet);
+    if (e.target === reminderSheet) {
+      activeReminderContribution = null;
+      closeBackdrop(reminderSheet);
+    }
   });
 
   $("#openContributions")?.addEventListener("click", async e => {
     const button = e.target.closest(".tiny-action");
     if (!button) return;
 
-    const buttons = $$(".tiny-action", $("#openContributions"));
-    const index = buttons.indexOf(button);
-    const openRows = (await loadContributions(selectedYear)).filter(c => c.status !== "paid");
-    const contribution = openRows[index];
-    if (!contribution) return;
+    const id = button.dataset.id;
+    const contribution = (await loadContributions(selectedYear))
+      .find(row => row.id === id && row.status !== "paid");
 
-    const m = contribution.members || {};
-    const text = friendlyReminder(contribution);
-    $("#reminderText").value = text;
-    $("#reminderTitle").textContent = memberFullName(m) + " erinnern";
-    $("#mailReminder").href = m.email
-      ? "mailto:" + encodeURIComponent(m.email) +
-        "?subject=" + encodeURIComponent("Mitgliedsbeitrag " + selectedYear) +
-        "&body=" + encodeURIComponent(text)
-      : "#";
-    $("#mailReminder").classList.toggle("disabled-link", !m.email);
-    openBackdrop(reminderSheet);
+    if (!contribution) {
+      showToast("Dieser Beitrag ist nicht mehr offen.");
+      return;
+    }
+
+    openReminderForContribution(contribution);
   });
 
   $("#copyReminder")?.addEventListener("click", async () => {
-    await navigator.clipboard.writeText($("#reminderText").value);
-    showToast("Text kopiert ✓");
+    const textarea = $("#reminderText");
+    const value = textarea.value;
+
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      textarea.setSelectionRange(0, 0);
+    }
+
+    showToast("Erinnerungstext kopiert ✓");
   });
 
   $("#mailReminder")?.addEventListener("click", e => {
-    if (e.currentTarget.classList.contains("disabled-link")) {
-      e.preventDefault();
-      showToast("Für dieses Mitglied ist keine E-Mail hinterlegt");
+    e.preventDefault();
+
+    const contribution = activeReminderContribution;
+    const m = contribution?.members || {};
+    const email = String(m.email || "").trim();
+
+    if (!contribution || !email) {
+      showToast("Für dieses Mitglied ist keine E-Mail hinterlegt.");
+      return;
     }
+
+    const subject = reminderSubject(contribution);
+    const body = $("#reminderText").value;
+    location.href =
+      "mailto:" + encodeURIComponent(email) +
+      "?subject=" + encodeURIComponent(subject) +
+      "&body=" + encodeURIComponent(body);
   });
 
+  const renderReminderBatch = openRows => {
+    const withEmail = openRows.filter(c => String(c.members?.email || "").trim());
+    const withoutEmail = openRows.filter(c => !String(c.members?.email || "").trim());
+
+    $("#reminderBatchCount").textContent = openRows.length;
+    $("#reminderBatchEmailCount").textContent = withEmail.length;
+    $("#reminderBatchMissingCount").textContent = withoutEmail.length;
+
+    $("#reminderBatchList").innerHTML = openRows.map(c => {
+      const m = c.members || {};
+      const email = String(m.email || "").trim();
+
+      return '<div class="reminder-batch-row">' +
+        '<div><strong>' + esc(memberFullName(m)) + '</strong>' +
+        '<span>' + esc(money(c.amount) + reminderDueText(c)) + '</span></div>' +
+        '<div class="reminder-batch-contact">' +
+          (email
+            ? '<span class="reminder-email-ok">' + esc(email) + '</span>'
+            : '<span class="reminder-email-missing">E-Mail fehlt</span>') +
+          '<button type="button" data-batch-reminder-id="' + esc(c.id) + '">Öffnen</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  };
+
   $("#remindAll")?.addEventListener("click", async () => {
-    const openRows = (await loadContributions(selectedYear)).filter(c => c.status !== "paid");
-    if (!openRows.length) return showToast("Keine offenen Beiträge");
+    const openRows = (await loadContributions(selectedYear))
+      .filter(c => c.status !== "paid");
+
+    if (!openRows.length) {
+      showToast("Keine offenen Beiträge.");
+      return;
+    }
+
+    renderReminderBatch(openRows);
+    openBackdrop(reminderBatchSheet);
+  });
+
+  $("#closeReminderBatch")?.addEventListener("click", () => closeBackdrop(reminderBatchSheet));
+
+  reminderBatchSheet?.addEventListener("click", async e => {
+    if (e.target === reminderBatchSheet) {
+      closeBackdrop(reminderBatchSheet);
+      return;
+    }
+
+    const button = e.target.closest("[data-batch-reminder-id]");
+    if (!button) return;
+
+    const contribution = (await loadContributions(selectedYear))
+      .find(c => c.id === button.dataset.batchReminderId && c.status !== "paid");
+
+    if (!contribution) {
+      showToast("Dieser Beitrag ist nicht mehr offen.");
+      return;
+    }
+
+    closeBackdrop(reminderBatchSheet);
+    openReminderForContribution(contribution);
+  });
+
+  $("#downloadReminderCsv")?.addEventListener("click", async () => {
+    const openRows = (await loadContributions(selectedYear))
+      .filter(c => c.status !== "paid");
+
+    if (!openRows.length) {
+      closeBackdrop(reminderBatchSheet);
+      showToast("Keine offenen Beiträge.");
+      return;
+    }
 
     const csvRows = [
-      ["Name","E-Mail","Betrag","Fälligkeit","Erinnerung"],
+      ["Name","E-Mail","Betrag","Fälligkeit","Betreff","Erinnerung"],
       ...openRows.map(c => {
         const m = c.members || {};
         return [
           memberFullName(m),
           m.email || "",
-          Number(c.amount || 0).toFixed(2),
+          Number(c.amount || 0).toFixed(2).replace(".", ","),
           c.due_date || "",
+          reminderSubject(c),
           friendlyReminder(c)
         ];
       })
@@ -1531,8 +1677,10 @@ async function enhanceContributionPage() {
       "VEREINSANKER_Zahlungserinnerungen_" + selectedYear + ".csv",
       "text/csv;charset=utf-8"
     );
-    showToast("Erinnerungsliste für " + selectedYear + " erstellt ✓");
+
+    showToast("Erinnerungsliste für " + selectedYear + " heruntergeladen ✓");
   });
+
 }
 
 async function enhanceOnboardingImport() {
