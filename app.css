@@ -931,3 +931,5 @@ body.trial-expired .settings-form select{
     cursor:pointer;
   }
 }
+
+.legal-side-links{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 10px}.legal-side-links a{color:rgba(255,255,255,.46);font-size:10px;text-decoration:none}.legal-side-links a:hover{color:#fff}
