@@ -1417,28 +1417,38 @@ async function enhanceContributionPage() {
   $("#prepareSepa")?.addEventListener("click", async () => {
     const currentClub = await getClub();
     const all = await loadContributions(selectedYear);
-    const ready = all.filter(c => {
-      const m = c.members || {};
-      return c.status !== "paid" && validIban(m.iban) && m.mandate_reference && m.mandate_signed_at;
-    });
     const collectionDate = $("#collectionDate")?.value;
     const openRows = all.filter(c => c.status !== "paid");
 
-    if (!openRows.length) return showToast("Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
-    if (!currentClub.creditor_id) return showToast("Gläubiger-ID fehlt. Bitte in Einstellungen → SEPA eintragen.");
-    if (!currentClub.iban) return showToast("Vereins-IBAN fehlt. Bitte in Einstellungen → SEPA eintragen.");
-    if (!validIban(currentClub.iban)) return showToast("Die gespeicherte Vereins-IBAN ist ungültig. Bitte in Einstellungen → SEPA korrigieren.");
-    if (!collectionDate) return showToast("Bitte Einzugsdatum wählen");
-    if (collectionDate < new Date().toISOString().slice(0,10)) return showToast("Einzugsdatum darf nicht in der Vergangenheit liegen");
-    if (!ready.length) return showToast("Kein offener Beitrag mit vollständigem SEPA-Mandat");
+    if (!openRows.length) {
+      showToast("Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
+      return;
+    }
 
-    const xml = buildSepaXml(currentClub, ready, collectionDate);
-    downloadBlob(
-      xml,
-      "VEREINSANKER_SEPA_" + selectedYear + "_" + collectionDate + ".xml",
-      "application/xml;charset=utf-8"
-    );
-    showToast("SEPA-Datei für " + selectedYear + " erstellt ✓");
+    const exportRows = openRows.filter(c => Number(c.amount || 0) >= 0.01);
+    const errors = validateSepaRows(currentClub, exportRows, collectionDate);
+
+    if (errors.length) {
+      const first = errors[0];
+      console.warn("SEPA-Prüfung:", errors);
+      showToast(first + (errors.length > 1 ? " +" + (errors.length - 1) + " weitere Fehler." : ""));
+      return;
+    }
+
+    try {
+      const xml = buildSepaXml(currentClub, exportRows, collectionDate);
+      validateGeneratedSepaXml(xml, exportRows);
+
+      downloadBlob(
+        xml,
+        "VEREINSANKER_SEPA_" + selectedYear + "_" + collectionDate + ".xml",
+        "application/xml;charset=utf-8"
+      );
+      showToast("SEPA-Datei für " + selectedYear + " geprüft und erstellt ✓");
+    } catch (error) {
+      console.error("SEPA-Datei:", error);
+      showToast("SEPA-Datei konnte nicht sicher erstellt werden: " + (error?.message || "Prüfung fehlgeschlagen"));
+    }
   });
 
   const reminderSheet = $("#reminderSheet");
