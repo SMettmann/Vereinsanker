@@ -567,3 +567,349 @@ body.trial-expired .settings-form select{
   font-weight:800;
   cursor:pointer;
 }
+
+
+/* Mobile Finalisierung Schritt 15 */
+@media(max-width:900px){
+  .mobile-top{
+    position:sticky;
+    top:0;
+    z-index:35;
+    min-height:58px;
+    gap:10px;
+  }
+  .mobile-top .simple-brand{
+    min-width:0;
+    font-size:12px;
+    letter-spacing:.04em;
+  }
+  .mobile-top>span{
+    flex:0 1 auto;
+    min-width:0;
+    max-width:42vw;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:11px;
+    font-weight:800;
+    color:rgba(255,255,255,.72);
+  }
+
+  .app-main{
+    padding-left:14px;
+    padding-right:14px;
+    padding-bottom:calc(102px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-bottom-nav{
+    bottom:calc(8px + env(safe-area-inset-bottom));
+    left:8px;
+    right:8px;
+  }
+
+  .toast{
+    bottom:calc(92px + env(safe-area-inset-bottom));
+    width:min(420px,calc(100vw - 28px));
+    text-align:center;
+  }
+
+  .side-sheet{
+    width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    padding-bottom:calc(28px + env(safe-area-inset-bottom));
+  }
+
+  input,
+  select,
+  textarea,
+  .field input,
+  .field select,
+  .correction-grid input,
+  .reminder-text{
+    font-size:16px;
+  }
+
+  .topline{
+    margin-bottom:20px;
+  }
+  .topline h1{
+    font-size:28px;
+  }
+
+  .year-pill{
+    display:flex;
+    align-items:center;
+    gap:3px;
+    padding:9px 10px;
+    white-space:nowrap;
+  }
+  .year-pill select{
+    min-width:64px;
+    font-size:12px;
+  }
+
+  .mark-paid,
+  .tiny-action,
+  .outline-button,
+  .payment-edit,
+  .correction-skip,
+  .duplicate-choice,
+  .reminder-batch-contact button{
+    min-height:44px;
+  }
+
+  .open-actions{
+    width:100%;
+  }
+  .open-actions .mark-paid,
+  .open-actions .tiny-action{
+    min-height:44px;
+  }
+
+  .payment-row{
+    min-height:68px;
+  }
+
+  .paid-with-date{
+    min-width:94px;
+  }
+  .paid-with-date .payment-edit{
+    min-height:28px;
+    padding:5px 0;
+  }
+
+  .trial-mobile-status{
+    position:relative;
+    z-index:34;
+  }
+
+  .trial-mobile-with-action a{
+    min-height:34px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .settings-save{
+    position:relative;
+    z-index:1;
+  }
+
+  .reminder-batch-list,
+  .correction-list{
+    max-height:none;
+  }
+}
+
+@media(max-width:600px){
+  .logo-settings{
+    flex-direction:column;
+  }
+  .logo-settings-copy{
+    width:100%;
+  }
+  .logo-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    width:100%;
+  }
+  .logo-upload-button,
+  .logo-remove-button{
+    min-height:44px;
+    justify-content:center;
+  }
+
+  .billing-choice{
+    padding:20px 17px;
+  }
+  .billing-badge{
+    position:static;
+    justify-self:start;
+  }
+
+  .trial-mobile-with-action{
+    align-items:center;
+    padding-left:12px;
+    padding-right:12px;
+  }
+
+  .onboard-top{
+    height:66px;
+  }
+  .onboard-top .inner{
+    width:calc(100% - 24px);
+  }
+  .onboard-top .simple-brand{
+    font-size:12px;
+  }
+  .onboard-top .simple-brand svg{
+    width:27px;
+    height:30px;
+  }
+  .onboard-main{
+    width:calc(100% - 24px);
+    margin-top:30px;
+    margin-bottom:50px;
+  }
+  .step h1{
+    font-size:31px;
+  }
+  .step>.intro{
+    font-size:14px;
+    margin-bottom:22px;
+  }
+  .drop{
+    padding:26px 16px;
+  }
+}
+
+@media(max-width:520px){
+  .year-pill{
+    display:flex;
+  }
+
+  .topline{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .topline .year-pill{
+    align-self:flex-start;
+  }
+
+  .summary>div,
+  .summary>a,
+  .contribution-summary>div,
+  .action-card,
+  .simple-section,
+  .settings-card{
+    border-radius:16px;
+  }
+
+  .simple-section{
+    padding:18px 14px;
+  }
+
+  .open-row{
+    padding:13px 12px;
+  }
+
+  .open-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .open-actions .mark-paid,
+  .open-actions .tiny-action{
+    width:100%;
+  }
+
+  .payment-row{
+    padding:13px 12px;
+    gap:8px;
+  }
+
+  .member-main{
+    min-width:0;
+  }
+  .member-main b{
+    min-width:0;
+  }
+  .member-main b,
+  .member-main small{
+    overflow-wrap:anywhere;
+  }
+
+  .members-row{
+    gap:8px;
+  }
+
+  .member-hero h2,
+  .side-sheet>h2{
+    font-size:24px;
+  }
+
+  .sheet-close{
+    right:14px;
+    top:14px;
+  }
+
+  .side-sheet{
+    padding-left:16px;
+    padding-right:16px;
+  }
+
+  .correction-card{
+    padding:11px;
+  }
+
+  .correction-grid{
+    gap:8px;
+  }
+
+  .duplicate-actions{
+    width:100%;
+  }
+
+  .auth-right{
+    padding:16px;
+  }
+  .auth-card{
+    padding:24px 18px;
+    border-radius:18px;
+  }
+
+  .billing-success-shell{
+    padding:14px;
+  }
+  .billing-success-card{
+    padding:26px 18px;
+    border-radius:20px;
+  }
+}
+
+@media(max-width:380px){
+  .mobile-bottom-nav{
+    padding:5px;
+  }
+  .mobile-bottom-nav a{
+    min-height:48px;
+  }
+  .mobile-bottom-nav i{
+    font-size:16px;
+  }
+  .mobile-bottom-nav span{
+    font-size:8px;
+  }
+
+  .mobile-top .simple-brand{
+    font-size:11px;
+  }
+  .mobile-top .simple-brand svg{
+    width:24px;
+    height:27px;
+  }
+
+  .trial-mobile-with-action{
+    gap:6px;
+  }
+  .trial-mobile-with-action span{
+    font-size:9px;
+  }
+  .trial-mobile-with-action a{
+    font-size:8px;
+    padding-left:7px;
+    padding-right:7px;
+  }
+
+  .step-actions{
+    flex-direction:column-reverse;
+  }
+  .step-actions .back,
+  .step-actions .next{
+    width:100%;
+    margin-left:0;
+  }
+}
