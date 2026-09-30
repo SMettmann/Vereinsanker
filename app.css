@@ -913,3 +913,21 @@ body.trial-expired .settings-form select{
     margin-left:0;
   }
 }
+
+
+.mobile-logout-button{display:none}
+@media(max-width:900px){
+  .mobile-logout-button{
+    display:block;
+    width:100%;
+    min-height:48px;
+    margin-top:2px;
+    border:1px solid #e2c7bf;
+    border-radius:11px;
+    background:#fff;
+    color:#9b4838;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+  }
+}
