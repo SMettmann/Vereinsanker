@@ -2,6 +2,36 @@ const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 const sb = window.vaSupabase;
 const currentYear = new Date().getFullYear();
+
+function contributionYearFromUrl() {
+  const raw = Number(new URLSearchParams(location.search).get("year"));
+  return Number.isInteger(raw) && raw >= 2000 && raw <= 2100 ? raw : currentYear;
+}
+
+function dueDateForContributionYear(club, year) {
+  const raw = String(club?.due_date || "");
+  let month = Number(raw.slice(5, 7)) || 3;
+  let day = Number(raw.slice(8, 10)) || 1;
+
+  month = Math.min(12, Math.max(1, month));
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  day = Math.min(lastDay, Math.max(1, day));
+
+  return String(year) + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+}
+
+async function loadContributionYears() {
+  const { data, error } = await sb
+    .from("contributions")
+    .select("contribution_year")
+    .order("contribution_year", { ascending: false });
+  if (error) throw error;
+
+  const years = [...new Set((data || []).map(row => Number(row.contribution_year)).filter(Number.isInteger))];
+  if (!years.includes(currentYear)) years.push(currentYear);
+  return years.sort((a, b) => b - a);
+}
+
 let vaSession = null;
 let vaClub = null;
 
@@ -692,7 +722,9 @@ async function initDashboard() {
   $("#dashProgress").style.width = percent + "%";
 
   const openList = $("#dashboardOpenRows");
-  if (!open.length) {
+  if (members.length && !contributions.length) {
+    openList.innerHTML = '<div class="empty-row"><strong>Beitragsjahr ' + currentYear + ' noch nicht angelegt</strong><span><a href="contributions.html">Beiträge für ' + currentYear + ' anlegen →</a></span></div>';
+  } else if (!open.length) {
     openList.innerHTML = '<div class="empty-row"><strong>Alles erledigt ✓</strong><span>Aktuell sind keine Beiträge offen.</span></div>';
   } else {
     openList.innerHTML = open.slice(0, 3).map(c => {
@@ -817,9 +849,7 @@ async function initMembers() {
       if (error) throw error;
       createdMemberId = member.id;
 
-      const dueDate = club.due_date
-        ? currentYear + club.due_date.slice(4)
-        : currentYear + "-03-01";
+      const dueDate = dueDateForContributionYear(club, currentYear);
 
       const { error: contributionError } = await sb.from("contributions").insert({
         club_id: club.id,
@@ -863,12 +893,28 @@ async function initContributions() {
   applyClubBrand(club);
   applyTrialUI(club);
 
-  let contributions = await loadContributions();
+  const selectedYear = contributionYearFromUrl();
+  window.vaContributionYear = selectedYear;
+  let contributions = await loadContributions(selectedYear);
   const total = contributions.reduce((s, c) => s + Number(c.amount || 0), 0);
   const paid = contributions.filter(c => c.status === "paid").reduce((s, c) => s + Number(c.amount || 0), 0);
   const open = contributions.filter(c => c.status !== "paid");
 
-  $("#contribYear").textContent = currentYear;
+  const yearSelect = $("#contribYearSelect");
+  if (yearSelect) {
+    const years = await loadContributionYears();
+    yearSelect.innerHTML = years.map(year =>
+      '<option value="' + year + '"' + (year === selectedYear ? ' selected' : '') + '>' + year + '</option>'
+    ).join("");
+    yearSelect.addEventListener("change", () => {
+      const year = Number(yearSelect.value);
+      const url = new URL(location.href);
+      if (year === currentYear) url.searchParams.delete("year");
+      else url.searchParams.set("year", String(year));
+      location.href = url.toString();
+    });
+  }
+
   $("#contribTotal").textContent = money(total);
   $("#contribPaid").textContent = money(paid);
   $("#contribOpen").textContent = money(total - paid);
@@ -948,7 +994,7 @@ async function initContributions() {
       return;
     }
 
-    contributions = await loadContributions();
+    contributions = await loadContributions(selectedYear);
 
     const newTotal = contributions.reduce((sum, c) => sum + Number(c.amount || 0), 0);
     const newPaid = contributions.filter(c => c.status === "paid").reduce((sum, c) => sum + Number(c.amount || 0), 0);
@@ -957,6 +1003,7 @@ async function initContributions() {
     $("#contribOpen").textContent = money(newTotal - newPaid);
 
     render();
+    updateSepaAction();
     showToast("Zahlung als bezahlt markiert ✓");
   };
 
@@ -969,15 +1016,21 @@ async function initContributions() {
 
   const sepaSheet = $("#sepaSheet");
   const sepaAction = $("#openSepa");
-  const openContributions = contributions.filter(c => c.status !== "paid");
 
-  if (sepaAction && !openContributions.length) {
-    sepaAction.classList.add("no-sepa-needed");
+  const updateSepaAction = () => {
+    if (!sepaAction) return;
+    const openRows = contributions.filter(c => c.status !== "paid");
+    sepaAction.classList.toggle("no-sepa-needed", !openRows.length);
     const sub = $("span", sepaAction);
-    if (sub) sub.textContent = "Alle Beiträge sind bereits bezahlt.";
-  }
+    if (sub) sub.textContent = openRows.length
+      ? "Beiträge für den Bankeinzug vorbereiten."
+      : "Alle Beiträge sind bereits bezahlt.";
+  };
+
+  updateSepaAction();
 
   sepaAction?.addEventListener("click", () => {
+    const openContributions = contributions.filter(c => c.status !== "paid");
     if (!openContributions.length) {
       showToast("Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
       return;
