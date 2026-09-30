@@ -224,7 +224,7 @@ async function importPreparedMembers(rows, mapping, club) {
   const { data: created, error } = await sb.from("members").insert(prepared).select();
   if (error) throw error;
 
-  const dueDate = club.due_date ? currentYear + club.due_date.slice(4) : currentYear + "-03-01";
+  const dueDate = dueDateForContributionYear(club, currentYear);
   const contributionRows = created.map(m => ({
     club_id: club.id,
     member_id: m.id,
@@ -318,7 +318,7 @@ async function importCorrectedMembers(members, club) {
   const { data: created, error } = await sb.from("members").insert(prepared).select();
   if (error) throw error;
 
-  const dueDate = club.due_date ? currentYear + club.due_date.slice(4) : currentYear + "-03-01";
+  const dueDate = dueDateForContributionYear(club, currentYear);
   const contributionRows = created.map(m => ({
     club_id: club.id,
     member_id: m.id,
@@ -356,7 +356,7 @@ async function applyDuplicateActions(actions, club) {
   let updated = 0;
   let created = 0;
   let renumbered = 0;
-  const dueDate = club.due_date ? currentYear + club.due_date.slice(4) : currentYear + "-03-01";
+  const dueDate = dueDateForContributionYear(club, currentYear);
 
   for (const action of actions) {
     const source = action.member || {};
