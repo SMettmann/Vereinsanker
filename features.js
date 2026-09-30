@@ -869,7 +869,7 @@ async function enhanceMemberPage() {
       }));
     } catch (error) {
       console.error(error);
-      showToast(error.message || "Datei konnte nicht gelesen werden");
+      showToast(error.message || "Datei konnte nicht gelesen werden.");
     } finally {
       e.target.value = "";
     }
@@ -1027,8 +1027,7 @@ async function enhanceMemberPage() {
       showToast((messages.join(" · ") || "Import abgeschlossen") + " ✓");
       setTimeout(() => location.reload(), 700);
     } catch (error) {
-      console.error(error);
-      showToast(error?.message || "Import fehlgeschlagen");
+      await handleAppError(error, error?.message || "Import fehlgeschlagen. Es wurden keine weiteren Daten gespeichert.");
       runImport.disabled = false;
       runImport.textContent = vaImportState?.corrections?.length
         ? "Korrekturen prüfen"
@@ -1108,7 +1107,8 @@ async function enhanceMemberPage() {
         return showToast("Diese Mandatsreferenz ist bereits vergeben.");
       }
       if (error.code === "23505") return showToast("Diese Mitgliedsnummer ist bereits vergeben.");
-      return showToast("Änderung konnte nicht gespeichert werden");
+      await handleAppError(error, "Änderung konnte nicht gespeichert werden.");
+      return;
     }
 
     const { error: contributionError } = await sb
@@ -1119,7 +1119,7 @@ async function enhanceMemberPage() {
       .neq("status", "paid");
 
     if (contributionError) {
-      showToast("Mitglied gespeichert, Beitrag konnte aber nicht angepasst werden.");
+      await handleAppError(contributionError, "Mitglied wurde gespeichert, der offene Beitrag konnte aber nicht angepasst werden.");
       return;
     }
 
@@ -1130,20 +1130,21 @@ async function enhanceMemberPage() {
 
   $("#deleteMemberBtn")?.addEventListener("click", async () => {
     const id = memberSheet.dataset.memberId;
-    if (!id || !confirm("Mitglied aus der aktiven Mitgliederliste entfernen? Vergangene Beitragsdaten bleiben erhalten.")) return;
-    const { error } = await sb.from("members").update({ active: false, updated_at: new Date().toISOString() }).eq("id", id);
-    if (error) return showToast("Mitglied konnte nicht entfernt werden");
+    if (!id || !confirm("Mitglied aus der aktiven Mitgliederliste entfernen? Vergangene bezahlte Beitragsdaten bleiben erhalten.")) return;
 
-    const { error: contributionDeleteError } = await sb
-      .from("contributions")
-      .delete()
-      .eq("member_id", id)
-      .eq("contribution_year", currentYear)
-      .neq("status", "paid");
+    const button = $("#deleteMemberBtn");
+    button.disabled = true;
+    button.textContent = "Wird entfernt …";
 
-    if (contributionDeleteError) {
-      await sb.from("members").update({ active: true, updated_at: new Date().toISOString() }).eq("id", id);
-      showToast("Mitglied konnte nicht vollständig entfernt werden.");
+    const { error } = await sb.rpc("remove_member_from_active_list", {
+      p_member_id: id,
+      p_contribution_year: currentYear
+    });
+
+    if (error) {
+      button.disabled = false;
+      button.textContent = "Mitglied entfernen";
+      await handleAppError(error, "Mitglied konnte nicht entfernt werden. Es wurde nichts verändert.");
       return;
     }
 
@@ -1436,7 +1437,7 @@ async function enhanceContributionPage() {
         setTimeout(() => location.reload(), 450);
         return;
       }
-      showToast("Beiträge konnten nicht angelegt werden");
+      await handleAppError(error, "Beiträge konnten nicht angelegt werden.");
       btn.disabled = false;
       btn.textContent = "Fehlende Beiträge anlegen";
       return;
