@@ -1,5 +1,5 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://exginppvomebjinydrrw.supabase.co; connect-src 'self' https://exginppvomebjinydrrw.supabase.co wss://exginppvomebjinydrrw.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><title>VEREINSANKER – Verein einrichten</title><meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="app.css?v=20260930-11"></head><body class="onboard">
-<header class="onboard-top"><div class="inner"><a class="simple-brand" href="index.html"><svg viewBox="0 0 48 54"><path d="M24 2 44 9v15c0 13-8.6 23-20 28C12.6 47 4 37 4 24V9L24 2Z" fill="currentColor"/><path d="M24 12v24M17 22h14M16 34c2.2 4.2 5 6.5 8 8.3 3-1.8 5.8-4.1 8-8.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="24" cy="13" r="3" fill="#fff"/></svg>VEREINSANKER</a><div class="step-label">Schritt <b id="stepNo">1</b> von 3</div></div></header>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://exginppvomebjinydrrw.supabase.co; connect-src 'self' https://exginppvomebjinydrrw.supabase.co wss://exginppvomebjinydrrw.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><title>VEREINSANKER – Verein einrichten</title><meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="app.css?v=20260930-12"></head><body class="onboard">
+<header class="onboard-top"><div class="inner"><a class="simple-brand" href="index.html"><svg viewBox="0 0 48 54"><path d="M24 2 44 9v15c0 13-8.6 23-20 28C12.6 47 4 37 4 24V9L24 2Z" fill="currentColor"/><path d="M24 12v24M17 22h14M16 34c2.2 4.2 5 6.5 8 8.3 3-1.8 5.8-4.1 8-8.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="24" cy="13" r="3" fill="#fff"/></svg>VEREINSANKER</a><div class="step-label">Schritt <b id="stepNo">1</b> von 4</div></div></header>
 <main class="onboard-main">
   <div class="progress"><i id="progressBar"></i></div>
   <section class="step active" data-step="1">
@@ -20,7 +20,21 @@
   <section class="step" data-step="3">
     <h1>Was kostet der normale Jahresbeitrag?</h1><p class="intro">Nur ein Startwert. Weitere Beiträge könnt ihr später jederzeit ergänzen.</p>
     <div class="form-card"><div class="row"><div class="field"><label for="fee">Jahresbeitrag</label><input id="fee" type="number" min="0" step="0.01" value="60"></div><div class="field"><label for="due">Fällig am</label><input id="due" type="date"></div></div><div class="field"><label for="creditor">Gläubiger-ID <span style="font-weight:400;color:#8a958f">(kann später ergänzt werden)</span></label><input id="creditor" placeholder="DE00ZZZ00000000000"></div></div>
-    <div class="step-actions"><button class="back" data-back="2">← Zurück</button><button class="next" id="finishSetup">Verein öffnen →</button></div>
+    <div class="step-actions"><button class="back" data-back="2">← Zurück</button><button class="next" data-next="4">Weiter →</button></div>
     <div class="help">Keine Sorge: <b>Alles lässt sich später ändern.</b></div>
   </section>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><script src="supabase-client.js"></script><script src="app.js?v=20260930-12"></script><script src="features.js?v=20260930-8"></script></body></html>
+
+  <section class="step" data-step="4">
+    <h1>Datenschutz einmal sauber.</h1><p class="intro">Damit VEREINSANKER Mitgliederdaten für euren Verein verarbeiten darf, schließen wir den AV-Vertrag direkt hier ab.</p>
+    <div class="form-card">
+      <div class="field"><label for="controllerAddress">Vereinsanschrift</label><input id="controllerAddress" placeholder="Straße Hausnummer, PLZ Ort" autocomplete="street-address"></div>
+      <div class="row">
+        <div class="field"><label for="controllerContact">Ansprechpartner</label><input id="controllerContact" placeholder="Vorname Nachname" autocomplete="name"></div>
+        <div class="field"><label for="controllerEmail">E-Mail</label><input id="controllerEmail" type="email" readonly></div>
+      </div>
+      <label class="legal-check"><input id="acceptAvv" type="checkbox"><span>Ich bin für den Verein zum Abschluss berechtigt und schließe den <a href="av-vertrag.html" target="_blank" rel="noopener">Vertrag zur Auftragsverarbeitung (AVV)</a>, Version 2026-09-30-v1, ab.</span></label>
+      <p class="micro">Die Annahme wird mit Verein, Account, Version und Zeitpunkt gespeichert.</p>
+    </div>
+    <div class="step-actions"><button class="back" data-back="3">← Zurück</button><button class="next" id="finishSetup">Verein öffnen →</button></div>
+  </section>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><script src="supabase-client.js"></script><script src="app.js?v=20260930-13"></script><script src="features.js?v=20260930-8"></script></body></html>
