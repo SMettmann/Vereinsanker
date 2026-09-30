@@ -928,6 +928,32 @@ async function initContributions() {
     return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("de-DE");
   };
 
+  const localDateValue = value => {
+    const date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) return "";
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")
+    ].join("-");
+  };
+
+  const paymentDateToIso = value => {
+    const date = new Date(value + "T12:00:00");
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  };
+
+  const refreshSummary = () => {
+    const newTotal = contributions.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+    const newPaid = contributions
+      .filter(c => c.status === "paid")
+      .reduce((sum, c) => sum + Number(c.amount || 0), 0);
+
+    $("#contribTotal").textContent = money(newTotal);
+    $("#contribPaid").textContent = money(newPaid);
+    $("#contribOpen").textContent = money(newTotal - newPaid);
+  };
+
   const render = () => {
     if (!contributions.length) {
       paymentList.innerHTML = '<div class="empty-row"><strong>Noch keine Beiträge</strong><span>Lege zuerst Mitglieder an.</span></div>';
@@ -962,10 +988,40 @@ async function initContributions() {
         '<small>' + esc(m.group_name || "Ohne Gruppe") + '</small></b></span>' +
         '<strong>' + esc(money(c.amount)) + '</strong>' +
         (c.status === "paid"
-          ? '<span class="paid-check paid-with-date"><b>✓ Bezahlt</b><small>' + esc(paidDate ? "am " + paidDate : "Zahlungsdatum nicht hinterlegt") + '</small></span>'
+          ? '<span class="paid-check paid-with-date"><b>✓ Bezahlt</b><small>' + esc(paidDate ? "am " + paidDate : "Zahlungsdatum fehlt") + '</small><button class="payment-edit" data-id="' + esc(c.id) + '" type="button">Ändern</button></span>'
           : '<span class="payment-open-status">Offen</span>') +
       '</div>';
     }).join("");
+  };
+
+  const paymentSheet = $("#paymentSheet");
+  const paymentDate = $("#paymentDate");
+  if (paymentDate) paymentDate.max = localDateValue();
+
+  const openPaymentSheet = contribution => {
+    if (!contribution) return;
+    const m = contributionMember(contribution);
+    const paid = contribution.status === "paid";
+
+    $("#paymentContributionId").value = contribution.id;
+    $("#paymentMemberName").textContent = memberFullName(m);
+    $("#paymentAmount").textContent = money(contribution.amount);
+    $("#paymentSheetTitle").textContent = paid ? "Zahlung ändern" : "Zahlung verbuchen";
+    $("#paymentSheetIntro").textContent = paid
+      ? "Zahlungsdatum korrigieren oder die Verbuchung zurücknehmen."
+      : "Zahlungsdatum prüfen und Beitrag als bezahlt markieren.";
+    paymentDate.value = paid ? localDateValue(contribution.paid_at) : localDateValue();
+    $("#savePayment").textContent = paid ? "Änderung speichern" : "Zahlung verbuchen";
+    $("#undoPayment").hidden = !paid;
+    paymentSheet.dataset.mode = paid ? "edit" : "new";
+    openBackdrop(paymentSheet);
+  };
+
+  const reloadPayments = async () => {
+    contributions = await loadContributions(selectedYear);
+    refreshSummary();
+    render();
+    updateSepaAction();
   };
 
   render();
@@ -975,41 +1031,105 @@ async function initContributions() {
     $$(".payment-row").forEach(row => { row.hidden = !row.dataset.search.includes(q); });
   });
 
-  const markPaid = async button => {
+  openList.addEventListener("click", e => {
+    const button = e.target.closest(".mark-paid");
     if (!button) return;
-    button.disabled = true;
-    button.textContent = "Wird verbucht …";
+    const contribution = contributions.find(c => c.id === button.dataset.id);
+    openPaymentSheet(contribution);
+  });
 
-    const paidAt = new Date().toISOString();
-    const { error } = await sb.from("contributions").update({
+  paymentList.addEventListener("click", e => {
+    const button = e.target.closest(".payment-edit");
+    if (!button) return;
+    const contribution = contributions.find(c => c.id === button.dataset.id);
+    openPaymentSheet(contribution);
+  });
+
+  $("#closePayment")?.addEventListener("click", () => closeBackdrop(paymentSheet));
+  paymentSheet?.addEventListener("click", e => {
+    if (e.target === paymentSheet) closeBackdrop(paymentSheet);
+  });
+
+  $("#savePayment")?.addEventListener("click", async () => {
+    const id = $("#paymentContributionId").value;
+    const contribution = contributions.find(c => c.id === id);
+    const dateValue = paymentDate?.value;
+    if (!contribution || !dateValue) return showToast("Bitte Zahlungsdatum auswählen");
+
+    const today = localDateValue();
+    if (dateValue > today) return showToast("Das Zahlungsdatum darf nicht in der Zukunft liegen");
+
+    const paidAt = paymentDateToIso(dateValue);
+    if (!paidAt) return showToast("Zahlungsdatum ist ungültig");
+
+    const button = $("#savePayment");
+    button.disabled = true;
+    button.textContent = "Wird gespeichert …";
+
+    let query = sb.from("contributions").update({
       status: "paid",
       paid_at: paidAt,
-      updated_at: paidAt
-    }).eq("id", button.dataset.id);
+      updated_at: new Date().toISOString()
+    }).eq("id", id);
+
+    if (paymentSheet.dataset.mode === "new") {
+      query = query.neq("status", "paid");
+    }
+
+    const { data, error } = await query.select("id").maybeSingle();
+
+    button.disabled = false;
+    button.textContent = paymentSheet.dataset.mode === "edit" ? "Änderung speichern" : "Zahlung verbuchen";
 
     if (error) {
-      button.disabled = false;
-      button.textContent = "Als bezahlt markieren";
+      console.error(error);
       showToast("Zahlung konnte nicht gespeichert werden");
       return;
     }
 
-    contributions = await loadContributions(selectedYear);
+    if (!data && paymentSheet.dataset.mode === "new") {
+      await reloadPayments();
+      closeBackdrop(paymentSheet);
+      showToast("Diese Zahlung war bereits verbucht.");
+      return;
+    }
 
-    const newTotal = contributions.reduce((sum, c) => sum + Number(c.amount || 0), 0);
-    const newPaid = contributions.filter(c => c.status === "paid").reduce((sum, c) => sum + Number(c.amount || 0), 0);
-    $("#contribTotal").textContent = money(newTotal);
-    $("#contribPaid").textContent = money(newPaid);
-    $("#contribOpen").textContent = money(newTotal - newPaid);
+    await reloadPayments();
+    closeBackdrop(paymentSheet);
+    showToast(paymentSheet.dataset.mode === "edit"
+      ? "Zahlungsdatum aktualisiert ✓"
+      : "Zahlung verbucht ✓");
+  });
 
-    render();
-    updateSepaAction();
-    showToast("Zahlung als bezahlt markiert ✓");
-  };
+  $("#undoPayment")?.addEventListener("click", async () => {
+    const id = $("#paymentContributionId").value;
+    const contribution = contributions.find(c => c.id === id);
+    if (!contribution || contribution.status !== "paid") return;
 
-  openList.addEventListener("click", async e => {
-    const button = e.target.closest(".mark-paid");
-    if (button) await markPaid(button);
+    if (!confirm("Zahlung wirklich zurücknehmen? Der Beitrag wird wieder als offen geführt.")) return;
+
+    const button = $("#undoPayment");
+    button.disabled = true;
+    button.textContent = "Wird zurückgesetzt …";
+
+    const { error } = await sb.from("contributions").update({
+      status: "open",
+      paid_at: null,
+      updated_at: new Date().toISOString()
+    }).eq("id", id).eq("status", "paid");
+
+    button.disabled = false;
+    button.textContent = "Zahlung wieder auf offen setzen";
+
+    if (error) {
+      console.error(error);
+      showToast("Zahlung konnte nicht zurückgenommen werden");
+      return;
+    }
+
+    await reloadPayments();
+    closeBackdrop(paymentSheet);
+    showToast("Zahlung wieder als offen markiert ✓");
   });
 
 
