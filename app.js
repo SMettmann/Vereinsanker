@@ -881,6 +881,29 @@ async function loadContributions(year = currentYear) {
   return data || [];
 }
 
+async function loadFinanceTransactions(year = currentYear) {
+  const { data, error } = await sb
+    .from("finance_transactions")
+    .select("*")
+    .gte("transaction_date", year + "-01-01")
+    .lte("transaction_date", year + "-12-31");
+  if (error) throw error;
+  return data || [];
+}
+
+async function loadPaidContributionsForFinance(year = currentYear) {
+  const start = year + "-01-01T00:00:00";
+  const end = (year + 1) + "-01-01T00:00:00";
+  const { data, error } = await sb
+    .from("contributions")
+    .select("id,amount,paid_at")
+    .eq("status", "paid")
+    .gte("paid_at", start)
+    .lt("paid_at", end);
+  if (error) throw error;
+  return data || [];
+}
+
 async function initDashboard() {
   const club = await getClub();
   if (!club) {
@@ -890,18 +913,31 @@ async function initDashboard() {
   applyClubBrand(club);
   applyTrialUI(club);
 
-  const [members, contributions] = await Promise.all([loadMembers(), loadContributions()]);
-  const total = contributions.reduce((sum, c) => sum + Number(c.amount || 0), 0);
-  const paid = contributions.filter(c => c.status === "paid").reduce((sum, c) => sum + Number(c.amount || 0), 0);
+  const [members, contributions, financeRows, paidFinanceContributions] = await Promise.all([
+    loadMembers(),
+    loadContributions(),
+    loadFinanceTransactions(),
+    loadPaidContributionsForFinance()
+  ]);
+
+  const manualIncome = financeRows
+    .filter(row => row.type === "income")
+    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const expenses = financeRows
+    .filter(row => row.type === "expense")
+    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const contributionIncome = paidFinanceContributions
+    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const income = manualIncome + contributionIncome;
+  const balance = income - expenses;
   const open = contributions.filter(c => c.status !== "paid");
-  const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+  const openAmount = open.reduce((sum, c) => sum + Number(c.amount || 0), 0);
 
   $("#dashboardYear").textContent = currentYear;
-  $("#dashPercent").textContent = percent + " %";
-  $("#dashMembers").textContent = members.length;
-  $("#dashPaid").textContent = contributions.filter(c => c.status === "paid").length;
-  $("#dashOpen").textContent = open.length;
-  $("#dashProgress").style.width = percent + "%";
+  $("#dashBalance").textContent = money(balance);
+  $("#dashIncome").textContent = money(income);
+  $("#dashExpenses").textContent = money(expenses);
+  $("#dashOpen").textContent = money(openAmount);
 
   const openList = $("#dashboardOpenRows");
   if (members.length && !contributions.length) {
@@ -1644,6 +1680,7 @@ function setupMobileNavigation() {
     ["app.html", "⌂", "Übersicht"],
     ["members.html", "♙", "Mitglieder"],
     ["contributions.html", "€", "Beiträge"],
+    ["finances.html", "€", "Finanzen"],
     ["settings.html", "⚙", "Einstellungen"]
   ];
   const nav = document.createElement("nav");
@@ -1726,6 +1763,12 @@ function setupLogout() {
     }
     if ($("#contributionsPage")) {
       await initContributions();
+      finishAppLoad();
+      return;
+    }
+    if ($("#financesPage")) {
+      if (typeof window.initFinancesPage !== "function") throw new Error("Finanzmodul konnte nicht geladen werden.");
+      await window.initFinancesPage();
       finishAppLoad();
       return;
     }
