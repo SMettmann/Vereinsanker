@@ -385,3 +385,42 @@ body.trial-expired .settings-form select{
 }
 .year-pill select option{color:#1d2821;background:#fff}
 .empty-row a{color:var(--green);font-weight:800;text-decoration:none}
+
+
+/* Zahlung verbuchen */
+.payment-booking-summary{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:0 0 18px;
+}
+.payment-booking-summary>div{
+  display:grid;
+  gap:5px;
+  padding:13px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fafbf8;
+}
+.payment-booking-summary span{font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.payment-booking-summary strong{font-size:13px}
+.payment-edit{
+  border:0;
+  background:transparent;
+  color:var(--green);
+  font-size:9px;
+  font-weight:800;
+  cursor:pointer;
+  padding:2px 0 0;
+}
+.payment-edit:hover{text-decoration:underline}
+.payment-undo{
+  display:block;
+  width:100%;
+  margin-top:8px;
+  text-align:center;
+}
+.payment-undo[hidden]{display:none!important}
+@media(max-width:520px){
+  .payment-booking-summary{grid-template-columns:1fr}
+}
