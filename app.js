@@ -581,7 +581,16 @@ async function initSignup() {
     });
 
     if (error) {
-      setMessage(form, error.message || "Registrierung nicht möglich.", "error");
+      console.error("Registrierung:", error);
+      setMessage(
+        form,
+        isNetworkAppError(error)
+          ? "Keine Internetverbindung. Konto wurde nicht angelegt."
+          : (error.code === "user_already_exists"
+              ? "Für diese E-Mail-Adresse gibt es bereits ein Konto."
+              : "Registrierung ist gerade nicht möglich. Bitte versuche es erneut."),
+        "error"
+      );
       button.disabled = false;
       button.textContent = "Weiter zur Einrichtung →";
       return;
@@ -627,7 +636,16 @@ async function initLogin() {
     });
 
     if (error) {
-      setMessage(form, "E-Mail oder Passwort stimmen nicht.", "error");
+      console.error("Anmeldung:", error);
+      setMessage(
+        form,
+        isNetworkAppError(error)
+          ? "Keine Internetverbindung. Bitte Verbindung prüfen."
+          : error.code === "email_not_confirmed"
+            ? "Bitte bestätige zuerst deine E-Mail-Adresse."
+            : "E-Mail oder Passwort stimmen nicht.",
+        "error"
+      );
       button.disabled = false;
       button.textContent = "Anmelden →";
       return;
@@ -653,7 +671,14 @@ async function initForgotPassword() {
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
 
     if (error) {
-      setMessage(form, "Reset-Link konnte nicht gesendet werden. Bitte versuche es erneut.", "error");
+      console.error("Passwort-Reset:", error);
+      setMessage(
+        form,
+        isNetworkAppError(error)
+          ? "Keine Internetverbindung. Reset-Link wurde nicht angefordert."
+          : "Reset-Link konnte nicht gesendet werden. Bitte versuche es erneut.",
+        "error"
+      );
       button.disabled = false;
       button.textContent = "Reset-Link senden →";
       return;
@@ -702,7 +727,10 @@ async function initResetPassword() {
 
     const { error } = await sb.auth.updateUser({ password });
     if (error) {
-      if (error.code === "same_password") {
+      console.error("Passwort ändern:", error);
+      if (isNetworkAppError(error)) {
+        setMessage(form, "Keine Internetverbindung. Passwort wurde nicht geändert.", "error");
+      } else if (error.code === "same_password") {
         setMessage(form, "Das neue Passwort darf nicht dem bisherigen Passwort entsprechen.", "error");
       } else if (error.code === "weak_password") {
         setMessage(form, "Das neue Passwort erfüllt die Sicherheitsanforderungen noch nicht. Bitte wähle ein stärkeres Passwort.", "error");
@@ -1391,7 +1419,7 @@ async function initSettings() {
       });
 
     if (uploadError) {
-      showToast("Logo konnte nicht hochgeladen werden.");
+      await handleAppError(uploadError, "Logo konnte nicht hochgeladen werden.");
       return;
     }
 
@@ -1404,7 +1432,7 @@ async function initSettings() {
 
     if (saveError) {
       await sb.storage.from("club-logos").remove([newPath]);
-      showToast("Logo konnte nicht gespeichert werden.");
+      await handleAppError(saveError, "Logo konnte nicht gespeichert werden.");
       return;
     }
 
@@ -1429,7 +1457,7 @@ async function initSettings() {
       .single();
 
     if (error) {
-      showToast("Logo konnte nicht entfernt werden.");
+      await handleAppError(error, "Logo konnte nicht entfernt werden.");
       return;
     }
 
