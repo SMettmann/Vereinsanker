@@ -1061,7 +1061,7 @@ async function enhanceMemberPage() {
     $("#editMemberNumber").value = data.member_number || "";
     $("#editFirstName").value = data.first_name || "";
     $("#editLastName").value = data.last_name || "";
-    $("#editMemberGroup").value = data.group_name || "";
+    setupDepartmentSelect($("#editMemberGroup"), memberClub, data.group_name || "");
     $("#editMemberEmail").value = data.email || "";
     setupMemberContributionSelect(
       $("#editMemberContributionType"),
