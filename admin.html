@@ -1,0 +1,58 @@
+<!doctype html><html lang="de"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin · VEREINSFACH</title>
+<link rel="stylesheet" href="app.css?v=20261001-31">
+</head><body class="admin-body">
+<div class="admin-shell">
+<header class="admin-head"><a href="index.html" class="simple-brand">VEREINSFACH</a><div><strong>Administration</strong><span id="adminAccount"></span></div></header>
+
+<section class="admin-login-card" id="adminLoginPanel" hidden>
+<span>GESCHÜTZTER BEREICH</span><h1>VEREINSFACH Admin</h1><p>Nur freigeschaltete Administrationskonten haben Zugriff.</p>
+<form id="adminLoginForm">
+<label>E-Mail<input id="adminEmail" type="email" autocomplete="username" value="S.Mettmann@Softwaremanufaktur-mettmann.de" required></label>
+<label>Passwort<input id="adminPassword" type="password" autocomplete="current-password" required></label>
+<p id="adminLoginMessage"></p>
+<button id="adminLoginButton" class="primary" type="submit">Admin anmelden</button>
+</form>
+</section>
+
+<section class="admin-login-card" id="adminDenied" hidden>
+<span>ZUGRIFF VERWEIGERT</span><h1>Kein Adminzugang</h1><p>Dieses Konto ist nicht für die VEREINSFACH-Administration freigeschaltet.</p>
+<button id="adminLogout" class="secondary-wide" type="button">Abmelden</button>
+</section>
+
+<main id="adminDashboard" hidden>
+<div class="admin-topline"><div><span>VEREINSFACH</span><h1>Adminübersicht</h1><p>Besucher, Vereine, Mitglieder und Rückmeldungen auf einen Blick.</p></div><div><button id="adminReload" class="secondary-wide" type="button">Aktualisieren</button><button id="adminLogout" class="secondary-wide" type="button">Abmelden</button></div></div>
+
+<section class="admin-kpis">
+<div><span>Besucher heute</span><strong id="adminVisitorsToday">0</strong></div>
+<div><span>Besucher 7 Tage</span><strong id="adminVisitors7d">0</strong></div>
+<div><span>Besucher 30 Tage</span><strong id="adminVisitors30d">0</strong></div>
+<div><span>Vereine</span><strong id="adminClubs">0</strong></div>
+<div><span>Aktive Mitglieder</span><strong id="adminMembers">0</strong></div>
+<div><span>Bezahlte Vereine</span><strong id="adminPaidClubs">0</strong></div>
+<div><span>Handbuch-Downloads</span><strong id="adminHandbook">0</strong></div>
+<div><span>Offene Rückmeldungen</span><strong id="adminSupportOpen">0</strong></div>
+</section>
+
+<section class="admin-grid">
+<div class="settings-card admin-panel"><div class="admin-section-head"><div><span>BESUCHER</span><h2>Letzte 14 Tage</h2></div></div><div id="adminVisitorDays" class="admin-visitor-days"></div></div>
+<div class="settings-card admin-panel"><div class="admin-section-head"><div><span>HANDBUCH</span><h2>Download & Nutzung</h2></div><a href="handbuch.html" target="_blank" rel="noopener">Handbuch öffnen →</a></div><p>Der Download-Zähler erfasst Klicks auf „Handbuch als PDF herunterladen“ – ohne personenbezogene Trackingdaten.</p></div>
+</section>
+
+<section class="settings-card admin-panel">
+<div class="admin-section-head"><div><span>VEREINE</span><h2>Kundenübersicht</h2></div></div>
+<div class="admin-club-head"><span>Verein</span><span>Mitglieder</span><span>Team</span><span>Status</span></div>
+<div id="adminClubRows"><div class="team-empty">Wird geladen …</div></div>
+</section>
+
+<section class="settings-card admin-panel">
+<div class="admin-section-head"><div><span>SUPPORT & IDEEN</span><h2>Rückmeldungen</h2></div></div>
+<div id="adminSupportRows"><div class="team-empty">Wird geladen …</div></div>
+</section>
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+<script src="supabase-client.js"></script>
+<script src="admin.js?v=20261001-1"></script>
+</body></html>
