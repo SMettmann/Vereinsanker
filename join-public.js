@@ -4,7 +4,13 @@ const token=new URLSearchParams(location.search).get("t")||"";
 const form=$("#publicJoinForm");
 function msg(text){let b=form.querySelector(".auth-message");if(!b){b=document.createElement("div");b.className="auth-message error";form.insertBefore(b,$("#submitJoin"));}b.textContent=text;}
 const get=await sb.functions.invoke("membership-join-public",{body:{action:"get",token}});
-if(get.error||!get.data?.ok){$("#joinLoadError").hidden=false;return;}
+if(get.error||!get.data?.ok){
+      $(".join-public-brand").hidden=true;
+      $("#publicJoinForm").hidden=true;
+      $("#publicJoinPdf").hidden=true;
+      $("#joinLoadError").hidden=false;
+      return;
+    }
 const data=get.data,c=data.club;
 document.documentElement.style.setProperty("--green",c.color||"#237a55");
 $("#publicClubName").textContent=c.name;
