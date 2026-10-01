@@ -923,6 +923,89 @@ async function loadMembers() {
   return data || [];
 }
 
+async function loadContributionTypes(clubId) {
+  const { data, error } = await sb
+    .from("contribution_types")
+    .select("id,name,annual_fee,is_default,active,sort_order,created_at")
+    .eq("club_id", clubId)
+    .eq("active", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+function contributionTypeEuro(value) {
+  return Number(value || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+function setupMemberContributionSelect(select, feeInput, types, club, member = null) {
+  if (!select || !feeInput) return;
+
+  const options = [
+    '<option value="standard">Standardbeitrag – ' + esc(contributionTypeEuro(club.standard_fee)) + '</option>',
+    ...types.map(type =>
+      '<option value="' + esc(type.id) + '">' + esc(type.name) + ' – ' + esc(contributionTypeEuro(type.annual_fee)) + '</option>'
+    ),
+    '<option value="custom">Individuell</option>'
+  ];
+
+  select.innerHTML = options.join("");
+
+  if (member) {
+    const knownType = member.contribution_type_id && types.find(type => type.id === member.contribution_type_id);
+    if (knownType) {
+      select.value = knownType.id;
+    } else if (member.contribution_label === "Standardbeitrag") {
+      select.value = "standard";
+    } else if (member.contribution_label === "Individuell") {
+      select.value = "custom";
+    } else if (!member.contribution_label && Number(member.annual_fee || 0) === Number(club.standard_fee || 0)) {
+      select.value = "standard";
+    } else {
+      select.value = "custom";
+    }
+    feeInput.value = Number(member.annual_fee || 0);
+  } else {
+    const defaultType = types.find(type => type.is_default) || null;
+    if (defaultType) {
+      select.value = defaultType.id;
+      feeInput.value = Number(defaultType.annual_fee || 0);
+    } else {
+      select.value = "standard";
+      feeInput.value = Number(club.standard_fee || 0);
+    }
+  }
+
+  select.onchange = () => {
+    if (select.value === "standard") {
+      feeInput.value = Number(club.standard_fee || 0);
+      return;
+    }
+    if (select.value === "custom") {
+      feeInput.focus();
+      feeInput.select?.();
+      return;
+    }
+    const type = types.find(item => item.id === select.value);
+    if (type) feeInput.value = Number(type.annual_fee || 0);
+  };
+}
+
+function memberContributionSelection(select, types) {
+  const value = select?.value || "standard";
+  if (value === "standard") {
+    return { contribution_type_id: null, contribution_label: "Standardbeitrag" };
+  }
+  if (value === "custom") {
+    return { contribution_type_id: null, contribution_label: "Individuell" };
+  }
+  const type = types.find(item => item.id === value);
+  return type
+    ? { contribution_type_id: type.id, contribution_label: type.name }
+    : { contribution_type_id: null, contribution_label: "Individuell" };
+}
+
 async function nextMemberNumber(clubId) {
   const { data, error } = await sb
     .from("members")
@@ -1103,6 +1186,8 @@ async function initMembers() {
   applyTrialUI(club);
 
   bindIbanValidation($("#memberIban"));
+  const contributionTypes = await loadContributionTypes(club.id);
+  setupMemberContributionSelect($("#memberContributionType"), $("#memberFee"), contributionTypes, club);
   let members = await loadMembers();
   let contributions = await loadContributions();
   let contributionMap = new Map(contributions.map(c => [c.member_id, c]));
@@ -1156,7 +1241,8 @@ async function initMembers() {
     e.preventDefault();
     const form = e.currentTarget;
     const button = $("button[type='submit']", form);
-    const fee = Number($("#memberFee").value || club.standard_fee || 0);
+    const fee = Number($("#memberFee").value || 0);
+    const selectedContribution = memberContributionSelection($("#memberContributionType"), contributionTypes);
     const memberIban = normalizeIbanValue($("#memberIban").value);
     const memberMandate = $("#memberMandate")?.value.trim() || "";
 
@@ -1193,7 +1279,9 @@ async function initMembers() {
         p_mandate_reference: memberMandate || null,
         p_mandate_signed_at: $("#memberMandateDate")?.value || null,
         p_contribution_year: currentYear,
-        p_due_date: dueDate
+        p_due_date: dueDate,
+        p_contribution_type_id: selectedContribution.contribution_type_id,
+        p_contribution_label: selectedContribution.contribution_label
       });
       if (error) throw error;
 
