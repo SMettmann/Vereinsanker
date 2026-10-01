@@ -118,7 +118,8 @@
           ALREADY_IN_OTHER_CLUB:"Dieser VEREINSANKER-Account ist bereits einem anderen Verein zugeordnet.",
           SELF_INVITE:"Du bist bereits in diesem Verein.",
           INVALID_EMAIL:"Bitte eine gültige E-Mail-Adresse eingeben.",
-          INVITE_EMAIL_FAILED:"Die Einladungs-E-Mail konnte nicht versendet werden."
+          INVITE_EMAIL_FAILED:"Die Einladungs-E-Mail konnte nicht versendet werden.",
+          TEAM_LIMIT_REACHED:"Maximal 10 Teamzugänge pro Verein sind möglich."
         };
         teamMessage(messages[code]||"Einladung konnte nicht erstellt werden.","error");
         button.disabled=false;
