@@ -87,6 +87,7 @@ function applicationCard(a){
       '<div><span>Telefon</span><b>'+esc(a.phone||"–")+'</b></div>'+
       '<div><span>Adresse</span><b>'+esc(address)+'</b></div>'+
       '<div><span>Gruppe/Wunsch</span><b>'+esc(a.group_name||"–")+'</b></div>'+
+      '<div><span>Beitragsart</span><b>'+esc(a.contribution_label||"Standardbeitrag")+'</b></div>'+
       '<div><span>Jahresbeitrag</span><b>'+Number(a.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+'</b></div>'+
       '<div><span>IBAN</span><b>'+esc(a.iban||"–")+'</b></div>'+
       '<div><span>SEPA</span><b>'+(a.sepa_consent?"Zustimmung erteilt":"Nein")+'</b></div>'+
