@@ -480,8 +480,10 @@ function portalUrl() {
 
 function accessIsBlocked(club) {
   if (hasPaidAccess(club)) return false;
+  const trialActive = new Date(club?.trial_ends_at || 0).getTime() > Date.now();
+  if (club?.subscription_status === "payment_failed" && trialActive) return false;
   if (["payment_failed", "canceled"].includes(club?.subscription_status)) return true;
-  return new Date(club?.trial_ends_at || 0).getTime() <= Date.now();
+  return !trialActive;
 }
 
 function applyBillingCard(club) {
@@ -563,8 +565,11 @@ function applyTrialUI(club) {
       side.innerHTML = '<strong>Abo aktiv</strong><span>' + (status === "active_yearly" ? "Jahrestarif" : "Monatstarif") + ' · VEREINSFACH freigeschaltet.</span>';
       side.className = "trial-side-status paid";
     } else if (status === "payment_failed") {
-      side.innerHTML = '<strong>Zahlung fehlgeschlagen</strong><span>Bitte Zahlungsart aktualisieren.</span>';
-      side.className = "trial-side-status expired";
+      const trialStillActive = new Date(club.trial_ends_at || 0).getTime() > Date.now();
+      side.innerHTML = trialStillActive
+        ? '<strong>Zahlung fehlgeschlagen</strong><span>Test läuft noch ' + days + (days === 1 ? ' Tag.' : ' Tage.') + '</span>'
+        : '<strong>Zahlung fehlgeschlagen</strong><span>Bitte Zahlungsart aktualisieren.</span>';
+      side.className = trialStillActive ? "trial-side-status warning" : "trial-side-status expired";
     } else if (status === "canceled") {
       side.innerHTML = '<strong>Abo beendet</strong><span>Deine Daten bleiben erhalten.</span>';
       side.className = "trial-side-status expired";
@@ -617,9 +622,12 @@ function applyTrialUI(club) {
     } else if (paid) {
       mobile.hidden = true;
     } else if (status === "payment_failed") {
+      const trialStillActive = new Date(club.trial_ends_at || 0).getTime() > Date.now();
       mobile.hidden = false;
-      mobile.innerHTML = '<span>Zahlung fehlgeschlagen</span><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Zahlung korrigieren →</a>';
-      mobile.className = "trial-mobile-status expired trial-mobile-with-action";
+      mobile.innerHTML = trialStillActive
+        ? '<span>Zahlung fehlgeschlagen · Test läuft noch ' + days + (days === 1 ? ' Tag' : ' Tage') + '</span><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Zahlung korrigieren →</a>'
+        : '<span>Zahlung fehlgeschlagen</span><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Zahlung korrigieren →</a>';
+      mobile.className = "trial-mobile-status " + (trialStillActive ? "warning" : "expired") + " trial-mobile-with-action";
     } else if (status === "canceled") {
       mobile.hidden = false;
       mobile.innerHTML = '<span>Abo beendet · Daten bleiben erhalten</span><a href="billing.html">Neu aktivieren →</a>';
@@ -646,7 +654,9 @@ function applyTrialUI(club) {
       main.insertBefore(banner, main.firstChild);
     }
 
-    if (status === "payment_failed") {
+    if (billingIsPending(club)) {
+      banner.innerHTML = '<div><strong>Zahlung wird noch verarbeitet.</strong><span>Bitte kein zweites Abo abschließen. Sobald Stripe erfolgreich bestätigt, wird VEREINSFACH automatisch freigeschaltet.</span></div><a href="billing-success.html">Status ansehen</a>';
+    } else if (status === "payment_failed") {
       banner.innerHTML = '<div><strong>Zahlung fehlgeschlagen.</strong><span>Bitte aktualisiere deine Zahlungsart. Sobald Stripe die Zahlung bestätigt, wird VEREINSFACH automatisch wieder freigeschaltet.</span></div><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Zahlung korrigieren</a>';
     } else if (status === "canceled") {
       banner.innerHTML = '<div><strong>Dein Abo ist beendet.</strong><span>Deine Daten bleiben erhalten. Du kannst VEREINSFACH jederzeit wieder freischalten.</span></div><a href="billing.html">Neu aktivieren</a>';
