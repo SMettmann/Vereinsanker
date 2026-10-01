@@ -43,7 +43,7 @@
     rows.innerHTML=(data||[]).map(member=>{
       const self=member.user_id===currentUserId;
       return '<div class="team-row">'+
-        '<div class="team-person"><strong>'+esc(member.email)+'</strong><span>Volle Rechte in VEREINSANKER</span></div>'+
+        '<div class="team-person"><strong>'+esc(member.email)+'</strong><span>Volle Rechte in VEREINSFACH</span></div>'+
         '<span class="team-role-badge">Teammitglied</span>'+
         '<button class="team-remove" type="button" data-team-remove="'+esc(member.id)+'" data-team-email="'+esc(member.email)+'" data-team-self="'+(self?"1":"0")+'">'+(self?"Mich entfernen":"Entfernen")+'</button>'+
       '</div>';
@@ -115,7 +115,7 @@
         const code=payload?.error||"";
         const messages={
           ALREADY_MEMBER:"Diese Person gehört bereits zu eurem Team.",
-          ALREADY_IN_OTHER_CLUB:"Dieser VEREINSANKER-Account ist bereits einem anderen Verein zugeordnet.",
+          ALREADY_IN_OTHER_CLUB:"Dieser VEREINSFACH-Account ist bereits einem anderen Verein zugeordnet.",
           SELF_INVITE:"Du bist bereits in diesem Verein.",
           INVALID_EMAIL:"Bitte eine gültige E-Mail-Adresse eingeben.",
           INVITE_EMAIL_FAILED:"Die Einladungs-E-Mail konnte nicht versendet werden.",
@@ -130,7 +130,7 @@
       form.reset();
       teamMessage(
         data?.status==="existing_user_added"
-          ?"Bestehender VEREINSANKER-Account freigeschaltet. Die Person kann sich direkt anmelden ✓"
+          ?"Bestehender VEREINSFACH-Account freigeschaltet. Die Person kann sich direkt anmelden ✓"
           :"Einladung wurde per E-Mail verschickt ✓",
         "success"
       );
@@ -185,6 +185,6 @@
 
     await initTeam(club,user);
   }catch(error){
-    console.error("VEREINSANKER Team:",error);
+    console.error("VEREINSFACH Team:",error);
   }
 })();
