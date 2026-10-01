@@ -22,7 +22,7 @@
   const session=sessionData?.session;
 
   if(!session){
-    if(status) status.textContent="Der Einladungslink ist abgelaufen oder wurde bereits verwendet.";
+    if(status) status.textContent="Der Einladungslink ist abgelaufen oder wurde bereits verwendet. Falls du deinen Zugang schon eingerichtet hast, kannst du dich normal anmelden. Sonst bitte den Verein um eine neue Einladung.";
     if(form) form.hidden=true;
     $("#teamInviteLoginLink")?.removeAttribute("hidden");
     return;
@@ -80,9 +80,25 @@
     const {error}=await sb.auth.updateUser({password});
     if(error){
       console.error("Team-Passwort:",error);
-      message("Passwort konnte nicht gespeichert werden. Bitte erneut versuchen.","error");
+      const text=error.code==="weak_password"
+        ?"Das Passwort erfüllt die Sicherheitsanforderungen noch nicht. Bitte wähle ein stärkeres Passwort."
+        : error.code==="same_password"
+          ?"Bitte wähle ein neues Passwort."
+          : error.code==="session_not_found"||error.code==="session_expired"
+            ?"Die Einladungssitzung ist abgelaufen. Bitte den Verein um eine neue Einladung."
+            :"Passwort konnte nicht gespeichert werden. Bitte erneut versuchen.";
+      message(text,"error");
       button.disabled=false;
       button.textContent="Zugang fertig einrichten →";
+      return;
+    }
+
+    const accepted=await sb.functions.invoke("manage-team",{body:{action:"accept"}});
+    if(accepted.error||!accepted.data?.ok){
+      console.error("Teameinladung bestätigen:",accepted.error,accepted.data);
+      message("Der Zugang wurde eingerichtet, konnte aber noch nicht als angenommen markiert werden. Bitte Seite neu laden.","error");
+      button.disabled=false;
+      button.textContent="Erneut bestätigen →";
       return;
     }
 
