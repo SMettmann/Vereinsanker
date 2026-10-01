@@ -44,7 +44,7 @@
 
   const {data:membership}=await sb
     .from("club_memberships")
-    .select("email,role")
+    .select("email,role,accepted_at")
     .eq("club_id",club.id)
     .eq("user_id",userData.user.id)
     .maybeSingle();
@@ -52,6 +52,18 @@
   if(!membership){
     if(status) status.textContent="Diese Teameinladung ist nicht mehr aktiv.";
     if(form) form.hidden=true;
+    return;
+  }
+
+  if(membership.accepted_at){
+    if(status) status.textContent="Dieser Teamzugang ist bereits vollständig eingerichtet.";
+    if(form) form.hidden=true;
+    const link=$("#teamInviteLoginLink");
+    if(link){
+      link.href="app.html";
+      link.textContent="VEREINSFACH öffnen";
+      link.removeAttribute("hidden");
+    }
     return;
   }
 
@@ -78,15 +90,13 @@
     button.disabled=true;
     button.textContent="Passwort wird gespeichert …";
     const {error}=await sb.auth.updateUser({password});
-    if(error){
+    if(error&&error.code!=="same_password"){
       console.error("Team-Passwort:",error);
       const text=error.code==="weak_password"
         ?"Das Passwort erfüllt die Sicherheitsanforderungen noch nicht. Bitte wähle ein stärkeres Passwort."
-        : error.code==="same_password"
-          ?"Bitte wähle ein neues Passwort."
-          : error.code==="session_not_found"||error.code==="session_expired"
-            ?"Die Einladungssitzung ist abgelaufen. Bitte den Verein um eine neue Einladung."
-            :"Passwort konnte nicht gespeichert werden. Bitte erneut versuchen.";
+        : error.code==="session_not_found"||error.code==="session_expired"
+          ?"Die Einladungssitzung ist abgelaufen. Bitte den Verein um eine neue Einladung."
+          :"Passwort konnte nicht gespeichert werden. Bitte erneut versuchen.";
       message(text,"error");
       button.disabled=false;
       button.textContent="Zugang fertig einrichten →";
