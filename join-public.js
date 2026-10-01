@@ -12,7 +12,6 @@ if(get.error||!get.data?.ok){
       return;
     }
 const data=get.data,c=data.club;
-document.documentElement.style.setProperty("--green",c.color||"#237a55");
 $("#publicClubName").textContent=c.name;
 $("#publicJoinIntro").textContent=c.intro_text||"Fülle deine Daten aus. Der Verein prüft den Antrag anschließend.";
 $("#publicAnnualFee").textContent=Number(c.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
