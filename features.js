@@ -814,8 +814,8 @@ async function enhanceMemberPage() {
   $("#exportMembers")?.addEventListener("click", async () => {
     const members = await loadMembers();
     const lines = [
-      ["Mitgliedsnummer","Vorname","Nachname","Gruppe","E-Mail","IBAN","Jahresbeitrag","Mandatsreferenz","Mandatsdatum"],
-      ...members.map(m => [m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",m.iban||"",m.annual_fee||0,m.mandate_reference||"",m.mandate_signed_at||""])
+      ["Mitgliedsnummer","Vorname","Nachname","Gruppe","E-Mail","Beitragsart","IBAN","Jahresbeitrag","Mandatsreferenz","Mandatsdatum"],
+      ...members.map(m => [m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",m.contribution_label||"",m.iban||"",m.annual_fee||0,m.mandate_reference||"",m.mandate_signed_at||""])
     ];
     const csv = lines.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";")).join("\r\n");
     downloadBlob("\uFEFF" + csv, "VEREINSANKER_Mitglieder.csv", "text/csv;charset=utf-8");
