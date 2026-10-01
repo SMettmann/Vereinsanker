@@ -16,6 +16,8 @@ $("#stdClubFallback").textContent=(c.short_name||c.name||"VA").slice(0,4).toUppe
 $("#stdAnnualFee").textContent=Number(c.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
 $("#stdGeneratedDate").textContent="Stand "+new Date().toLocaleDateString("de-DE");
 if(c.logo_url){$("#stdClubLogo").src=c.logo_url;$("#stdClubLogo").hidden=false;$("#stdClubFallback").hidden=true;}
+$("#standardJoinPaper").hidden=false;
+$(".standard-join-actions").hidden=false;
 if(c.creditor_id){
   $("#stdCreditor").textContent="Gläubiger-ID: "+c.creditor_id+".";
 }else{
