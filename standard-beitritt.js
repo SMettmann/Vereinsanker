@@ -1,6 +1,9 @@
 (async function(){
 const $=s=>document.querySelector(s),sb=window.vaSupabase;
-const token=new URLSearchParams(location.search).get("t")||"";
+const query=new URLSearchParams(location.search);
+const token=query.get("t")||"";
+const presetGroup=(query.get("gruppe")||"").trim();
+const presetContribution=(query.get("beitrag")||"").trim();
 const r=await sb.functions.invoke("membership-join-public",{body:{action:"get",token}});
 if(r.error||!r.data?.ok){
   $("#standardJoinPaper").hidden=true;
@@ -16,14 +19,16 @@ const contributionTypes=Array.isArray(r.data.contribution_types)?r.data.contribu
 if(contributionTypes.length){
   $("#stdContributionFallback").hidden=true;
   $("#stdContributionTypes").hidden=false;
-  $("#stdContributionTypes").innerHTML=contributionTypes.map(item=>
-    '<div class="paper-contribution-row"><i></i><span><strong>'+String(item.name||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))+'</strong><b>'+Number(item.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+' / Jahr</b></span></div>'
-  ).join("");
+  $("#stdContributionTypes").innerHTML=contributionTypes.map(item=>{
+    const selected=item.id===presetContribution;
+    return '<div class="paper-contribution-row'+(selected?' selected':'')+'"><i>'+(selected?'✓':'')+'</i><span><strong>'+String(item.name||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))+'</strong><b>'+Number(item.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+' / Jahr</b></span></div>';
+  }).join("");
 }else{
   $("#stdContributionFallback").hidden=false;
   $("#stdContributionTypes").hidden=true;
 }
 $("#stdGeneratedDate").textContent="Stand "+new Date().toLocaleDateString("de-DE");
+if(presetGroup) $("#stdGroupValue").textContent=presetGroup;
 if(c.logo_url){$("#stdClubLogo").src=c.logo_url;$("#stdClubLogo").hidden=false;$("#stdClubFallback").hidden=true;}
 $("#standardJoinPaper").hidden=false;
 $(".standard-join-actions").hidden=false;
