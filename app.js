@@ -144,6 +144,38 @@ function memberFullName(member) {
   return [member?.first_name, member?.last_name].filter(Boolean).join(" ") || "Mitglied";
 }
 
+function clubDepartments(club) {
+  const values = Array.isArray(club?.departments) ? club.departments : [];
+  const seen = new Set();
+  return values
+    .map(value => String(value || "").trim())
+    .filter(value => {
+      const key = value.toLocaleLowerCase("de-DE");
+      if (!value || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function setupDepartmentSelect(select, club, currentValue = "") {
+  if (!select) return;
+  const departments = clubDepartments(club);
+  const current = String(currentValue || "").trim();
+  const hasCurrent = current && departments.some(item => item.toLocaleLowerCase("de-DE") === current.toLocaleLowerCase("de-DE"));
+  const options = ['<option value="">Keine / nicht zugeordnet</option>'];
+
+  departments.forEach(item => {
+    options.push('<option value="' + esc(item) + '">' + esc(item) + '</option>');
+  });
+
+  if (current && !hasCurrent) {
+    options.push('<option value="' + esc(current) + '">' + esc(current) + ' (bisher)</option>');
+  }
+
+  select.innerHTML = options.join("");
+  select.value = current && (hasCurrent || !departments.length || !hasCurrent) ? current : "";
+}
+
 function setMessage(form, message, type = "info") {
   if (!form) return;
   let box = $(".auth-message", form);
@@ -1186,6 +1218,7 @@ async function initMembers() {
   applyTrialUI(club);
 
   bindIbanValidation($("#memberIban"));
+  setupDepartmentSelect($("#memberGroup"), club);
   const contributionTypes = await loadContributionTypes(club.id);
   setupMemberContributionSelect($("#memberContributionType"), $("#memberFee"), contributionTypes, club);
   let members = await loadMembers();
@@ -1675,6 +1708,7 @@ async function cleanupOrphanClubLogos(club) {
 
 async function initSettings() {
   let club = await getClub();
+  let departmentDraft = [];
   if (!club) return location.replace("onboarding.html");
   applyClubBrand(club);
   applyTrialUI(club);
@@ -1738,6 +1772,8 @@ async function initSettings() {
 
     club = data;
     vaClub = data;
+    departmentDraft = clubDepartments(data);
+    renderDepartments();
     applyClubBrand(data);
     updateLogoControls();
     showToast("Vereinslogo gespeichert ✓");
@@ -1776,6 +1812,50 @@ async function initSettings() {
   $("#settingsIban").value = club.iban || "";
   $("#settingsFee").value = Number(club.standard_fee || 0);
   $("#settingsDue").value = club.due_date || "";
+
+  departmentDraft = clubDepartments(club);
+  const departmentRows = $("#departmentRows");
+  const departmentInput = $("#settingsDepartmentName");
+
+  const renderDepartments = () => {
+    if (!departmentRows) return;
+    departmentRows.innerHTML = departmentDraft.length
+      ? departmentDraft.map((name, index) =>
+          '<div class="department-row"><span>' + esc(name) + '</span><button type="button" data-remove-department="' + index + '">Entfernen</button></div>'
+        ).join("")
+      : '<div class="department-empty">Noch keine Abteilungen oder Gruppen angelegt.</div>';
+
+    $("[data-remove-department]", departmentRows).forEach(button => {
+      button.addEventListener("click", () => {
+        departmentDraft.splice(Number(button.dataset.removeDepartment), 1);
+        renderDepartments();
+      });
+    });
+  };
+
+  const addDepartment = () => {
+    const name = String(departmentInput?.value || "").trim().replace(/\s+/g, " ");
+    if (!name) return;
+    if (departmentDraft.some(item => item.toLocaleLowerCase("de-DE") === name.toLocaleLowerCase("de-DE"))) {
+      showToast("Diese Abteilung / Gruppe gibt es bereits.");
+      departmentInput.focus();
+      return;
+    }
+    departmentDraft.push(name.slice(0, 80));
+    departmentDraft.sort((a, b) => a.localeCompare(b, "de"));
+    departmentInput.value = "";
+    renderDepartments();
+    departmentInput.focus();
+  };
+
+  $("#addDepartment")?.addEventListener("click", addDepartment);
+  departmentInput?.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addDepartment();
+  });
+  renderDepartments();
+
   if ($("#settingsAvvState")) {
     $("#settingsAvvState").textContent = hasCurrentAvv(club) ? "AV-Vertrag abgeschlossen ✓" : "AV-Vertrag fehlt";
   }
@@ -1830,6 +1910,7 @@ async function initSettings() {
         "IBAN": club.iban || "",
         "Standardbeitrag": Number(club.standard_fee || 0),
         "Fälligkeit": club.due_date || "",
+        "Abteilungen / Gruppen": clubDepartments(club).join(", "),
         "Vereinsanschrift": club.controller_address || "",
         "Datenschutz-Ansprechpartner": club.controller_contact_name || "",
         "AVV-Version": club.avv_version || "",
@@ -2062,6 +2143,7 @@ async function initSettings() {
       iban: clubIban || null,
       standard_fee: Number($("#settingsFee").value || 0),
       due_date: $("#settingsDue").value || null,
+      departments: departmentDraft,
       updated_at: new Date().toISOString()
     }).eq("id", club.id).select().single();
 
