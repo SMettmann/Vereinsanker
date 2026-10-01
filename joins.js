@@ -76,14 +76,14 @@ async function refreshFormSource(){
   if(settings?.form_pdf_path){
     const signed=await sb.storage.from("membership-forms").createSignedUrl(settings.form_pdf_path,3600);
     status.textContent="Eigene Beitrittserklärung aktiv ✓";
-    hint.textContent="Die eigene PDF ersetzt die VEREINSANKER-Standarderklärung.";
+    hint.textContent="Die eigene PDF ersetzt die VEREINSFACH-Standarderklärung.";
     preview.textContent="Eigene PDF ansehen →";
     preview.href=signed.error?"#":(signed.data?.signedUrl||"#");
     remove.hidden=false;
   }else{
     const std=new URL("standard-beitritt.html",location.href);
     std.searchParams.set("t",settings.public_token);
-    status.textContent="VEREINSANKER-Standard wird verwendet.";
+    status.textContent="VEREINSFACH-Standard wird verwendet.";
     hint.textContent="Eigene PDF optional · maximal 5 MB";
     preview.textContent="Standard ansehen / herunterladen →";
     preview.href=std.href;
@@ -126,7 +126,7 @@ async function removePdf(){
   if(save.error) throw save.error;
   settings.form_pdf_path=null;
   await refreshFormSource();
-  showToast("Eigene PDF entfernt – VEREINSANKER-Standard ist wieder aktiv.");
+  showToast("Eigene PDF entfernt – VEREINSFACH-Standard ist wieder aktiv.");
 }
 
 function applicationCard(a){
