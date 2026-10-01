@@ -355,15 +355,15 @@ function applyClubBrand(club) {
   if (!club) return;
 
   const shortName = (club.short_name || "VA").slice(0, 4).toUpperCase();
-  $("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
+  $$("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
 
-  $(".club-logo-fallback").forEach(el => {
+  $$(".club-logo-fallback").forEach(el => {
     el.textContent = shortName;
     el.hidden = Boolean(club.logo_path);
     el.style.removeProperty("background");
   });
 
-  $("#clubBadge").forEach(el => {
+  $$("#clubBadge").forEach(el => {
     el.textContent = shortName;
     el.hidden = Boolean(club.logo_path);
     el.style.removeProperty("background");
@@ -785,7 +785,7 @@ async function initResetPassword() {
 }
 
 function showStep(n) {
-  $(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
+  $$(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
   if ($("#stepNo")) $("#stepNo").textContent = n;
   if ($("#progressBar")) $("#progressBar").style.width = (n / 4 * 100) + "%";
 }
