@@ -41,17 +41,11 @@
     }
 
     rows.innerHTML=(data||[]).map(member=>{
-      const technicalMain=member.role==="owner";
       const self=member.user_id===currentUserId;
-      const badge=technicalMain
-        ? '<span class="team-role-badge owner">Technischer Hauptzugang</span>'
-        : '<span class="team-role-badge">Teammitglied</span>';
-      const action=technicalMain
-        ? '<span class="team-owner-note">Nicht einzeln entfernbar</span>'
-        : '<button class="team-remove" type="button" data-team-remove="'+esc(member.id)+'" data-team-email="'+esc(member.email)+'" data-team-self="'+(self?"1":"0")+'">'+(self?"Mich entfernen":"Entfernen")+'</button>';
       return '<div class="team-row">'+
         '<div class="team-person"><strong>'+esc(member.email)+'</strong><span>Volle Rechte in VEREINSANKER</span></div>'+
-        badge+action+
+        '<span class="team-role-badge">Teammitglied</span>'+
+        '<button class="team-remove" type="button" data-team-remove="'+esc(member.id)+'" data-team-email="'+esc(member.email)+'" data-team-self="'+(self?"1":"0")+'">'+(self?"Mich entfernen":"Entfernen")+'</button>'+
       '</div>';
     }).join("")||'<div class="team-empty">Noch keine weiteren Teammitglieder.</div>';
 
@@ -75,7 +69,8 @@
         const payload=await functionPayload(error);
         const code=payload?.error||"";
         const messages={
-          TECHNICAL_MAIN_ACCOUNT:"Der technische Hauptzugang bleibt bestehen. Der Verein kann aber von jedem Teammitglied komplett gelöscht werden.",
+          LAST_MEMBER_USE_CLUB_DELETE:"Du bist der letzte Zugang. Wenn der Verein beendet werden soll, nutze unten „Verein & Konto löschen“.",
+          TRANSFER_FAILED:"Der Teamzugang konnte gerade nicht sauber übertragen werden.",
           NOT_FOUND:"Dieser Teamzugang existiert nicht mehr."
         };
         teamMessage(messages[code]||"Teamzugang konnte nicht entfernt werden.","error");
