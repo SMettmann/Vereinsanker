@@ -963,7 +963,7 @@ body.trial-expired .settings-form select{
 }
 
 .team-settings-card{margin-top:20px}
-.team-invite-form{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(180px,.8fr) auto;gap:10px;align-items:end;margin-top:16px}
+.team-invite-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:16px}
 .team-invite-form .field{margin:0}
 .team-invite-form .primary{min-height:46px;white-space:nowrap}
 .team-role-help{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 4px;color:var(--muted);font-size:10px;line-height:1.55}
