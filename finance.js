@@ -338,7 +338,7 @@ window.initFinancesPage = async function () {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "VEREINSANKER-Finanzen-" + selectedYear + ".xls";
+    a.download = "VEREINSFACH-Finanzen-" + selectedYear + ".xls";
     document.body.appendChild(a);
     a.click();
     a.remove();
