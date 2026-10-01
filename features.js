@@ -1020,6 +1020,7 @@ async function enhanceMemberPage() {
       }
 
       const duplicateResult = await applyDuplicateActions(duplicateActions, club);
+      try { await syncDepartmentsFromMembers(club); } catch (err) { console.warn("Abteilungen konnten nicht synchronisiert werden:", err); }
       const messages = [];
       if (result.inserted) messages.push(result.inserted + " neu importiert");
       if (duplicateResult.updated) messages.push(duplicateResult.updated + " aktualisiert");
