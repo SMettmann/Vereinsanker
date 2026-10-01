@@ -1,6 +1,9 @@
 (async function(){
 const $=s=>document.querySelector(s),sb=window.vaSupabase;
-const token=new URLSearchParams(location.search).get("t")||"";
+const query=new URLSearchParams(location.search);
+const token=query.get("t")||"";
+const presetGroup=(query.get("gruppe")||"").trim();
+const presetContribution=(query.get("beitrag")||"").trim();
 const form=$("#publicJoinForm");
 function msg(text){let b=form.querySelector(".auth-message");if(!b){b=document.createElement("div");b.className="auth-message error";form.insertBefore(b,$("#submitJoin"));}b.textContent=text;}
 const get=await sb.functions.invoke("membership-join-public",{body:{action:"get",token}});
@@ -18,7 +21,8 @@ const contributionTypes=Array.isArray(data.contribution_types)?data.contribution
 if(contributionTypes.length){
   $("#publicStandardFee").hidden=true;
   $("#joinContributionChoice").hidden=false;
-  const selectedDefault=contributionTypes.find(item=>item.is_default)||contributionTypes[0];
+  const presetType=contributionTypes.find(item=>item.id===presetContribution)||null;
+  const selectedDefault=presetType||contributionTypes.find(item=>item.is_default)||contributionTypes[0];
   $("#joinContributionOptions").innerHTML=contributionTypes.map(item=>
     '<label class="join-contribution-option">'+
       '<input type="radio" name="joinContributionType" value="'+item.id+'"'+(item.id===selectedDefault.id?' checked':'')+'>'+
@@ -40,10 +44,13 @@ if(data.form_pdf_url){
 }else{
   const std=new URL("standard-beitritt.html",location.href);
   std.searchParams.set("t",token);
+  if(presetGroup) std.searchParams.set("gruppe",presetGroup);
+  if(presetContribution) std.searchParams.set("beitrag",presetContribution);
   $("#publicJoinPdf").href=std.href;
   $("#publicJoinPdf").textContent="Standard-Beitrittserklärung ansehen / herunterladen →";
   $("#publicJoinPdf").hidden=false;
 }
+if(presetGroup) $("#joinGroup").value=presetGroup;
 if(c.creditor_id){$("#sepaJoinBox").hidden=false;$("#joinSepaText").textContent="Ich ermächtige "+c.name+" (Gläubiger-ID "+c.creditor_id+"), fällige Mitgliedsbeiträge per SEPA-Lastschrift von meinem Konto einzuziehen.";}
 $("#joinSepa").addEventListener("change",e=>{$("#signatureBox").hidden=!e.target.checked;});
 form.hidden=false;
