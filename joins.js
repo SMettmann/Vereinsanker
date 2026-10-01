@@ -2,10 +2,59 @@
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const sb=window.vaSupabase;
-let club=null,settings=null,currentFilter="pending";
+let club=null,settings=null,currentFilter="pending",joinContributionTypes=[];
 
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString("de-DE"):"–";
+
+function buildPreparedJoinUrl(){
+  const url=new URL("beitritt.html",location.href);
+  url.searchParams.set("t",settings.public_token);
+
+  const group=$("#joinPresetGroup")?.value.trim()||"";
+  const contribution=$("#joinPresetContribution")?.value||"";
+
+  if(group) url.searchParams.set("gruppe",group);
+  if(contribution) url.searchParams.set("beitrag",contribution);
+
+  return url;
+}
+
+function refreshPreparedJoinUrl(){
+  if(!settings) return;
+  $("#joinPublicUrl").value=buildPreparedJoinUrl().href;
+}
+
+async function loadJoinContributionTypes(){
+  const {data,error}=await sb
+    .from("contribution_types")
+    .select("id,name,annual_fee,is_default,sort_order,created_at")
+    .eq("club_id",club.id)
+    .eq("active",true)
+    .order("sort_order",{ascending:true})
+    .order("created_at",{ascending:true});
+
+  if(error) throw error;
+  joinContributionTypes=data||[];
+
+  const select=$("#joinPresetContribution");
+  if(!select) return;
+
+  select.innerHTML='<option value="">Interessent wählt selbst</option>'+
+    joinContributionTypes.map(item=>
+      '<option value="'+esc(item.id)+'">'+
+      esc(item.name)+' – '+
+      Number(item.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+
+      ' / Jahr</option>'
+    ).join("");
+
+  if(!joinContributionTypes.length){
+    select.innerHTML='<option value="">Standardbeitrag wird verwendet</option>';
+    select.disabled=true;
+  }else{
+    select.disabled=false;
+  }
+}
 
 async function refreshFormSource(){
   const preview=$("#joinFormPreview");
@@ -39,9 +88,8 @@ async function ensureSettings(){
     data=created.data;
   }
   settings=data;
-  const url=new URL("beitritt.html",location.href);
-  url.searchParams.set("t",settings.public_token);
-  $("#joinPublicUrl").value=url.href;
+  await loadJoinContributionTypes();
+  refreshPreparedJoinUrl();
   await refreshFormSource();
 }
 
@@ -124,16 +172,37 @@ window.initJoinsPage=async function(){
   await ensureSettings();
   await loadApplications();
 
+  $("#joinPresetGroup")?.addEventListener("input",refreshPreparedJoinUrl);
+  $("#joinPresetContribution")?.addEventListener("change",refreshPreparedJoinUrl);
+
   $("#copyJoinLink").addEventListener("click",async()=>{
+    refreshPreparedJoinUrl();
     await navigator.clipboard.writeText($("#joinPublicUrl").value);
     showToast("Beitrittslink kopiert ✓");
   });
   $("#openJoinMail").addEventListener("click",()=>{
     const recipient=$("#joinMailRecipient").value.trim();
     if(!recipient) return showToast("Bitte zuerst eine E-Mail-Adresse eintragen.");
+    refreshPreparedJoinUrl();
     const subject="Beitritt zu "+club.name;
-    const body="Hallo,%0D%0A%0D%0Ahier kannst du deinen Beitritt zu "+encodeURIComponent(club.name)+" direkt online ausfüllen:%0D%0A"+encodeURIComponent($("#joinPublicUrl").value)+"%0D%0A%0D%0AViele Grüße";
-    location.href="mailto:"+encodeURIComponent(recipient)+"?subject="+encodeURIComponent(subject)+"&body="+body;
+    const group=$("#joinPresetGroup")?.value.trim()||"";
+    const selectedId=$("#joinPresetContribution")?.value||"";
+    const selectedType=joinContributionTypes.find(item=>item.id===selectedId);
+    const prepLines=[
+      group?"Abteilung / Gruppe: "+group:"",
+      selectedType?"Beitragsart: "+selectedType.name+" – "+Number(selectedType.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+" / Jahr":""
+    ].filter(Boolean);
+    const bodyText=[
+      "Hallo,",
+      "",
+      "hier kannst du deinen Beitritt zu "+club.name+" direkt online ausfüllen:",
+      $("#joinPublicUrl").value,
+      prepLines.length?"":"",
+      ...prepLines,
+      "",
+      "Viele Grüße"
+    ].join("\r\n");
+    location.href="mailto:"+encodeURIComponent(recipient)+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(bodyText);
   });
   $("#joinPdfInput").addEventListener("change",async e=>{try{await uploadPdf(e.target.files?.[0]);}catch(err){await handleAppError(err,"PDF konnte nicht gespeichert werden.");}finally{e.target.value="";}});
   $("#removeJoinPdf").addEventListener("click",async()=>{try{await removePdf();}catch(err){await handleAppError(err,"PDF konnte nicht entfernt werden.");}});
