@@ -12,7 +12,17 @@ $("#publicJoinIntro").textContent=c.intro_text||"Fülle deine Daten aus. Der Ver
 $("#publicAnnualFee").textContent=Number(c.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
 $("#publicClubFallback").textContent=(c.short_name||c.name||"VA").slice(0,4).toUpperCase();
 if(c.logo_url){$("#publicClubLogo").src=c.logo_url;$("#publicClubLogo").hidden=false;$("#publicClubFallback").hidden=true;}
-if(data.form_pdf_url){$("#publicJoinPdf").href=data.form_pdf_url;$("#publicJoinPdf").hidden=false;}
+if(data.form_pdf_url){
+  $("#publicJoinPdf").href=data.form_pdf_url;
+  $("#publicJoinPdf").textContent="Beitrittserklärung des Vereins ansehen →";
+  $("#publicJoinPdf").hidden=false;
+}else{
+  const std=new URL("standard-beitritt.html",location.href);
+  std.searchParams.set("t",token);
+  $("#publicJoinPdf").href=std.href;
+  $("#publicJoinPdf").textContent="Standard-Beitrittserklärung ansehen / herunterladen →";
+  $("#publicJoinPdf").hidden=false;
+}
 if(c.creditor_id){$("#sepaJoinBox").hidden=false;$("#joinSepaText").textContent="Ich ermächtige "+c.name+" (Gläubiger-ID "+c.creditor_id+"), fällige Mitgliedsbeiträge per SEPA-Lastschrift von meinem Konto einzuziehen.";}
 $("#joinSepa").addEventListener("change",e=>{$("#signatureBox").hidden=!e.target.checked;});
 form.hidden=false;
