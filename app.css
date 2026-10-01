@@ -2424,6 +2424,7 @@ body.trial-expired #teamInviteForm button[type="submit"],
 body.trial-expired [data-accept-join],
 body.trial-expired [data-reject-join],
 body.trial-expired #joinPdfInput,
+body.trial-expired .join-pdf-box .logo-upload-button,
 body.trial-expired #removeJoinPdf,
 body.trial-expired #copyJoinLink,
 body.trial-expired #openJoinMail{
