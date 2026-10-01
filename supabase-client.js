@@ -1,4 +1,4 @@
-// Public browser configuration for VEREINSANKER.
+// Public browser configuration for VEREINSFACH.
 // The publishable key is designed to be used in client-side applications.
 // Access to rows is protected by Supabase Auth + Row Level Security.
 const VA_SUPABASE_URL = "https://exginppvomebjinydrrw.supabase.co";
