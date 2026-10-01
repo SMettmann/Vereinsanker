@@ -14,7 +14,7 @@ if(r.error||!r.data?.ok){
 const c=r.data.club;
 $("#stdClubName").textContent=c.name||"Verein";
 $("#stdClubNameInline").textContent=c.name||"den Verein";
-$("#stdClubFallback").textContent=(c.short_name||c.name||"VA").slice(0,4).toUpperCase();
+$("#stdClubFallback").textContent=(c.short_name||c.name||"VF").slice(0,4).toUpperCase();
 const contributionTypes=Array.isArray(r.data.contribution_types)?r.data.contribution_types:[];
 if(contributionTypes.length){
   $("#stdContributionFallback").hidden=true;
