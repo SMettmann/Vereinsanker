@@ -1767,6 +1767,111 @@ async function initSettings() {
     }
   });
 
+  const stripeDeletionBlocked = Boolean(
+    club.stripe_subscription_id &&
+    !club.stripe_cancel_at_period_end &&
+    !["canceled", "incomplete_expired"].includes(String(club.stripe_status || "").toLowerCase())
+  );
+
+  const deleteBlockedBox = $("#deleteAccountBlocked");
+  const prepareDeleteButton = $("#prepareDeleteAccount");
+  const deletePanel = $("#deleteAccountPanel");
+  const deletePortalLink = $("#deletePortalLink");
+  const deletionStatus = $("#deleteAccountStatus");
+
+  if (deletePortalLink) deletePortalLink.href = portalUrl();
+
+  if (stripeDeletionBlocked) {
+    if (deleteBlockedBox) deleteBlockedBox.hidden = false;
+    if (prepareDeleteButton) prepareDeleteButton.hidden = true;
+  } else {
+    if (deleteBlockedBox) deleteBlockedBox.hidden = true;
+    if (prepareDeleteButton) prepareDeleteButton.hidden = false;
+    if (club.stripe_subscription_id && club.stripe_cancel_at_period_end && deletionStatus) {
+      deletionStatus.textContent = "Dein Abo ist bereits zur Kündigung vorgemerkt. Wenn du jetzt löschst, endet der Zugang sofort und eine verbleibende Restlaufzeit wird nicht weiter genutzt.";
+    }
+  }
+
+  $("#exportBeforeDelete")?.addEventListener("click", () => {
+    $("#exportAllData")?.click();
+  });
+
+  prepareDeleteButton?.addEventListener("click", () => {
+    if (deletePanel) deletePanel.hidden = false;
+    prepareDeleteButton.hidden = true;
+    $("#deletePassword")?.focus();
+  });
+
+  $("#cancelDeleteAccount")?.addEventListener("click", () => {
+    if (deletePanel) deletePanel.hidden = true;
+    if (prepareDeleteButton) prepareDeleteButton.hidden = false;
+    if ($("#deletePassword")) $("#deletePassword").value = "";
+    if ($("#deleteConfirmation")) $("#deleteConfirmation").value = "";
+    if ($("#deleteAccountError")) $("#deleteAccountError").textContent = "";
+  });
+
+  $("#confirmDeleteAccount")?.addEventListener("click", async e => {
+    const button = e.currentTarget;
+    const password = $("#deletePassword")?.value || "";
+    const confirmation = $("#deleteConfirmation")?.value.trim() || "";
+    const errorBox = $("#deleteAccountError");
+
+    if (!password) {
+      if (errorBox) errorBox.textContent = "Bitte dein aktuelles Passwort eingeben.";
+      $("#deletePassword")?.focus();
+      return;
+    }
+    if (confirmation !== "VEREIN LÖSCHEN") {
+      if (errorBox) errorBox.textContent = 'Bitte exakt „VEREIN LÖSCHEN“ eingeben.';
+      $("#deleteConfirmation")?.focus();
+      return;
+    }
+
+    if (!confirm("Letzte Bestätigung: Verein, Mitglieder, Beiträge, Finanzen, Belege, Logo und dein VEREINSANKER-Konto werden unwiderruflich gelöscht.")) return;
+
+    button.disabled = true;
+    button.textContent = "Wird endgültig gelöscht …";
+    if (errorBox) errorBox.textContent = "";
+
+    const { data, error } = await sb.functions.invoke("delete-account", {
+      body: { password, confirmation }
+    });
+
+    if (error) {
+      let payload = null;
+      try {
+        if (error.context && typeof error.context.json === "function") payload = await error.context.json();
+      } catch {}
+
+      const code = payload?.error || "";
+      if (code === "INVALID_PASSWORD") {
+        if (errorBox) errorBox.textContent = "Das aktuelle Passwort stimmt nicht.";
+      } else if (code === "ACTIVE_SUBSCRIPTION") {
+        if (errorBox) errorBox.textContent = "Das Abo verlängert sich noch. Bitte zuerst im Stripe-Kundenbereich kündigen.";
+        if (deleteBlockedBox) deleteBlockedBox.hidden = false;
+        if (prepareDeleteButton) prepareDeleteButton.hidden = true;
+        if (deletePanel) deletePanel.hidden = true;
+      } else {
+        if (errorBox) errorBox.textContent = "Die Löschung konnte nicht vollständig abgeschlossen werden. Bitte erneut versuchen.";
+        console.error("Kontolöschung:", error, payload);
+      }
+
+      button.disabled = false;
+      button.textContent = "Verein & Konto endgültig löschen";
+      return;
+    }
+
+    if (!data?.deleted) {
+      if (errorBox) errorBox.textContent = "Die Löschung wurde nicht bestätigt. Bitte erneut versuchen.";
+      button.disabled = false;
+      button.textContent = "Verein & Konto endgültig löschen";
+      return;
+    }
+
+    try { await sb.auth.signOut({ scope: "local" }); } catch {}
+    location.replace("konto-geloescht.html");
+  });
+
   $("#settingsForm").addEventListener("submit", async e => {
     e.preventDefault();
     const button = $("button[type='submit']", e.currentTarget);
