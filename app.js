@@ -1689,19 +1689,22 @@ async function initSettings() {
     try {
       if (!window.XLSX) throw new Error("Excel-Export ist noch nicht geladen.");
 
-      const [membersResult, contributionsResult, financeResult] = await Promise.all([
+      const [membersResult, contributionsResult, financeResult, legalResult] = await Promise.all([
         sb.from("members").select("*").eq("club_id", club.id).order("last_name").order("first_name"),
         sb.from("contributions").select("*").eq("club_id", club.id).order("contribution_year", { ascending: false }),
-        sb.from("finance_transactions").select("*").eq("club_id", club.id).order("transaction_date", { ascending: false })
+        sb.from("finance_transactions").select("*").eq("club_id", club.id).order("transaction_date", { ascending: false }),
+        sb.from("legal_acceptances").select("document_type,document_version,accepted_at,controller_name,controller_address,controller_contact_name,controller_contact_email").eq("club_id", club.id).order("accepted_at", { ascending: false })
       ]);
 
       if (membersResult.error) throw membersResult.error;
       if (contributionsResult.error) throw contributionsResult.error;
       if (financeResult.error) throw financeResult.error;
+      if (legalResult.error) throw legalResult.error;
 
       const members = membersResult.data || [];
       const contributions = contributionsResult.data || [];
       const finances = financeResult.data || [];
+      const legalAcceptances = legalResult.data || [];
       const memberById = new Map(members.map(member => [member.id, member]));
 
       const workbook = XLSX.utils.book_new();
@@ -1714,6 +1717,10 @@ async function initSettings() {
         "IBAN": club.iban || "",
         "Standardbeitrag": Number(club.standard_fee || 0),
         "Fälligkeit": club.due_date || "",
+        "Vereinsanschrift": club.controller_address || "",
+        "Datenschutz-Ansprechpartner": club.controller_contact_name || "",
+        "AVV-Version": club.avv_version || "",
+        "AVV angenommen am": club.avv_accepted_at || "",
         "Erstellt am": club.created_at || ""
       }]), "Verein");
 
@@ -1755,6 +1762,16 @@ async function initSettings() {
         "Zahlungsart": entry.payment_method === "cash" ? "Bar" : "Bank",
         "Beleg vorhanden": entry.receipt_path ? "Ja" : "Nein"
       }))), "Finanzen");
+
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(legalAcceptances.map(entry => ({
+        "Dokument": entry.document_type === "avv" ? "AV-Vertrag" : entry.document_type || "",
+        "Version": entry.document_version || "",
+        "Angenommen am": entry.accepted_at || "",
+        "Verantwortlicher / Verein": entry.controller_name || "",
+        "Vereinsanschrift": entry.controller_address || "",
+        "Ansprechpartner": entry.controller_contact_name || "",
+        "Account-E-Mail": entry.controller_contact_email || ""
+      }))), "AVV-Nachweis");
 
       const stamp = new Date().toISOString().slice(0, 10);
       XLSX.writeFile(workbook, "VEREINSANKER_Datenexport_" + stamp + ".xlsx");
