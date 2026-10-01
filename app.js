@@ -1136,6 +1136,9 @@ async function initMembers() {
     $("#detailGroup").textContent = member.group_name || "Ohne Gruppe";
     $("#detailMemberNumber").textContent = member.member_number || "–";
     $("#detailEmail").textContent = member.email || "–";
+    if ($("#detailPhone")) $("#detailPhone").textContent = member.phone || "–";
+    if ($("#detailBirthDate")) $("#detailBirthDate").textContent = member.birth_date ? new Date(member.birth_date + "T00:00:00").toLocaleDateString("de-DE") : "–";
+    if ($("#detailAddress")) $("#detailAddress").textContent = [member.street, [member.postal_code, member.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "–";
     $("#detailIban").textContent = member.iban || "–";
     $("#detailFee").textContent = money(member.annual_fee);
     $("#detailStatus").textContent = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
