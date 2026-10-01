@@ -88,6 +88,7 @@
         const code=payload?.error||"";
         const messages={
           LAST_MEMBER_USE_CLUB_DELETE:"Du bist der letzte Zugang. Wenn der Verein beendet werden soll, nutze unten „Verein & Konto löschen“.",
+          NO_ACCEPTED_REPLACEMENT:"Bevor du das Hauptkonto verlässt, muss mindestens ein anderes Teammitglied die Einladung vollständig angenommen haben.",
           TRANSFER_FAILED:"Der Teamzugang konnte gerade nicht sauber übertragen werden.",
           NOT_FOUND:"Dieser Teamzugang existiert nicht mehr.",
           CANNOT_REMOVE_OWNER:"Das Hauptkonto kann nur sich selbst entfernen und die Eigentümerschaft dabei übertragen."
