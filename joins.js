@@ -7,6 +7,29 @@ let club=null,settings=null,currentFilter="pending";
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString("de-DE"):"–";
 
+async function refreshFormSource(){
+  const preview=$("#joinFormPreview");
+  const remove=$("#removeJoinPdf");
+  const status=$("#joinPdfStatus");
+  const hint=$("#joinPdfHint");
+  if(settings?.form_pdf_path){
+    const signed=await sb.storage.from("membership-forms").createSignedUrl(settings.form_pdf_path,3600);
+    status.textContent="Eigene Beitrittserklärung aktiv ✓";
+    hint.textContent="Die eigene PDF ersetzt die VEREINSANKER-Standarderklärung.";
+    preview.textContent="Eigene PDF ansehen →";
+    preview.href=signed.error?"#":(signed.data?.signedUrl||"#");
+    remove.hidden=false;
+  }else{
+    const std=new URL("standard-beitritt.html",location.href);
+    std.searchParams.set("t",settings.public_token);
+    status.textContent="VEREINSANKER-Standard wird verwendet.";
+    hint.textContent="Eigene PDF optional · maximal 5 MB";
+    preview.textContent="Standard ansehen / herunterladen →";
+    preview.href=std.href;
+    remove.hidden=true;
+  }
+}
+
 async function ensureSettings(){
   let {data,error}=await sb.from("membership_join_settings").select("*").eq("club_id",club.id).maybeSingle();
   if(error) throw error;
@@ -19,7 +42,7 @@ async function ensureSettings(){
   const url=new URL("beitritt.html",location.href);
   url.searchParams.set("t",settings.public_token);
   $("#joinPublicUrl").value=url.href;
-  $("#joinPdfStatus").textContent=settings.form_pdf_path?"PDF hinterlegt ✓":"Noch kein PDF hinterlegt.";
+  await refreshFormSource();
 }
 
 async function uploadPdf(file){
@@ -31,8 +54,8 @@ async function uploadPdf(file){
   const save=await sb.from("membership_join_settings").update({form_pdf_path:path,updated_at:new Date().toISOString()}).eq("club_id",club.id);
   if(save.error) throw save.error;
   settings.form_pdf_path=path;
-  $("#joinPdfStatus").textContent="PDF hinterlegt ✓";
-  showToast("Beitrittserklärung gespeichert.");
+  await refreshFormSource();
+  showToast("Eigene Beitrittserklärung gespeichert.");
 }
 
 async function removePdf(){
@@ -42,8 +65,8 @@ async function removePdf(){
   const save=await sb.from("membership_join_settings").update({form_pdf_path:null,updated_at:new Date().toISOString()}).eq("club_id",club.id);
   if(save.error) throw save.error;
   settings.form_pdf_path=null;
-  $("#joinPdfStatus").textContent="Noch kein PDF hinterlegt.";
-  showToast("PDF entfernt.");
+  await refreshFormSource();
+  showToast("Eigene PDF entfernt – VEREINSANKER-Standard ist wieder aktiv.");
 }
 
 function applicationCard(a){
