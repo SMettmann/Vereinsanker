@@ -452,6 +452,13 @@ function hasPaidAccess(club) {
   return ["active_monthly", "active_yearly"].includes(club?.subscription_status);
 }
 
+function billingIsPending(club) {
+  return Boolean(
+    club?.stripe_subscription_id &&
+    ["pending", "incomplete"].includes(String(club?.stripe_status || ""))
+  );
+}
+
 function formatBillingDate(value) {
   if (!value) return "";
   const d = new Date(value);
@@ -508,7 +515,12 @@ function applyBillingCard(club) {
   action.removeAttribute("target");
   action.removeAttribute("rel");
 
-  if (club.subscription_status === "payment_failed") {
+  if (billingIsPending(club)) {
+    title.textContent = "Zahlung wird verarbeitet";
+    detail.textContent = "Stripe bestätigt die Zahlung noch. Bitte kein zweites Abo abschließen.";
+    action.href = "billing-success.html";
+    action.textContent = "Status ansehen →";
+  } else if (club.subscription_status === "payment_failed") {
     title.textContent = "Zahlung fehlgeschlagen";
     detail.textContent = "Bitte Zahlungsart im Stripe-Kundenbereich aktualisieren.";
     action.href = portalUrl();
@@ -2221,13 +2233,15 @@ async function initBilling() {
   const choiceWrap = $(".billing-choice-wrap");
   const billingNote = $(".billing-note");
 
-  if (hasPaidAccess(club) || club.subscription_status === "payment_failed") {
+  if (hasPaidAccess(club) || club.subscription_status === "payment_failed" || billingIsPending(club)) {
     if (choiceWrap) choiceWrap.hidden = true;
 
     const current = document.createElement("section");
     current.className = "billing-current-card";
 
-    if (club.subscription_status === "payment_failed") {
+    if (billingIsPending(club)) {
+      current.innerHTML = '<span class="billing-state warning">Zahlung wird verarbeitet</span><h2>Bitte kein zweites Abo abschließen</h2><p>Stripe bestätigt die Zahlung noch. Je nach Zahlungsart kann das etwas dauern. Sobald Stripe erfolgreich bestätigt, wird VEREINSFACH automatisch freigeschaltet.</p><a href="billing-success.html">Zahlungsstatus ansehen →</a>';
+    } else if (club.subscription_status === "payment_failed") {
       current.innerHTML = '<span class="billing-state bad">Zahlung fehlgeschlagen</span><h2>Zahlungsart aktualisieren</h2><p>Öffne den sicheren Stripe-Kundenbereich. Sobald Stripe die Zahlung bestätigt, wird VEREINSFACH automatisch wieder freigeschaltet.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Stripe-Kundenbereich öffnen →</a>';
     } else if (club.stripe_cancel_at_period_end) {
       current.innerHTML = '<span class="billing-state warning">Kündigung vorgemerkt</span><h2>Zugang bleibt aktiv</h2><p>Das Abo läuft noch bis ' + esc(formatBillingDate(club.stripe_current_period_end) || "zum Laufzeitende") + '. Im Stripe-Kundenbereich kannst du Zahlungsart, Rechnungen und Kündigung verwalten.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Abo verwalten →</a>';
