@@ -1090,3 +1090,473 @@ body.trial-expired .settings-form select{
   .paper-grid.two,.paper-signatures{grid-template-columns:1fr}
   .paper-grid .wide{grid-column:auto}
 }
+
+
+/* =========================================================
+   VEREINSANKER – globale Lesbarkeitsrunde
+   Ziel: klare Hierarchie statt Mini-Schrift
+   ========================================================= */
+:root{
+  --muted:#58665e;
+  --line:#d5ddd7;
+  --bg:#f3f5f1;
+}
+html{
+  font-size:16px;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+}
+body{
+  font-size:14px;
+  line-height:1.5;
+}
+.app-shell{grid-template-columns:250px minmax(0,1fr)}
+.app-main{
+  padding:38px 42px 68px;
+}
+.app-main>*{
+  width:100%;
+  max-width:1320px;
+}
+.topline{
+  margin-bottom:28px;
+}
+.topline h1{
+  font-size:38px;
+  line-height:1.08;
+  letter-spacing:-.035em;
+}
+.topline p{
+  margin-top:7px;
+  font-size:14px;
+  line-height:1.55;
+  color:var(--muted);
+}
+.year-pill{
+  font-size:13px;
+}
+
+/* Sidebar */
+.side{
+  padding:26px 18px;
+}
+.side .simple-brand{
+  font-size:14px;
+}
+.club-mini{
+  gap:11px;
+  padding-top:22px;
+  padding-bottom:22px;
+}
+.club-mini strong{
+  font-size:13px;
+  line-height:1.25;
+}
+.club-mini span{
+  font-size:11px;
+  line-height:1.35;
+  color:rgba(255,255,255,.60);
+}
+.nav-list{
+  gap:6px;
+}
+.nav-list a{
+  padding:13px 14px;
+  font-size:14px;
+  line-height:1.2;
+  color:rgba(255,255,255,.72);
+}
+.side-bottom{
+  font-size:12px;
+}
+.trial-side-status strong{
+  font-size:12px;
+}
+.trial-side-status span{
+  font-size:10.5px;
+  line-height:1.45;
+  color:rgba(255,255,255,.62);
+}
+.team-role-inline strong{
+  font-size:11.5px;
+}
+.team-role-inline span{
+  font-size:10.5px;
+  line-height:1.35;
+  color:rgba(255,255,255,.62);
+}
+.legal-side-links a{
+  font-size:11px;
+  color:rgba(255,255,255,.60);
+}
+.logout-button,
+.billing-side-action{
+  font-size:12px;
+}
+
+/* Basiselemente */
+.field{
+  gap:8px;
+  margin-bottom:18px;
+}
+.field label{
+  font-size:13.5px;
+  line-height:1.3;
+}
+.field input,
+.field select{
+  height:52px;
+  padding:0 15px;
+  font-size:15px;
+}
+.primary,
+.secondary-wide,
+.small-primary,
+.import-button,
+.outline-button,
+.mark-paid,
+.tiny-action,
+.danger-button{
+  font-size:13px;
+}
+.micro{
+  font-size:12px!important;
+  line-height:1.55!important;
+  color:#68766e!important;
+}
+.auth-message{
+  font-size:13px;
+  line-height:1.55;
+}
+.notice b{
+  font-size:13px;
+}
+.notice span{
+  font-size:12.5px;
+  line-height:1.55;
+}
+
+/* Dashboard */
+.summary>div,
+.summary>a{
+  padding:24px;
+}
+.summary span,
+.summary>a span{
+  font-size:13px;
+}
+.action-card{
+  padding:24px;
+}
+.action-card strong{
+  font-size:17px;
+  line-height:1.25;
+}
+.action-card span{
+  font-size:13px;
+  line-height:1.55;
+}
+.table-head strong{
+  font-size:17px;
+}
+.table-head a{
+  font-size:13px;
+}
+.member-name strong{
+  font-size:14px;
+}
+.member-name span,
+.member-row>span{
+  font-size:12.5px;
+}
+.status{
+  font-size:11.5px;
+}
+
+/* Mitglieder */
+.members-head{
+  font-size:12px;
+}
+.member-main b{
+  font-size:14px;
+}
+.member-main small{
+  font-size:11.5px;
+  line-height:1.35;
+  color:#6d7972;
+}
+.members-row>span:not(.member-main){
+  font-size:13px;
+}
+.members-row em{
+  font-size:11.5px;
+}
+.members-foot{
+  font-size:12px;
+}
+.member-hero small,
+.sheet-kicker{
+  font-size:11px;
+}
+.member-hero span{
+  font-size:13px;
+}
+.detail-grid span{
+  font-size:11px;
+}
+.detail-grid strong{
+  font-size:14px;
+  line-height:1.4;
+}
+.sheet-intro{
+  font-size:14px;
+  line-height:1.65;
+}
+
+/* Beiträge & Zahlungen */
+.contribution-summary span{
+  font-size:13px;
+}
+.contribution-action strong{
+  font-size:16px;
+}
+.contribution-action span{
+  font-size:12.5px;
+  line-height:1.55;
+}
+.eyebrow{
+  font-size:11px;
+}
+.simple-section-head p{
+  font-size:13.5px;
+  line-height:1.55;
+}
+.payment-row>strong,
+.open-row>strong{
+  font-size:14px;
+}
+.open-row>span:nth-of-type(2),
+.paid-check{
+  font-size:12px;
+}
+.sepa-check span{
+  font-size:11px;
+}
+.mark-paid,
+.tiny-action,
+.outline-button{
+  font-size:12px;
+}
+
+/* Einstellungen */
+.settings-form,
+.settings-form~.settings-card{
+  max-width:920px;
+}
+.settings-card{
+  padding:28px;
+}
+.settings-title{
+  gap:14px;
+  margin-bottom:24px;
+}
+.settings-title>span{
+  width:36px;
+  height:36px;
+  font-size:14px;
+}
+.settings-title h2{
+  font-size:20px;
+  line-height:1.2;
+}
+.settings-title p{
+  font-size:13px;
+  line-height:1.5;
+}
+.logo-settings-copy>span,
+.avv-settings-row span,
+.billing-settings-row span,
+.danger-copy p,
+.delete-blocked p,
+.delete-status{
+  font-size:12.5px;
+  line-height:1.6;
+}
+.logo-upload-button,
+.logo-remove-button,
+.avv-settings-row a,
+.billing-settings-row a,
+.delete-blocked a{
+  font-size:12px;
+}
+
+/* Team */
+.team-role-help{
+  font-size:12.5px;
+  line-height:1.6;
+}
+.team-message{
+  font-size:12.5px;
+  line-height:1.5;
+}
+.team-person strong{
+  font-size:13.5px;
+}
+.team-person span{
+  font-size:12px;
+}
+.team-role-badge,
+.team-remove{
+  font-size:11.5px;
+}
+.team-empty{
+  font-size:12.5px;
+}
+
+/* Digitale Beitritte */
+#joinsPage>.settings-card{
+  max-width:1320px;
+}
+.join-link-row input,
+.join-mail-row input{
+  min-height:50px;
+  font-size:14px;
+}
+.join-pdf-box{
+  grid-template-columns:minmax(0,1fr) auto auto auto;
+  gap:12px;
+  padding:16px 0;
+}
+.join-pdf-box strong{
+  font-size:13.5px;
+}
+.join-pdf-box span{
+  font-size:12px;
+  line-height:1.5;
+}
+.join-pdf-preview{
+  min-height:42px;
+  font-size:12px;
+}
+.join-pdf-box .logo-remove-button[hidden]{
+  display:none!important;
+}
+.join-app-head strong{
+  font-size:15px;
+}
+.join-app-head span{
+  font-size:12px;
+}
+.join-status{
+  min-height:30px;
+  font-size:11px;
+}
+.join-app-grid>div{
+  padding:12px;
+}
+.join-app-grid span{
+  font-size:11px;
+}
+.join-app-grid b{
+  font-size:12.5px;
+  line-height:1.4;
+}
+.join-filter .tiny-action{
+  min-height:38px;
+  padding:0 12px;
+}
+
+/* Öffentlicher Beitritt */
+.join-public-brand small{
+  font-size:11px;
+}
+.join-public-brand p{
+  font-size:14px;
+}
+.join-pdf-link{
+  font-size:12.5px;
+}
+.join-fee-info span{
+  font-size:12.5px;
+}
+.legal-check{
+  font-size:13px;
+  line-height:1.6;
+}
+
+/* Import, Korrektur, Erinnerungen – keine Mikroschrift mehr */
+.mapping-grid label>span,
+.mapping-note,
+.year-setup span,
+.correction-head span,
+.paid-with-date b,
+.reminder-batch-row strong,
+.network-status,
+.app-load-error span{
+  font-size:12px;
+}
+.preview-table small,
+.correction-card-head span,
+.duplicate-found strong,
+.duplicate-found span,
+.reminder-meta,
+.reminder-batch-row>div:first-child span,
+.reminder-email-ok,
+.reminder-email-missing,
+.reminder-batch-contact button{
+  font-size:11px;
+}
+.correction-skip,
+.correction-grid label>span,
+.paid-with-date small,
+.payment-edit,
+.duplicate-note,
+.payment-booking-summary span,
+.reminder-batch-stats span,
+.preview-table .preview-error em{
+  font-size:10.5px;
+}
+
+/* Mobile: lesbar trotz 6 Hauptpunkte */
+@media(max-width:900px){
+  .app-main{
+    padding:24px 16px calc(106px + env(safe-area-inset-bottom));
+  }
+  .app-main>*{
+    max-width:none;
+  }
+  .topline h1{
+    font-size:30px;
+  }
+  .topline p{
+    font-size:13.5px;
+  }
+  .mobile-top .simple-brand{
+    font-size:13px;
+  }
+  .mobile-top>span{
+    font-size:12px;
+  }
+  .mobile-bottom-nav{
+    grid-template-columns:repeat(6,1fr);
+  }
+  .mobile-bottom-nav span{
+    font-size:9.5px;
+  }
+  .mobile-bottom-nav i{
+    font-size:17px;
+  }
+}
+@media(max-width:620px){
+  .settings-card{
+    padding:22px 18px;
+  }
+  .join-pdf-box{
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:380px){
+  .mobile-bottom-nav span{
+    font-size:8.5px;
+  }
+}
