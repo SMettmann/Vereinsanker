@@ -2,7 +2,7 @@
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const sb=window.vaSupabase;
-let club=null,settings=null,currentFilter="pending",joinContributionTypes=[];
+let club=null,settings=null,currentFilter="pending",joinContributionTypes=[],joinDepartments=[];
 
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString("de-DE"):"–";
@@ -34,6 +34,23 @@ function refreshPreparedJoinUrl(){
     if(contribution) std.searchParams.set("beitrag",contribution);
     const preview=$("#joinFormPreview");
     if(preview) preview.href=std.href;
+  }
+}
+
+function loadJoinDepartments(){
+  joinDepartments=Array.isArray(club?.departments)
+    ? club.departments.map(value=>String(value||"").trim()).filter(Boolean)
+    : [];
+
+  const select=$("#joinPresetGroup");
+  if(!select) return;
+
+  select.innerHTML='<option value="">Interessent wählt selbst</option>'+
+    joinDepartments.map(name=>'<option value="'+esc(name)+'">'+esc(name)+'</option>').join("");
+
+  select.disabled=!joinDepartments.length;
+  if(!joinDepartments.length){
+    select.innerHTML='<option value="">Keine Abteilungen / Gruppen angelegt</option>';
   }
 }
 
@@ -100,6 +117,7 @@ async function ensureSettings(){
     data=created.data;
   }
   settings=data;
+  loadJoinDepartments();
   await loadJoinContributionTypes();
   refreshPreparedJoinUrl();
   await refreshFormSource();
@@ -184,7 +202,7 @@ window.initJoinsPage=async function(){
   await ensureSettings();
   await loadApplications();
 
-  $("#joinPresetGroup")?.addEventListener("input",refreshPreparedJoinUrl);
+  $("#joinPresetGroup")?.addEventListener("change",refreshPreparedJoinUrl);
   $("#joinPresetContribution")?.addEventListener("change",refreshPreparedJoinUrl);
 
   $("#copyJoinLink").addEventListener("click",async()=>{
