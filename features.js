@@ -1375,17 +1375,38 @@ function friendlyReminder(c) {
   const m = c.members || {};
   const contributionYear = Number(c.contribution_year || contributionYearFromUrl() || currentYear);
   const dueText = reminderDueText(c);
+  const clubName = String(vaClub?.name || "Euer Verein").trim();
+  const clubIban = String(vaClub?.iban || "").trim();
+  const groupName = String(m.group_name || "").trim();
+  const memberNumber = String(m.member_number || "").trim();
+  const memberName = memberFullName(m);
+  const purpose = [
+    "Mitgliedsbeitrag " + contributionYear,
+    memberName,
+    memberNumber ? "Mitglied " + memberNumber : ""
+  ].filter(Boolean).join(" · ");
 
-  return `Hallo ${memberFullName(m)},
+  const paymentDetails = [
+    "Zahlungsdaten:",
+    "Verein / Kontoinhaber: " + clubName,
+    groupName ? "Abteilung / Gruppe: " + groupName : "",
+    "Offener Betrag: " + money(c.amount),
+    clubIban ? "IBAN: " + clubIban : "",
+    "Verwendungszweck: " + purpose
+  ].filter(Boolean).join("\n");
+
+  return `Hallo ${memberName},
 
 für deinen Mitgliedsbeitrag ${contributionYear} sind noch ${money(c.amount)} offen${dueText}.
 
-Wir möchten dich freundlich daran erinnern, den Beitrag zu überweisen bzw. den Zahlungseingang zu prüfen.
+Wir möchten dich freundlich daran erinnern, den offenen Betrag zu überweisen bzw. den Zahlungseingang zu prüfen.
+
+${paymentDetails}
 
 Falls die Zahlung bereits unterwegs ist, kannst du diese Nachricht einfach ignorieren.
 
 Viele Grüße
-${vaClub?.name || "Euer Verein"}`;
+${clubName}`;
 }
 
 async function enhanceContributionPage() {
