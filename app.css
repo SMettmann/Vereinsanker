@@ -1560,3 +1560,5 @@ body{
     font-size:8.5px;
   }
 }
+
+.join-pdf-link[hidden],.join-public-brand[hidden]{display:none!important}
