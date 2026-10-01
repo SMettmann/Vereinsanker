@@ -1097,21 +1097,22 @@ async function enhanceMemberPage() {
       showToast("Mandatsreferenz ungültig: maximal 35 Zeichen, kein / am Anfang oder Ende und kein //.");
       return;
     }
-    const payload = {
-      member_number: $("#editMemberNumber").value.trim() || null,
-      first_name: $("#editFirstName").value.trim(),
-      last_name: $("#editLastName").value.trim(),
-      group_name: $("#editMemberGroup").value.trim() || null,
-      email: $("#editMemberEmail").value.trim() || null,
-      annual_fee: amount,
-      contribution_type_id: selectedContribution.contribution_type_id,
-      contribution_label: selectedContribution.contribution_label,
-      iban: editIban || null,
-      mandate_reference: editMandate || null,
-      mandate_signed_at: $("#editMemberMandateDate").value || null,
-      updated_at: new Date().toISOString()
-    };
-    const { error } = await sb.from("members").update(payload).eq("id", id);
+    const { error } = await sb.rpc("update_member_with_open_contribution", {
+      p_member_id: id,
+      p_member_number: $("#editMemberNumber").value.trim() || null,
+      p_first_name: $("#editFirstName").value.trim(),
+      p_last_name: $("#editLastName").value.trim(),
+      p_group_name: $("#editMemberGroup").value.trim() || null,
+      p_email: $("#editMemberEmail").value.trim() || null,
+      p_annual_fee: amount,
+      p_contribution_type_id: selectedContribution.contribution_type_id,
+      p_contribution_label: selectedContribution.contribution_label,
+      p_iban: editIban || null,
+      p_mandate_reference: editMandate || null,
+      p_mandate_signed_at: $("#editMemberMandateDate").value || null,
+      p_contribution_year: currentYear
+    });
+
     if (error) {
       const message = String(error?.message || "") + " " + String(error?.details || "");
       if (error.code === "23505" && /mandate_reference|members_club_mandate_reference_uidx/i.test(message)) {
@@ -1119,18 +1120,6 @@ async function enhanceMemberPage() {
       }
       if (error.code === "23505") return showToast("Diese Mitgliedsnummer ist bereits vergeben.");
       await handleAppError(error, "Änderung konnte nicht gespeichert werden.");
-      return;
-    }
-
-    const { error: contributionError } = await sb
-      .from("contributions")
-      .update({ amount, updated_at: new Date().toISOString() })
-      .eq("member_id", id)
-      .eq("contribution_year", currentYear)
-      .neq("status", "paid");
-
-    if (contributionError) {
-      await handleAppError(contributionError, "Mitglied wurde gespeichert, der offene Beitrag konnte aber nicht angepasst werden.");
       return;
     }
 
