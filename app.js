@@ -2149,6 +2149,7 @@ async function initSettings() {
 
   $("#settingsForm").addEventListener("submit", async e => {
     e.preventDefault();
+    if (String(departmentInput?.value || "").trim()) addDepartment();
     const button = $("button[type='submit']", e.currentTarget);
     const clubIban = normalizeIbanValue($("#settingsIban").value);
     const creditorId = normalizeCreditorIdValue($("#settingsCreditor").value);
