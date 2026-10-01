@@ -12,7 +12,17 @@ const c=r.data.club;
 $("#stdClubName").textContent=c.name||"Verein";
 $("#stdClubNameInline").textContent=c.name||"den Verein";
 $("#stdClubFallback").textContent=(c.short_name||c.name||"VA").slice(0,4).toUpperCase();
-$("#stdAnnualFee").textContent=Number(c.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
+const contributionTypes=Array.isArray(r.data.contribution_types)?r.data.contribution_types:[];
+if(contributionTypes.length){
+  $("#stdContributionFallback").hidden=true;
+  $("#stdContributionTypes").hidden=false;
+  $("#stdContributionTypes").innerHTML=contributionTypes.map(item=>
+    '<div class="paper-contribution-row"><i></i><span><strong>'+String(item.name||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))+'</strong><b>'+Number(item.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+' / Jahr</b></span></div>'
+  ).join("");
+}else{
+  $("#stdContributionFallback").hidden=false;
+  $("#stdContributionTypes").hidden=true;
+}
 $("#stdGeneratedDate").textContent="Stand "+new Date().toLocaleDateString("de-DE");
 if(c.logo_url){$("#stdClubLogo").src=c.logo_url;$("#stdClubLogo").hidden=false;$("#stdClubFallback").hidden=true;}
 $("#standardJoinPaper").hidden=false;
