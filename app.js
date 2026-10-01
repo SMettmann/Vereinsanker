@@ -1864,7 +1864,7 @@ async function initSettings() {
         ).join("")
       : '<div class="department-empty">Noch keine Abteilungen oder Gruppen angelegt.</div>';
 
-    $("[data-remove-department]", departmentRows).forEach(button => {
+    $$("[data-remove-department]", departmentRows).forEach(button => {
       button.addEventListener("click", () => {
         departmentDraft.splice(Number(button.dataset.removeDepartment), 1);
         renderDepartments();
