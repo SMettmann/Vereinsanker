@@ -31,17 +31,11 @@
   }
 
   async function loadDashboard(){
-    const [overviewRes,clubsRes,supportRes,visitorRes]=await Promise.all([
-      sb.rpc("admin_overview"),
-      sb.rpc("admin_clubs"),
-      sb.rpc("admin_support_requests"),
-      sb.rpc("admin_visitor_days",{p_days:14})
-    ]);
+    const response=await sb.functions.invoke("admin-dashboard",{body:{action:"overview"}});
+    if(response.error||!response.data?.ok) throw response.error||new Error(response.data?.error||"ADMIN_LOAD_FAILED");
 
-    const firstError=overviewRes.error||clubsRes.error||supportRes.error||visitorRes.error;
-    if(firstError) throw firstError;
-
-    const o=overviewRes.data||{};
+    const payload=response.data;
+    const o=payload.overview||{};
     const cards=[
       ["adminVisitorsToday",o.visitors_today||0],
       ["adminVisitors7d",o.visitors_7d||0],
@@ -54,7 +48,7 @@
     ];
     cards.forEach(([id,value])=>{const el=$("#"+id);if(el)el.textContent=String(value);});
 
-    const clubs=clubsRes.data||[];
+    const clubs=payload.clubs||[];
     $("#adminClubRows").innerHTML=clubs.length?clubs.map(row=>
       '<div class="admin-club-row">'+
         '<div><strong>'+esc(row.club_name)+'</strong><span>angelegt '+esc(dateText(row.created_at))+'</span></div>'+
@@ -64,7 +58,7 @@
       '</div>'
     ).join(""):'<div class="team-empty">Noch keine Vereine vorhanden.</div>';
 
-    const tickets=supportRes.data||[];
+    const tickets=payload.support||[];
     $("#adminSupportRows").innerHTML=tickets.length?tickets.map(row=>
       '<article class="admin-ticket">'+
         '<div class="admin-ticket-head"><div><span class="support-type '+esc(row.category)+'">'+esc(categoryLabel(row.category))+'</span><strong>'+esc(row.subject)+'</strong></div><span>'+esc(dateText(row.created_at,true))+'</span></div>'+
@@ -78,9 +72,9 @@
     document.querySelectorAll("[data-ticket-status]").forEach(select=>{
       select.addEventListener("change",async()=>{
         select.disabled=true;
-        const {error}=await sb.rpc("admin_set_support_status",{p_id:select.dataset.ticketStatus,p_status:select.value});
+        const result=await sb.functions.invoke("admin-dashboard",{body:{action:"set_status",id:select.dataset.ticketStatus,status:select.value}});
         select.disabled=false;
-        if(error){
+        if(result.error||!result.data?.ok){
           console.error(error);
           alert("Status konnte nicht gespeichert werden.");
         }else{
@@ -89,7 +83,7 @@
       });
     });
 
-    const days=visitorRes.data||[];
+    const days=payload.visitor_days||[];
     const max=Math.max(1,...days.map(x=>Number(x.unique_visitors||0)));
     $("#adminVisitorDays").innerHTML=days.map(row=>{
       const value=Number(row.unique_visitors||0);
