@@ -122,7 +122,7 @@ function importMappingHtml(columns, mapping) {
     ["first_name", "Vorname", true],
     ["last_name", "Nachname", true],
     ["full_name", "Name komplett", false],
-    ["group_name", "Gruppe / Abteilung", false],
+    ["group_name", "Abteilung / Gruppe", false],
     ["email", "E-Mail", false],
     ["iban", "IBAN", false],
     ["annual_fee", "Jahresbeitrag", false],
@@ -149,7 +149,7 @@ function importPreviewHtml(rows, mapping, fallbackFee) {
     '<div class="' + (item.errors.length ? 'preview-error' : '') + '"><span>' +
     esc(memberFullName(item.member)) +
     (item.errors.length ? '<em>Zeile ' + item.rowNo + ': ' + esc(item.errors.join(", ")) + '</em>' : '') +
-    '</span><small>' + esc(item.member.group_name || "Ohne Gruppe") + ' · ' + esc(money(item.member.annual_fee)) + '</small></div>'
+    '</span><small>' + esc(item.member.group_name || "Nicht zugeordnet") + ' · ' + esc(money(item.member.annual_fee)) + '</small></div>'
   ).join("") + '</div>';
 }
 
@@ -538,7 +538,7 @@ function renderImportCorrections(items) {
           '<label><span>Vorname</span><input data-correct="first_name" value="' + esc(correctionValue(m,"first_name")) + '"></label>' +
           '<label><span>Nachname</span><input data-correct="last_name" value="' + esc(correctionValue(m,"last_name")) + '"></label>' +
           '<label><span>Mitgliedsnummer</span><input data-correct="member_number" value="' + esc(correctionValue(m,"member_number")) + '"></label>' +
-          '<label><span>Gruppe / Abteilung</span><input data-correct="group_name" value="' + esc(correctionValue(m,"group_name")) + '"></label>' +
+          '<label><span>Abteilung / Gruppe</span><input data-correct="group_name" value="' + esc(correctionValue(m,"group_name")) + '"></label>' +
           '<label><span>E-Mail</span><input data-correct="email" value="' + esc(correctionValue(m,"email")) + '"></label>' +
           '<label><span>IBAN</span><input data-correct="iban" value="' + esc(correctionValue(m,"iban")) + '"></label>' +
           '<label><span>Jahresbeitrag</span><input data-correct="annual_fee" value="' + esc(correctionValue(m,"annual_fee")) + '"></label>' +
@@ -814,7 +814,7 @@ async function enhanceMemberPage() {
   $("#exportMembers")?.addEventListener("click", async () => {
     const members = await loadMembers();
     const lines = [
-      ["Mitgliedsnummer","Vorname","Nachname","Gruppe","E-Mail","Beitragsart","IBAN","Jahresbeitrag","Mandatsreferenz","Mandatsdatum"],
+      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Beitragsart","IBAN","Jahresbeitrag","Mandatsreferenz","Mandatsdatum"],
       ...members.map(m => [m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",m.contribution_label||"",m.iban||"",m.annual_fee||0,m.mandate_reference||"",m.mandate_signed_at||""])
     ];
     const csv = lines.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";")).join("\r\n");
