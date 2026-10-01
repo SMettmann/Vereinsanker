@@ -116,7 +116,7 @@ body.app-data-loading .mobile-bottom-nav{
   pointer-events:none;
 }
 body.app-data-loading::before{
-  content:"VEREINSANKER";
+  content:"VEREINSFACH";
   position:fixed;
   inset:0;
   z-index:9998;
@@ -1092,7 +1092,7 @@ body.trial-expired .settings-form select{
 
 
 /* =========================================================
-   VEREINSANKER – globale Lesbarkeitsrunde
+   VEREINSFACH – globale Lesbarkeitsrunde
    Ziel: klare Hierarchie statt Mini-Schrift
    ========================================================= */
 :root{
@@ -1564,7 +1564,7 @@ body{
 
 
 /* =========================================================
-   VEREINSANKER – Typografie-Politur v2
+   VEREINSFACH – Typografie-Politur v2
    Ruhiger, hochwertiger, klarer statt einfach nur größer
    ========================================================= */
 :root{
@@ -1861,7 +1861,7 @@ body{
 }
 
 
-/* VEREINSANKER – Sidebar Beitritte statt Hauptnavigation */
+/* VEREINSFACH – Sidebar Beitritte statt Hauptnavigation */
 .joins-side-action{
   display:flex;
   align-items:center;
@@ -1921,7 +1921,7 @@ body{
 }
 
 
-/* VEREINSANKER – Beitragsarten */
+/* VEREINSFACH – Beitragsarten */
 .contribution-types-manager{
   margin-top:20px;
   padding-top:20px;
@@ -2175,7 +2175,7 @@ body{
 }
 
 
-/* VEREINSANKER – Beitragslayout Feinschliff */
+/* VEREINSFACH – Beitragslayout Feinschliff */
 .field{
   align-content:start;
 }
@@ -2256,7 +2256,7 @@ body{
 }
 
 
-/* VEREINSANKER – vorbereitete Beitrittslinks */
+/* VEREINSFACH – vorbereitete Beitrittslinks */
 .join-link-options{
   display:grid;
   grid-template-columns:minmax(0,1fr) minmax(0,1fr);
@@ -2304,7 +2304,7 @@ body{
 }
 
 
-/* VEREINSANKER – SEPA Prüfliste */
+/* VEREINSFACH – SEPA Prüfliste */
 .sepa-issue-list{
   display:grid;
   gap:7px;
