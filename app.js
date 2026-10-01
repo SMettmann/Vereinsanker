@@ -1613,9 +1613,35 @@ async function initContributions() {
     if (invalidIban.length) issues.push(invalidIban.length + " Mitglied(er) mit ungültiger IBAN.");
     if (missingMandate.length) issues.push(missingMandate.length + " Mitglied(er) ohne vollständiges SEPA-Mandat.");
 
+    const memberIssues = openContributions.map(c => {
+      const m = contributionMember(c);
+      const details = [];
+      const amount = Number(c.amount || 0);
+      if (!Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99) details.push("Beitrag ungültig");
+      if (!m.iban) details.push("IBAN fehlt");
+      else if (!isValidIbanValue(m.iban)) details.push("IBAN ungültig");
+      if (!String(m.mandate_reference || "").trim()) details.push("Mandatsreferenz fehlt");
+      if (!m.mandate_signed_at) details.push("Mandatsdatum fehlt");
+      return details.length ? { name: memberFullName(m), details } : null;
+    }).filter(Boolean);
+
     $("#sepaMissing").textContent = issues.length
-      ? issues.join(" ")
+      ? "Bitte die folgenden Angaben korrigieren. Erst danach kann die Bankdatei erstellt werden."
       : "Alles vollständig. Die Datei kann erstellt werden.";
+
+    const issueList = $("#sepaIssueList");
+    if (issueList) {
+      issueList.hidden = !memberIssues.length;
+      issueList.innerHTML = memberIssues.map(item =>
+        '<div class="sepa-issue-row"><strong>' + esc(item.name || "Mitglied") + '</strong><span>' + esc(item.details.join(" · ")) + '</span></div>'
+      ).join("");
+    }
+
+    const prepareButton = $("#prepareSepa");
+    if (prepareButton) {
+      prepareButton.disabled = issues.length > 0;
+      prepareButton.title = issues.length ? issues.join(" ") : "";
+    }
 
     openBackdrop(sepaSheet);
   });
