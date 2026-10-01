@@ -46,9 +46,7 @@
     ).join("");
   }
 
-  window.initSupportPage=async function(){
-    const club=window.vaClub||await window.getClub?.();
-    const session=window.vaSession;
+  window.initSupportPage=async function(club,session){
     if(!club||!session?.user) throw new Error("SUPPORT_CONTEXT_MISSING");
 
     const form=$("#supportForm");
