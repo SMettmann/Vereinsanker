@@ -161,19 +161,51 @@ function setupDepartmentSelect(select, club, currentValue = "") {
   if (!select) return;
   const departments = clubDepartments(club);
   const current = String(currentValue || "").trim();
-  const hasCurrent = current && departments.some(item => item.toLocaleLowerCase("de-DE") === current.toLocaleLowerCase("de-DE"));
+  const matched = current
+    ? departments.find(item => item.toLocaleLowerCase("de-DE") === current.toLocaleLowerCase("de-DE"))
+    : "";
   const options = ['<option value="">Keine / nicht zugeordnet</option>'];
 
   departments.forEach(item => {
     options.push('<option value="' + esc(item) + '">' + esc(item) + '</option>');
   });
 
-  if (current && !hasCurrent) {
+  if (current && !matched) {
     options.push('<option value="' + esc(current) + '">' + esc(current) + ' (bisher)</option>');
   }
 
   select.innerHTML = options.join("");
-  select.value = current && (hasCurrent || !departments.length || !hasCurrent) ? current : "";
+  select.value = matched || current || "";
+}
+
+async function syncDepartmentsFromMembers(club) {
+  if (!club?.id) return [];
+  const { data, error } = await sb
+    .from("members")
+    .select("group_name")
+    .eq("club_id", club.id)
+    .eq("active", true);
+  if (error) throw error;
+
+  const merged = clubDepartments({
+    departments: [
+      ...clubDepartments(club),
+      ...(data || []).map(row => row.group_name)
+    ]
+  }).sort((a, b) => a.localeCompare(b, "de"));
+
+  const current = clubDepartments(club);
+  if (JSON.stringify(current) !== JSON.stringify(merged)) {
+    const { error: saveError } = await sb
+      .from("clubs")
+      .update({ departments: merged, updated_at: new Date().toISOString() })
+      .eq("id", club.id);
+    if (saveError) throw saveError;
+    club.departments = merged;
+    if (vaClub?.id === club.id) vaClub.departments = merged;
+  }
+
+  return merged;
 }
 
 function setMessage(form, message, type = "info") {
