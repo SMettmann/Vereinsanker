@@ -2509,3 +2509,6 @@ body.trial-expired #openJoinMail{
   .admin-club-row{grid-template-columns:1fr 1fr;gap:10px}.admin-club-row>span:last-child{grid-column:2}
   .admin-visitor-day{grid-template-columns:42px 1fr 28px}.admin-visitor-day small{display:none}
 }
+
+.admin-auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:600px){.admin-auth-actions{grid-template-columns:1fr}}
