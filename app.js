@@ -2147,6 +2147,12 @@ function setupLogout() {
       finishAppLoad();
       return;
     }
+    if ($("#joinsPage")) {
+      if (typeof window.initJoinsPage !== "function") throw new Error("Beitrittsmodul konnte nicht geladen werden.");
+      await window.initJoinsPage();
+      finishAppLoad();
+      return;
+    }
     if ($("#contributionsPage")) {
       await initContributions();
       finishAppLoad();
