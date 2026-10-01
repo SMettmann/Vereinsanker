@@ -7,7 +7,7 @@
 <div class="field"><label for="joinEmail">E-Mail</label><input id="joinEmail" type="email" required></div>
 <div class="field"><label for="joinStreet">Straße & Hausnummer</label><input id="joinStreet"></div>
 <div class="row"><div class="field"><label for="joinPostal">PLZ</label><input id="joinPostal" maxlength="20"></div><div class="field"><label for="joinCity">Ort</label><input id="joinCity"></div></div>
-<div class="field"><label for="joinGroup">Abteilung / Gruppe / Wunsch <span class="optional">optional</span></label><input id="joinGroup" placeholder="z. B. Jugend, Fußball, Fördermitglied"></div>
+<div class="field"><label for="joinGroup">Abteilung / Gruppe <span class="optional">optional</span></label><select id="joinGroup"><option value="">Keine / bitte auswählen</option></select></div>
 <div class="join-contribution-choice" id="joinContributionChoice" hidden><div class="field-label-row"><label>Mitgliedschaft / Beitrag</label><span>Bitte auswählen</span></div><div class="join-contribution-options" id="joinContributionOptions"></div></div><div class="join-fee-info" id="publicStandardFee"><span>Jahresbeitrag</span><strong id="publicAnnualFee">–</strong></div>
 <div class="field"><label for="joinIban">IBAN <span class="optional">optional</span></label><input id="joinIban" autocomplete="off" placeholder="DE00 0000 0000 0000 0000 00"></div>
 <label class="legal-check" id="sepaJoinBox" hidden><input id="joinSepa" type="checkbox"><span id="joinSepaText">Ich ermächtige den Verein, fällige Mitgliedsbeiträge per SEPA-Lastschrift einzuziehen.</span></label>
@@ -18,4 +18,4 @@
 </form>
 <section class="join-public-success" id="joinSuccess" hidden><strong>✓ Antrag gesendet</strong><h2>Danke!</h2><p>Dein Beitrittsantrag wurde an den Verein übermittelt. Der Verein prüft ihn jetzt.</p></section>
 <section class="join-public-error" id="joinLoadError" hidden><h2>Dieser Beitrittslink ist nicht verfügbar.</h2><p>Bitte wende dich direkt an den Verein.</p></section>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase-client.js"></script><script src="join-public.js?v=20261001-8"></script></body></html>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase-client.js"></script><script src="join-public.js?v=20261001-9"></script></body></html>
