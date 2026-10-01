@@ -1048,9 +1048,10 @@ async function initDashboard() {
   applyClubBrand(club);
   applyTrialUI(club);
 
-  const [members, contributions] = await Promise.all([
+  const [members, contributions, pendingJoinsResult] = await Promise.all([
     loadMembers(),
-    loadContributions()
+    loadContributions(),
+    sb.from("membership_applications").select("id", { count: "exact", head: true }).eq("club_id", club.id).eq("status", "pending")
   ]);
 
   const paid = contributions.filter(c => c.status === "paid");
@@ -1063,6 +1064,7 @@ async function initDashboard() {
   $("#dashMembers").textContent = String(members.length);
   $("#dashPaid").textContent = String(paid.length);
   $("#dashOpen").textContent = String(open.length);
+  if ($("#dashJoinCount")) $("#dashJoinCount").textContent = String(pendingJoinsResult.error ? 0 : (pendingJoinsResult.count || 0));
   $("#dashPercent").textContent = completedPercent + " %";
   $("#dashProgress").style.width = completedPercent + "%";
 
@@ -2076,6 +2078,7 @@ function setupMobileNavigation() {
   const items = [
     ["app.html", "⌂", "Übersicht"],
     ["members.html", "♙", "Mitglieder"],
+    ["joins.html", "✦", "Beitritte"],
     ["contributions.html", "€", "Beiträge"],
     ["finances.html", "€", "Finanzen"],
     ["settings.html", "⚙", "Einstellungen"]
