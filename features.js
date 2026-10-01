@@ -801,6 +801,8 @@ async function reviewCorrectedCandidates(sources, club) {
 }
 
 async function enhanceMemberPage() {
+  const memberClub = vaClub || await getClub();
+  const memberContributionTypes = await loadContributionTypes(memberClub.id);
   const fileInput = $("#memberImport");
   const importSheet = $("#importSheet");
   const mappingBox = $("#importMapping");
@@ -1061,7 +1063,13 @@ async function enhanceMemberPage() {
     $("#editLastName").value = data.last_name || "";
     $("#editMemberGroup").value = data.group_name || "";
     $("#editMemberEmail").value = data.email || "";
-    $("#editMemberFee").value = Number(data.annual_fee || 0);
+    setupMemberContributionSelect(
+      $("#editMemberContributionType"),
+      $("#editMemberFee"),
+      memberContributionTypes,
+      memberClub,
+      data
+    );
     $("#editMemberIban").value = data.iban || "";
     $("#editMemberMandate").value = data.mandate_reference || "";
     $("#editMemberMandateDate").value = data.mandate_signed_at || "";
@@ -1076,6 +1084,7 @@ async function enhanceMemberPage() {
     e.preventDefault();
     const id = $("#editMemberId").value;
     const amount = Number($("#editMemberFee").value || 0);
+    const selectedContribution = memberContributionSelection($("#editMemberContributionType"), memberContributionTypes);
     const editIban = normalizeIban($("#editMemberIban").value);
     const editMandate = $("#editMemberMandate").value.trim();
     if (editIban && !validIban(editIban)) {
@@ -1095,6 +1104,8 @@ async function enhanceMemberPage() {
       group_name: $("#editMemberGroup").value.trim() || null,
       email: $("#editMemberEmail").value.trim() || null,
       annual_fee: amount,
+      contribution_type_id: selectedContribution.contribution_type_id,
+      contribution_label: selectedContribution.contribution_label,
       iban: editIban || null,
       mandate_reference: editMandate || null,
       mandate_signed_at: $("#editMemberMandateDate").value || null,
