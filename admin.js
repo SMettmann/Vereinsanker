@@ -141,10 +141,11 @@
     await verifyAndLoad();
   });
 
-  $("#adminLogout")?.addEventListener("click",async()=>{
+  document.querySelectorAll("[data-admin-logout]").forEach(button=>button.addEventListener("click",async()=>{
+    button.disabled=true;
     await sb.auth.signOut();
     location.reload();
-  });
+  }));
 
   $("#adminReload")?.addEventListener("click",async()=>{
     const button=$("#adminReload");
