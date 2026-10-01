@@ -139,7 +139,8 @@
           SELF_INVITE:"Du bist bereits in diesem Verein.",
           INVALID_EMAIL:"Bitte eine gültige E-Mail-Adresse eingeben.",
           INVITE_EMAIL_FAILED:"Die Einladungs-E-Mail konnte nicht versendet werden.",
-          TEAM_LIMIT_REACHED:"Maximal 10 Teamzugänge pro Verein sind möglich."
+          TEAM_LIMIT_REACHED:"Maximal 10 Teamzugänge pro Verein sind möglich.",
+          ACCESS_BLOCKED:"Der Test oder das Abo ist beendet. Neue Teamzugänge sind erst nach Freischaltung wieder möglich."
         };
         teamMessage(messages[code]||"Einladung konnte nicht erstellt werden.","error");
         button.disabled=false;
