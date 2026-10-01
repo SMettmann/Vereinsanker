@@ -1692,22 +1692,25 @@ async function initSettings() {
     try {
       if (!window.XLSX) throw new Error("Excel-Export ist noch nicht geladen.");
 
-      const [membersResult, contributionsResult, financeResult, legalResult] = await Promise.all([
+      const [membersResult, contributionsResult, financeResult, legalResult, applicationsResult] = await Promise.all([
         sb.from("members").select("*").eq("club_id", club.id).order("last_name").order("first_name"),
         sb.from("contributions").select("*").eq("club_id", club.id).order("contribution_year", { ascending: false }),
         sb.from("finance_transactions").select("*").eq("club_id", club.id).order("transaction_date", { ascending: false }),
-        sb.from("legal_acceptances").select("document_type,document_version,accepted_at,controller_name,controller_address,controller_contact_name,controller_contact_email").eq("club_id", club.id).order("accepted_at", { ascending: false })
+        sb.from("legal_acceptances").select("document_type,document_version,accepted_at,controller_name,controller_address,controller_contact_name,controller_contact_email").eq("club_id", club.id).order("accepted_at", { ascending: false }),
+        sb.from("membership_applications").select("*").eq("club_id", club.id).order("submitted_at", { ascending: false })
       ]);
 
       if (membersResult.error) throw membersResult.error;
       if (contributionsResult.error) throw contributionsResult.error;
       if (financeResult.error) throw financeResult.error;
       if (legalResult.error) throw legalResult.error;
+      if (applicationsResult.error) throw applicationsResult.error;
 
       const members = membersResult.data || [];
       const contributions = contributionsResult.data || [];
       const finances = financeResult.data || [];
       const legalAcceptances = legalResult.data || [];
+      const applications = applicationsResult.data || [];
       const memberById = new Map(members.map(member => [member.id, member]));
 
       const workbook = XLSX.utils.book_new();
@@ -1733,6 +1736,11 @@ async function initSettings() {
         "Nachname": member.last_name || "",
         "Gruppe": member.group_name || "",
         "E-Mail": member.email || "",
+        "Telefon": member.phone || "",
+        "Geburtsdatum": member.birth_date || "",
+        "Straße": member.street || "",
+        "PLZ": member.postal_code || "",
+        "Ort": member.city || "",
         "IBAN": member.iban || "",
         "Jahresbeitrag": Number(member.annual_fee || 0),
         "Mandatsreferenz": member.mandate_reference || "",
@@ -1765,6 +1773,24 @@ async function initSettings() {
         "Zahlungsart": entry.payment_method === "cash" ? "Bar" : "Bank",
         "Beleg vorhanden": entry.receipt_path ? "Ja" : "Nein"
       }))), "Finanzen");
+
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(applications.map(entry => ({
+        "Vorname": entry.first_name || "",
+        "Nachname": entry.last_name || "",
+        "E-Mail": entry.email || "",
+        "Telefon": entry.phone || "",
+        "Geburtsdatum": entry.birth_date || "",
+        "Straße": entry.street || "",
+        "PLZ": entry.postal_code || "",
+        "Ort": entry.city || "",
+        "Gruppe/Wunsch": entry.group_name || "",
+        "IBAN": entry.iban || "",
+        "SEPA-Zustimmung": entry.sepa_consent ? "Ja" : "Nein",
+        "Jahresbeitrag": Number(entry.annual_fee || 0),
+        "Status": entry.status || "",
+        "Eingegangen am": entry.submitted_at || "",
+        "Bearbeitet am": entry.reviewed_at || ""
+      }))), "Beitrittsanträge");
 
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(legalAcceptances.map(entry => ({
         "Dokument": entry.document_type === "avv" ? "AV-Vertrag" : entry.document_type || "",
