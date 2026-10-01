@@ -35,7 +35,7 @@ if(contributionTypes.length){
   $("#publicStandardFee").hidden=false;
   $("#publicAnnualFee").textContent=Number(c.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
 }
-$("#publicClubFallback").textContent=(c.short_name||c.name||"VA").slice(0,4).toUpperCase();
+$("#publicClubFallback").textContent=(c.short_name||c.name||"VF").slice(0,4).toUpperCase();
 if(c.logo_url){$("#publicClubLogo").src=c.logo_url;$("#publicClubLogo").hidden=false;$("#publicClubFallback").hidden=true;}
 if(data.form_pdf_url){
   $("#publicJoinPdf").href=data.form_pdf_url;
