@@ -564,6 +564,9 @@ function applyTrialUI(club) {
     } else if (paid) {
       side.innerHTML = '<strong>Abo aktiv</strong><span>' + (status === "active_yearly" ? "Jahrestarif" : "Monatstarif") + ' · VEREINSFACH freigeschaltet.</span>';
       side.className = "trial-side-status paid";
+    } else if (billingIsPending(club)) {
+      side.innerHTML = '<strong>Zahlung wird verarbeitet</strong><span>Bitte kein zweites Abo abschließen.</span>';
+      side.className = "trial-side-status warning";
     } else if (status === "payment_failed") {
       const trialStillActive = new Date(club.trial_ends_at || 0).getTime() > Date.now();
       side.innerHTML = trialStillActive
@@ -593,6 +596,9 @@ function applyTrialUI(club) {
       billingSideAction.textContent = "Abo verwalten →";
       billingSideAction.target = "_blank";
       billingSideAction.rel = "noopener";
+    } else if (billingIsPending(club)) {
+      billingSideAction.href = "billing-success.html";
+      billingSideAction.textContent = "Zahlungsstatus →";
     } else if (status === "payment_failed") {
       billingSideAction.href = portalUrl();
       billingSideAction.textContent = "Zahlung korrigieren →";
@@ -621,6 +627,10 @@ function applyTrialUI(club) {
       mobile.className = "trial-mobile-status warning";
     } else if (paid) {
       mobile.hidden = true;
+    } else if (billingIsPending(club)) {
+      mobile.hidden = false;
+      mobile.innerHTML = '<span>Zahlung wird verarbeitet</span><a href="billing-success.html">Status ansehen →</a>';
+      mobile.className = "trial-mobile-status warning trial-mobile-with-action";
     } else if (status === "payment_failed") {
       const trialStillActive = new Date(club.trial_ends_at || 0).getTime() > Date.now();
       mobile.hidden = false;
