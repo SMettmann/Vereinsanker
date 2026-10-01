@@ -1,7 +1,7 @@
 <!doctype html><html lang="de"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin · VEREINSFACH</title>
-<link rel="stylesheet" href="app.css?v=20261001-31">
+<link rel="stylesheet" href="app.css?v=20261001-33">
 </head><body class="admin-body">
 <div class="admin-shell">
 <header class="admin-head"><a href="index.html" class="simple-brand">VEREINSFACH</a><div><strong>Administration</strong><span id="adminAccount"></span></div></header>
@@ -12,7 +12,8 @@
 <label>E-Mail<input id="adminEmail" type="email" autocomplete="username" value="S.Mettmann@Softwaremanufaktur-mettmann.de" required></label>
 <label>Passwort<input id="adminPassword" type="password" autocomplete="current-password" required></label>
 <p id="adminLoginMessage"></p>
-<button id="adminLoginButton" class="primary" type="submit">Admin anmelden</button>
+<div class="admin-auth-actions"><button id="adminLoginButton" class="primary" type="submit">Admin anmelden</button><button id="adminCreateButton" class="secondary-wide" type="button">Adminzugang einmalig anlegen</button></div>
+<p class="micro">Beim ersten Mal: mindestens 12 Zeichen als Passwort eingeben und „Adminzugang einmalig anlegen“ wählen. Danach Bestätigungs-Mail öffnen.</p>
 </form>
 </section>
 
@@ -54,5 +55,5 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <script src="supabase-client.js"></script>
-<script src="admin.js?v=20261001-1"></script>
+<script src="admin.js?v=20261001-2"></script>
 </body></html>
