@@ -17,6 +17,17 @@ if(get.error||!get.data?.ok){
 const data=get.data,c=data.club;
 $("#publicClubName").textContent=c.name;
 $("#publicJoinIntro").textContent=c.intro_text||"Fülle deine Daten aus. Der Verein prüft den Antrag anschließend.";
+const departments=Array.isArray(data.departments)
+  ? data.departments.map(value=>String(value||"").trim()).filter(Boolean)
+  : [];
+const groupSelect=$("#joinGroup");
+if(groupSelect){
+  groupSelect.innerHTML='<option value="">Keine / bitte auswählen</option>'+
+    departments.map(name=>'<option value="'+String(name).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))+'">'+String(name).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))+'</option>').join("");
+  groupSelect.disabled=!departments.length;
+  const presetMatch=departments.find(name=>name.toLocaleLowerCase("de-DE")===presetGroup.toLocaleLowerCase("de-DE"));
+  if(presetMatch) groupSelect.value=presetMatch;
+}
 const contributionTypes=Array.isArray(data.contribution_types)?data.contribution_types:[];
 if(contributionTypes.length){
   $("#publicStandardFee").hidden=true;
@@ -50,7 +61,6 @@ if(data.form_pdf_url){
   $("#publicJoinPdf").textContent="Standard-Beitrittserklärung ansehen / herunterladen →";
   $("#publicJoinPdf").hidden=false;
 }
-if(presetGroup) $("#joinGroup").value=presetGroup;
 if(c.creditor_id){$("#sepaJoinBox").hidden=false;$("#joinSepaText").textContent="Ich ermächtige "+c.name+" (Gläubiger-ID "+c.creditor_id+"), fällige Mitgliedsbeiträge per SEPA-Lastschrift von meinem Konto einzuziehen.";}
 $("#joinSepa").addEventListener("change",e=>{$("#signatureBox").hidden=!e.target.checked;});
 form.hidden=false;
