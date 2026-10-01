@@ -193,16 +193,7 @@
     document.body.dataset.clubRole=membership.role;
 
     const owner=membership.role==="owner"||club.owner_id===user.id;
-    const canSettings=owner||membership.role==="admin";
     const page=location.pathname.split("/").pop()||"app.html";
-
-    if(!canSettings){
-      $$('a[href="settings.html"]').forEach(a=>a.hidden=true);
-      if(page==="settings.html"){
-        location.replace("app.html");
-        return;
-      }
-    }
 
     if(!owner){
       hideOwnerOnly();
