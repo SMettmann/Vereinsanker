@@ -1133,6 +1133,7 @@ async function initMembers() {
     if ($("#detailBirthDate")) $("#detailBirthDate").textContent = member.birth_date ? new Date(member.birth_date + "T00:00:00").toLocaleDateString("de-DE") : "–";
     if ($("#detailAddress")) $("#detailAddress").textContent = [member.street, [member.postal_code, member.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "–";
     $("#detailIban").textContent = member.iban || "–";
+    if ($("#detailContributionType")) $("#detailContributionType").textContent = member.contribution_label || "Standard / individuell";
     $("#detailFee").textContent = money(member.annual_fee);
     $("#detailStatus").textContent = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
     openBackdrop(memberSheet);
@@ -1682,12 +1683,13 @@ async function initSettings() {
     try {
       if (!window.XLSX) throw new Error("Excel-Export ist noch nicht geladen.");
 
-      const [membersResult, contributionsResult, financeResult, legalResult, applicationsResult] = await Promise.all([
+      const [membersResult, contributionsResult, financeResult, legalResult, applicationsResult, contributionTypesResult] = await Promise.all([
         sb.from("members").select("*").eq("club_id", club.id).order("last_name").order("first_name"),
         sb.from("contributions").select("*").eq("club_id", club.id).order("contribution_year", { ascending: false }),
         sb.from("finance_transactions").select("*").eq("club_id", club.id).order("transaction_date", { ascending: false }),
         sb.from("legal_acceptances").select("document_type,document_version,accepted_at,controller_name,controller_address,controller_contact_name,controller_contact_email").eq("club_id", club.id).order("accepted_at", { ascending: false }),
-        sb.from("membership_applications").select("*").eq("club_id", club.id).order("submitted_at", { ascending: false })
+        sb.from("membership_applications").select("*").eq("club_id", club.id).order("submitted_at", { ascending: false }),
+        sb.from("contribution_types").select("name,annual_fee,is_default,active,sort_order").eq("club_id", club.id).order("sort_order", { ascending: true })
       ]);
 
       if (membersResult.error) throw membersResult.error;
@@ -1695,12 +1697,14 @@ async function initSettings() {
       if (financeResult.error) throw financeResult.error;
       if (legalResult.error) throw legalResult.error;
       if (applicationsResult.error) throw applicationsResult.error;
+      if (contributionTypesResult.error) throw contributionTypesResult.error;
 
       const members = membersResult.data || [];
       const contributions = contributionsResult.data || [];
       const finances = financeResult.data || [];
       const legalAcceptances = legalResult.data || [];
       const applications = applicationsResult.data || [];
+      const contributionTypes = contributionTypesResult.data || [];
       const memberById = new Map(members.map(member => [member.id, member]));
 
       const workbook = XLSX.utils.book_new();
@@ -1730,6 +1734,7 @@ async function initSettings() {
         "Straße": member.street || "",
         "PLZ": member.postal_code || "",
         "Ort": member.city || "",
+        "Beitragsart": member.contribution_label || "",
         "IBAN": member.iban || "",
         "Jahresbeitrag": Number(member.annual_fee || 0),
         "Mandatsreferenz": member.mandate_reference || "",
@@ -1763,6 +1768,13 @@ async function initSettings() {
         "Beleg vorhanden": entry.receipt_path ? "Ja" : "Nein"
       }))), "Finanzen");
 
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(contributionTypes.map(entry => ({
+        "Beitragsart": entry.name || "",
+        "Jahresbeitrag": Number(entry.annual_fee || 0),
+        "Vorauswahl": entry.is_default ? "Ja" : "Nein",
+        "Aktiv": entry.active ? "Ja" : "Nein"
+      }))), "Beitragsarten");
+
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(applications.map(entry => ({
         "Vorname": entry.first_name || "",
         "Nachname": entry.last_name || "",
@@ -1773,6 +1785,7 @@ async function initSettings() {
         "PLZ": entry.postal_code || "",
         "Ort": entry.city || "",
         "Gruppe/Wunsch": entry.group_name || "",
+        "Beitragsart": entry.contribution_label || "",
         "IBAN": entry.iban || "",
         "SEPA-Zustimmung": entry.sepa_consent ? "Ja" : "Nein",
         "Jahresbeitrag": Number(entry.annual_fee || 0),
