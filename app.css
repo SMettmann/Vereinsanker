@@ -2408,3 +2408,26 @@ body{
 .team-row.pending{
   background:#fffdf7;
 }
+
+
+/* VEREINSFACH – Schreibaktionen bei beendetem Zugang */
+body.trial-expired [data-finance-new],
+body.trial-expired [data-finance-edit],
+body.trial-expired #saveFinance,
+body.trial-expired #deleteFinance,
+body.trial-expired #addDepartment,
+body.trial-expired .department-row button,
+body.trial-expired #addContributionType,
+body.trial-expired #saveContributionType,
+body.trial-expired .contribution-type-actions button,
+body.trial-expired #teamInviteForm button[type="submit"],
+body.trial-expired [data-accept-join],
+body.trial-expired [data-reject-join],
+body.trial-expired #joinPdfInput,
+body.trial-expired #removeJoinPdf,
+body.trial-expired #copyJoinLink,
+body.trial-expired #openJoinMail{
+  opacity:.45!important;
+  pointer-events:none!important;
+  cursor:not-allowed!important;
+}
