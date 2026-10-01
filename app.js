@@ -353,21 +353,20 @@ function clubLogoPublicUrl(path) {
 
 function applyClubBrand(club) {
   if (!club) return;
-  if (club.color) document.documentElement.style.setProperty("--green", club.color);
 
   const shortName = (club.short_name || "VA").slice(0, 4).toUpperCase();
-  $$("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
+  $("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
 
-  $$(".club-logo-fallback").forEach(el => {
+  $(".club-logo-fallback").forEach(el => {
     el.textContent = shortName;
     el.hidden = Boolean(club.logo_path);
-    if (club.color) el.style.background = club.color;
+    el.style.removeProperty("background");
   });
 
-  $$("#clubBadge").forEach(el => {
+  $("#clubBadge").forEach(el => {
     el.textContent = shortName;
     el.hidden = Boolean(club.logo_path);
-    if (club.color) el.style.background = club.color;
+    el.style.removeProperty("background");
   });
 
   const logoUrl = clubLogoPublicUrl(club.logo_path);
@@ -801,14 +800,8 @@ async function initOnboarding() {
     $("#creditor").value = existing.creditor_id || "";
     $("#controllerAddress").value = existing.controller_address || "";
     $("#controllerContact").value = existing.controller_contact_name || "";
-    $$(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === existing.color));
   }
   if ($("#controllerEmail")) $("#controllerEmail").value = vaSession?.user?.email || "";
-
-  $$$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
-    $$$(".color-choice").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-  }));
 
   $$("[data-next]").forEach(btn => btn.addEventListener("click", () => showStep(Number(btn.dataset.next))));
   $$("[data-back]").forEach(btn => btn.addEventListener("click", () => showStep(Number(btn.dataset.back))));
@@ -857,12 +850,10 @@ async function initOnboarding() {
     button.disabled = true;
     button.textContent = "Wird eingerichtet …";
 
-    const activeColor = $(".color-choice.active")?.dataset.color || "#237a55";
     const payload = {
       owner_id: vaSession.user.id,
       name,
       short_name: ($("#clubShort").value.trim() || "VA").toUpperCase(),
-      color: activeColor,
       standard_fee: Number($("#fee").value || 0),
       due_date: $("#due").value || null,
       creditor_id: creditorId || null,
@@ -1679,13 +1670,6 @@ async function initSettings() {
       ? "Version " + club.avv_version + " · angenommen am " + acceptedDate
       : "Vor der Verarbeitung von Mitgliederdaten muss der aktuelle AV-Vertrag abgeschlossen werden.";
   }
-  $$(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === club.color));
-
-  $$$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
-    $$$(".color-choice").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-  }));
-
   $("#exportAllData")?.addEventListener("click", async e => {
     const button = e.currentTarget;
     button.disabled = true;
@@ -1720,7 +1704,6 @@ async function initSettings() {
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([{
         "Vereinsname": club.name || "",
         "Kürzel": club.short_name || "",
-        "Vereinsfarbe": club.color || "",
         "Gläubiger-ID": club.creditor_id || "",
         "IBAN": club.iban || "",
         "Standardbeitrag": Number(club.standard_fee || 0),
@@ -1944,7 +1927,6 @@ async function initSettings() {
     const { data, error } = await sb.from("clubs").update({
       name: $("#settingsClub").value.trim(),
       short_name: $("#settingsShort").value.trim().toUpperCase(),
-      color: $(".color-choice.active")?.dataset.color || club.color,
       creditor_id: creditorId || null,
       iban: clubIban || null,
       standard_fee: Number($("#settingsFee").value || 0),
@@ -2078,7 +2060,6 @@ function setupMobileNavigation() {
   const items = [
     ["app.html", "⌂", "Übersicht"],
     ["members.html", "♙", "Mitglieder"],
-    ["joins.html", "✦", "Beitritte"],
     ["contributions.html", "€", "Beiträge"],
     ["finances.html", "€", "Finanzen"],
     ["settings.html", "⚙", "Einstellungen"]
@@ -2090,6 +2071,17 @@ function setupMobileNavigation() {
     '<a href="' + href + '" class="' + (page === href ? "active" : "") + '"><i>' + icon + '</i><span>' + label + '</span></a>'
   ).join("");
   document.body.appendChild(nav);
+}
+
+async function updateJoinSidebarCount() {
+  const badge = $("#joinsSideCount");
+  if (!badge) return;
+  const { count, error } = await sb
+    .from("membership_applications")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+  badge.textContent = error ? "–" : String(count || 0);
+  badge.title = error ? "Offene Beitritte konnten nicht geladen werden." : String(count || 0) + " offene Beitritte";
 }
 
 function setupLogout() {
@@ -2114,8 +2106,10 @@ function setupLogout() {
 
   const sideBottom = $(".side-bottom");
   if (sideBottom) {
-    sideBottom.innerHTML = '<div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><a id="billingSideAction" class="billing-side-action" href="billing.html">Tarif wählen →</a><div class="legal-side-links"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="av-vertrag.html">AV-Vertrag</a></div><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
+    const joinsActive = (location.pathname.split("/").pop() || "") === "joins.html" ? " active" : "";
+    sideBottom.innerHTML = '<a class="joins-side-action' + joinsActive + '" href="joins.html"><span><strong>Digitale Beitritte</strong><small>Anträge & Beitrittslink</small></span><b id="joinsSideCount">–</b></a><div id="trialStatusSide" class="trial-side-status"><strong>Test wird geladen …</strong></div><a id="billingSideAction" class="billing-side-action" href="billing.html">Tarif wählen →</a><div class="legal-side-links"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="av-vertrag.html">AV-Vertrag</a></div><button class="logout-button" id="logoutButton" type="button">Abmelden</button>';
     $("#logoutButton")?.addEventListener("click", e => doLogout(e.currentTarget));
+    updateJoinSidebarCount().catch(error => console.error("Beitrittszähler:", error));
   }
 
   $("#mobileLogoutButton")?.addEventListener("click", e => doLogout(e.currentTarget));
