@@ -2432,3 +2432,80 @@ body.trial-expired #openJoinMail{
   pointer-events:none!important;
   cursor:not-allowed!important;
 }
+
+
+/* VEREINSFACH – Hilfe, Support & Administration */
+.support-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.support-quick-card{display:grid;gap:8px;padding:22px;border:1px solid var(--line);border-radius:18px;background:#fff;color:inherit;text-decoration:none;transition:.15s}
+.support-quick-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(18,32,25,.08)}
+.support-quick-card>span,.admin-section-head>div>span,.admin-login-card>span{font-size:9px;font-weight:900;letter-spacing:.14em;color:var(--green)}
+.support-quick-card strong{font-size:17px}
+.support-quick-card p,.admin-panel>p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
+.support-quick-card b{font-size:11px;color:var(--green)}
+.support-form-card textarea{width:100%;min-height:170px;resize:vertical;border:1px solid var(--line);border-radius:11px;padding:13px 14px;background:#fff;color:var(--dark);font:13px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;outline:none}
+.support-form-card textarea:focus{border-color:#9ebcae;box-shadow:0 0 0 3px rgba(35,122,85,.08)}
+.support-context{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;color:var(--muted);font-size:11px}
+.support-context b{color:var(--dark)}
+.support-save{align-items:center}
+.support-message{margin:0;font-size:11px;font-weight:800}
+.support-message.success{color:var(--green)}
+.support-message.error{color:#a44332}
+.support-history-row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.support-history-row:last-child{border-bottom:0}
+.support-history-row>div{display:flex;align-items:center;gap:10px;min-width:0}
+.support-history-row strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.support-history-row small{font-size:10px;color:var(--muted);margin-left:auto}
+.support-type,.support-status{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap}
+.support-type.support{background:#eaf5ef;color:#236b4a}
+.support-type.idea{background:#eef0fb;color:#4d5f9a}
+.support-status.new{background:#fff2de;color:#8a6500}
+.support-status.in_review{background:#eef0fb;color:#536196}
+.support-status.done{background:#eaf5ef;color:#236b4a}
+
+.admin-body{background:#f4f6f3}
+.admin-shell{width:min(1380px,calc(100% - 32px));margin:0 auto;padding:22px 0 60px}
+.admin-head{display:flex;justify-content:space-between;align-items:center;padding:0 4px 20px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.admin-head>div{display:grid;text-align:right;gap:3px}.admin-head>div strong{font-size:12px}.admin-head>div span{font-size:10px;color:var(--muted)}
+.admin-login-card{width:min(520px,100%);margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:22px;padding:30px}
+.admin-login-card h1{font-size:30px;margin:7px 0}.admin-login-card p{color:var(--muted);font-size:12px;line-height:1.55}
+.admin-login-card form{display:grid;gap:13px;margin-top:22px}.admin-login-card label{display:grid;gap:6px;font-size:11px;font-weight:800}.admin-login-card input{min-height:48px;border:1px solid var(--line);border-radius:10px;padding:0 13px;font:13px inherit}
+.admin-topline{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}
+.admin-topline>div:first-child>span{font-size:9px;font-weight:900;letter-spacing:.14em;color:var(--green)}
+.admin-topline h1{margin:4px 0;font-size:36px;letter-spacing:-.04em}.admin-topline p{margin:0;color:var(--muted);font-size:12px}
+.admin-topline>div:last-child{display:flex;gap:8px}
+.admin-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.admin-kpis>div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;gap:7px}
+.admin-kpis span{font-size:10px;color:var(--muted);font-weight:800}.admin-kpis strong{font-size:28px;letter-spacing:-.04em}
+.admin-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:14px;margin-bottom:14px}
+.admin-panel{margin:0 0 14px}
+.admin-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.admin-section-head h2{margin:3px 0 0;font-size:20px}.admin-section-head a{font-size:11px;font-weight:800;color:var(--green)}
+.admin-visitor-days{display:grid;gap:8px}
+.admin-visitor-day{display:grid;grid-template-columns:48px 1fr 34px 72px;align-items:center;gap:9px;font-size:10px}
+.admin-visitor-day>span,.admin-visitor-day>small{color:var(--muted)}.admin-visitor-day>b{text-align:right}
+.admin-visitor-day>div{height:8px;border-radius:99px;background:#edf1ee;overflow:hidden}.admin-visitor-day i{display:block;height:100%;border-radius:99px;background:var(--green)}
+.admin-club-head,.admin-club-row{display:grid;grid-template-columns:minmax(220px,1.5fr) 130px 90px 150px;gap:14px;align-items:center}
+.admin-club-head{padding:0 12px 9px;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+.admin-club-row{padding:13px 12px;border-top:1px solid var(--line);font-size:11px}.admin-club-row>div{display:grid;gap:3px}.admin-club-row>div span,.admin-club-row small{color:var(--muted);font-size:9px}.admin-club-row>span{display:grid;gap:2px}
+.admin-billing{display:inline-flex!important;width:max-content;padding:6px 9px;border-radius:999px;background:#eef1ef;font-size:9px!important;font-weight:900}
+.admin-billing.active_monthly,.admin-billing.active_yearly{background:#eaf5ef;color:#236b4a}.admin-billing.payment_failed{background:#fff0e8;color:#9a4d31}
+.admin-ticket{padding:16px 0;border-top:1px solid var(--line)}.admin-ticket:first-child{border-top:0}
+.admin-ticket-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.admin-ticket-head>div{display:flex;align-items:center;gap:9px}.admin-ticket-head strong{font-size:13px}.admin-ticket-head>span{font-size:9px;color:var(--muted)}
+.admin-ticket p{font-size:12px;line-height:1.6;color:#39463f;margin:12px 0}
+.admin-ticket-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;color:var(--muted);font-size:9px}.admin-ticket-meta select{margin-left:auto;min-height:34px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 8px;font-size:10px;font-weight:800}
+
+@media(max-width:980px){
+  .admin-kpis{grid-template-columns:repeat(2,1fr)}
+  .admin-grid{grid-template-columns:1fr}
+  .admin-club-head{display:none}
+  .admin-club-row{grid-template-columns:1fr 100px 70px 120px}
+}
+@media(max-width:760px){
+  .support-quick-grid{grid-template-columns:1fr}
+  .support-history-row>div{display:grid;grid-template-columns:auto 1fr}.support-history-row small{margin-left:0}
+  .admin-shell{width:min(100% - 20px,1380px)}
+  .admin-topline{align-items:flex-start;flex-direction:column}.admin-topline>div:last-child{width:100%}.admin-topline button{flex:1}
+  .admin-kpis{grid-template-columns:1fr 1fr}
+  .admin-club-row{grid-template-columns:1fr 1fr;gap:10px}.admin-club-row>span:last-child{grid-column:2}
+  .admin-visitor-day{grid-template-columns:42px 1fr 28px}.admin-visitor-day small{display:none}
+}
