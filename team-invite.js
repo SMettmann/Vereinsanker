@@ -55,10 +55,9 @@
     return;
   }
 
-  const labels={owner:"Inhaber",admin:"Vorstand / Admin",treasurer:"Kassierer"};
   $("#teamInviteClub").textContent=club.name||"Verein";
   $("#teamInviteEmail").textContent=userData.user.email||membership.email||"";
-  $("#teamInviteRole").textContent=labels[membership.role]||"Team";
+  $("#teamInviteRole").textContent="Volle Rechte";
   if(status) status.textContent="Einladung angenommen. Lege jetzt dein persönliches Passwort fest.";
 
   form?.addEventListener("submit",async e=>{
