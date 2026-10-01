@@ -29,6 +29,10 @@ window.initFinancesPage = async function () {
     return parts.length === 3 ? parts[2] + "." + parts[1] + "." + parts[0] : value;
   }
   function paymentLabel(value) { return value === "cash" ? "Kasse" : "Bank"; }
+  function defaultDateForYear(year) {
+    const today = new Date().toISOString().slice(0,10);
+    return Number(today.slice(0,4)) === Number(year) ? today : String(year) + "-01-01";
+  }
 
   function setCategoryOptions(type, selected) {
     const list = type === "expense" ? expenseCategories : incomeCategories;
@@ -177,7 +181,9 @@ window.initFinancesPage = async function () {
     $("#financeId").value = "";
     $("#financeOldReceipt").value = "";
     $("#financeType").value = type || "income";
-    $("#financeDate").value = new Date().toISOString().slice(0,10);
+    $("#financeDate").min = selectedYear + "-01-01";
+    $("#financeDate").max = selectedYear + "-12-31";
+    $("#financeDate").value = defaultDateForYear(selectedYear);
     $("#financePayment").value = "bank";
     setCategoryOptions($("#financeType").value);
     $("#financeSheetTitle").textContent = $("#financeType").value === "expense" ? "Ausgabe erfassen" : "Einnahme erfassen";
@@ -242,6 +248,12 @@ window.initFinancesPage = async function () {
     const button = $("#saveFinance");
     const id = $("#financeId").value;
     const amount = Number($("#financeAmount").value || 0);
+    const transactionDate = $("#financeDate").value;
+    if (Number(String(transactionDate).slice(0,4)) !== selectedYear) {
+      $("#financeDate").focus();
+      showToast("Das Buchungsdatum muss im ausgewählten Finanzjahr " + selectedYear + " liegen.");
+      return;
+    }
     if (!(amount > 0)) {
       $("#financeAmount").focus();
       showToast("Bitte einen Betrag größer als 0 eingeben.");
@@ -252,7 +264,7 @@ window.initFinancesPage = async function () {
     try {
       const payload = {
         club_id: club.id,
-        transaction_date: $("#financeDate").value,
+        transaction_date: transactionDate,
         type: $("#financeType").value,
         category: $("#financeCategory").value,
         description: $("#financeDescription").value.trim() || null,
