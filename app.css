@@ -1562,3 +1562,301 @@ body{
 }
 
 .join-pdf-link[hidden],.join-public-brand[hidden]{display:none!important}
+
+
+/* =========================================================
+   VEREINSANKER – Typografie-Politur v2
+   Ruhiger, hochwertiger, klarer statt einfach nur größer
+   ========================================================= */
+:root{
+  --ink:#17231d;
+  --muted:#536159;
+  --soft-text:#6b776f;
+}
+html,body,
+button,input,select,textarea{
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+body{
+  font-size:15px;
+  line-height:1.58;
+  letter-spacing:-.005em;
+}
+.app-main>*{
+  max-width:1180px;
+}
+#joinsPage>.settings-card{
+  max-width:1180px;
+}
+
+/* Überschriften: weniger schwer, mehr Ruhe */
+.topline h1,
+.member-hero h2,
+.side-sheet>h2,
+.step h1,
+.auth-card h2,
+.simple-section h2,
+.settings-title h2,
+.join-public-brand h1,
+.join-public-success h2,
+.join-public-error h2{
+  font-family:"Segoe UI Variable Display","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+  font-weight:700;
+}
+.topline h1{
+  font-size:36px;
+  line-height:1.12;
+  letter-spacing:-.028em;
+}
+.topline p{
+  max-width:720px;
+  font-size:14.5px;
+  line-height:1.6;
+  color:#5d6a62;
+}
+.settings-title h2{
+  font-size:21px;
+  letter-spacing:-.015em;
+}
+.settings-title p{
+  max-width:760px;
+  font-size:13.5px;
+  color:#657169;
+}
+.simple-section h2{
+  font-size:22px;
+  letter-spacing:-.02em;
+}
+
+/* Karten: definierter, aber nicht schwer */
+.settings-card,
+.table-card,
+.members-card,
+.simple-section,
+.summary>div,
+.summary>a,
+.action-card,
+.contribution-summary>div,
+.join-app-card{
+  border-color:#d8dfda;
+  box-shadow:0 1px 2px rgba(19,35,27,.025);
+}
+.settings-card{
+  border-radius:18px;
+}
+.settings-title>span{
+  font-weight:750;
+}
+.action-card strong,
+.table-head strong,
+.member-name strong,
+.member-main b,
+.payment-row>strong,
+.open-row>strong,
+.join-app-head strong{
+  font-weight:700;
+}
+
+/* Fließtext und Hinweise */
+.micro,
+.settings-title p,
+.action-card span,
+.contribution-action span,
+.simple-section-head p,
+.sheet-intro,
+.team-role-help,
+.join-pdf-box span,
+.join-app-head span,
+.join-public-brand p,
+.danger-copy p,
+.avv-settings-row span,
+.billing-settings-row span{
+  color:#5e6b63!important;
+}
+.micro{
+  text-align:left;
+}
+.join-link-card .micro{
+  text-align:center;
+}
+
+/* Formulare: klarer Fokus */
+.field label{
+  font-weight:650;
+  color:#26362e;
+}
+.field input,
+.field select,
+.join-link-row input,
+.join-mail-row input{
+  border-color:#ced7d0;
+  background:#fcfdfc;
+  color:#17231d;
+}
+.field input::placeholder,
+.join-link-row input::placeholder,
+.join-mail-row input::placeholder{
+  color:#8a958e;
+}
+.field input:focus,
+.field select:focus,
+.join-link-row input:focus,
+.join-mail-row input:focus{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px rgba(35,122,85,.10);
+}
+
+/* Buttons: nicht zu fett, dafür eindeutiger */
+.primary,
+.small-primary,
+.import-button,
+.secondary-wide,
+.outline-button,
+.mark-paid,
+.tiny-action,
+.logo-upload-button,
+.logo-remove-button,
+.danger-button,
+.billing-side-action{
+  font-weight:700;
+  letter-spacing:-.005em;
+}
+.primary,
+.small-primary{
+  box-shadow:0 1px 2px rgba(12,47,31,.08);
+}
+
+/* Sidebar: ruhige Navigation */
+.side .simple-brand{
+  font-weight:750;
+}
+.nav-list a{
+  font-weight:650;
+  letter-spacing:-.005em;
+}
+.nav-list a.active{
+  background:rgba(88,215,150,.13);
+}
+.club-mini strong{
+  font-weight:700;
+}
+.club-mini span{
+  color:rgba(255,255,255,.64);
+}
+
+/* Tabellen / Status */
+.members-head{
+  color:#657169;
+  font-weight:700;
+  letter-spacing:.045em;
+}
+.member-main small,
+.member-name span,
+.member-row>span,
+.members-foot{
+  color:#66736b;
+}
+.status,
+.members-row em,
+.join-status,
+.team-role-badge{
+  font-weight:700;
+}
+.detail-grid span,
+.sepa-check span,
+.eyebrow{
+  letter-spacing:.04em;
+}
+
+/* Digitale Beitritte: klarere Hierarchie */
+#joinsPage .settings-title{
+  margin-bottom:20px;
+}
+.join-link-row,
+.join-mail-row{
+  gap:12px;
+}
+.join-link-row input,
+.join-mail-row input{
+  font-size:14.5px;
+}
+.join-pdf-box{
+  background:#fafcfb;
+  border:1px solid #e1e6e2;
+  border-radius:13px;
+  padding:14px 16px;
+}
+.join-pdf-box strong{
+  font-size:14px;
+}
+.join-pdf-preview{
+  font-weight:700;
+}
+.join-filter{
+  margin-top:4px;
+}
+.join-filter .tiny-action{
+  border-color:#d3dbd5;
+}
+.join-app-grid>div{
+  background:#f7f9f7;
+  border:1px solid #edf1ee;
+}
+.join-app-grid span{
+  color:#657169;
+  font-weight:600;
+}
+.join-app-grid b{
+  font-weight:700;
+}
+
+/* Öffentliche Beitrittsseite */
+.join-public-shell{
+  width:min(720px,calc(100% - 28px));
+}
+.join-public-brand h1{
+  font-size:clamp(32px,6vw,44px);
+  line-height:1.08;
+  letter-spacing:-.03em;
+}
+.join-public-brand p{
+  max-width:540px;
+  color:#5d6a62;
+}
+.join-public-form{
+  border-color:#d8dfda;
+  box-shadow:0 18px 48px rgba(20,40,30,.055);
+}
+.join-fee-info{
+  background:#f2f7f4;
+}
+
+/* Desktop-Lesefluss */
+@media(min-width:901px){
+  .app-main{
+    padding-top:40px;
+  }
+  .settings-form,
+  .settings-form~.settings-card{
+    max-width:900px;
+  }
+  #joinsPage{
+    max-width:1180px;
+  }
+}
+
+/* Mobile bleibt klar und nicht gequetscht */
+@media(max-width:900px){
+  body{
+    font-size:14px;
+  }
+  .topline h1{
+    font-size:29px;
+  }
+  .settings-title h2{
+    font-size:19px;
+  }
+  .nav-list a{
+    font-size:14px;
+  }
+}
