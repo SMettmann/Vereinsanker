@@ -1670,6 +1670,10 @@ async function initSettings() {
       ? "Version " + club.avv_version + " · angenommen am " + acceptedDate
       : "Vor der Verarbeitung von Mitgliederdaten muss der aktuelle AV-Vertrag abgeschlossen werden.";
   }
+  if (typeof window.initContributionTypes === "function") {
+    await window.initContributionTypes(club);
+  }
+
   $("#exportAllData")?.addEventListener("click", async e => {
     const button = e.currentTarget;
     button.disabled = true;
