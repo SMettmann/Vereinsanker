@@ -1064,6 +1064,11 @@ async function enhanceMemberPage() {
     $("#editLastName").value = data.last_name || "";
     setupDepartmentSelect($("#editMemberGroup"), memberClub, data.group_name || "");
     $("#editMemberEmail").value = data.email || "";
+    $("#editMemberBirthDate").value = data.birth_date || "";
+    $("#editMemberPhone").value = data.phone || "";
+    $("#editMemberStreet").value = data.street || "";
+    $("#editMemberPostalCode").value = data.postal_code || "";
+    $("#editMemberCity").value = data.city || "";
     setupMemberContributionSelect(
       $("#editMemberContributionType"),
       $("#editMemberFee"),
@@ -1098,7 +1103,7 @@ async function enhanceMemberPage() {
       showToast("Mandatsreferenz ungültig: maximal 35 Zeichen, kein / am Anfang oder Ende und kein //.");
       return;
     }
-    const { error } = await sb.rpc("update_member_with_open_contribution", {
+    const { error } = await sb.rpc("update_member_full_with_open_contribution", {
       p_member_id: id,
       p_member_number: $("#editMemberNumber").value.trim() || null,
       p_first_name: $("#editFirstName").value.trim(),
@@ -1111,11 +1116,18 @@ async function enhanceMemberPage() {
       p_iban: editIban || null,
       p_mandate_reference: editMandate || null,
       p_mandate_signed_at: $("#editMemberMandateDate").value || null,
-      p_contribution_year: currentYear
+      p_contribution_year: currentYear,
+      p_birth_date: $("#editMemberBirthDate").value || null,
+      p_phone: $("#editMemberPhone").value.trim() || null,
+      p_street: $("#editMemberStreet").value.trim() || null,
+      p_postal_code: $("#editMemberPostalCode").value.trim() || null,
+      p_city: $("#editMemberCity").value.trim() || null
     });
 
     if (error) {
       const message = String(error?.message || "") + " " + String(error?.details || "");
+      if (message.includes("INVALID_BIRTH_DATE")) return showToast("Das Geburtsdatum ist ungültig.");
+      if (message.includes("INVALID_DEPARTMENT")) return showToast("Diese Abteilung / Gruppe ist nicht mehr verfügbar. Bitte Auswahl neu öffnen.");
       if (error.code === "23505" && /mandate_reference|members_club_mandate_reference_uidx/i.test(message)) {
         return showToast("Diese Mandatsreferenz ist bereits vergeben.");
       }
