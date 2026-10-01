@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-track-public="1">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://exginppvomebjinydrrw.supabase.co; connect-src 'self' https://exginppvomebjinydrrw.supabase.co wss://exginppvomebjinydrrw.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <title>VEREINSFACH – Handbuch</title><meta name="robots" content="index,follow">
 <style>
 :root{--g:#237a55;--d:#10231a;--m:#657169;--l:#dde4df;--bg:#f6f8f5;--warn:#fff7eb;--red:#fff5f1}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--d);font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.wrap{width:min(920px,calc(100% - 32px));margin:auto}.top{padding:22px 0;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{font-weight:900;color:var(--d);text-decoration:none}.back{font-size:13px;font-weight:800;color:var(--g);text-decoration:none}.public-actions{width:min(920px,calc(100% - 32px));margin:0 auto 4px;display:flex;gap:10px;flex-wrap:wrap}.public-actions a,.public-actions button{min-height:44px;padding:0 15px;border-radius:11px;font:800 12px/1 "Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.public-actions .primary{border:0;background:var(--g);color:#fff}.public-actions .secondary{border:1px solid var(--l);background:#fff;color:var(--d)}.download-note{font-size:11px;color:var(--m);align-self:center}.hero{padding:48px 0 28px}.hero small{font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--g)}.hero h1{font-size:clamp(38px,7vw,64px);line-height:1;letter-spacing:-.055em;margin:8px 0 12px}.hero p{font-size:17px;color:var(--m);line-height:1.65;max-width:700px}.toc{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 42px}.toc a{padding:12px 14px;border:1px solid var(--l);border-radius:12px;background:#fff;color:var(--d);font-size:12px;font-weight:800;text-decoration:none}.chapter{background:#fff;border:1px solid var(--l);border-radius:20px;padding:clamp(22px,5vw,38px);margin-bottom:16px}.chapter .no{color:var(--g);font-size:11px;font-weight:900}.chapter h2{font-size:30px;letter-spacing:-.04em;margin:5px 0 10px}.chapter h3{font-size:18px;margin:24px 0 8px}.chapter p,.chapter li{font-size:14px;line-height:1.7;color:#2d3831}.chapter li{margin-bottom:5px}.steps{counter-reset:s;display:grid;gap:8px;padding:0}.steps li{list-style:none;display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start}.steps li:before{counter-increment:s;content:counter(s);width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:var(--g);color:#fff;font-weight:900}.note{padding:14px 16px;border:1px solid var(--l);border-radius:12px;background:#f4f8f5}.note.warn{background:var(--warn)}.note.danger{background:var(--red)}.note strong{display:block;color:var(--g);margin-bottom:4px}.note.danger strong{color:#a54831}.footer{padding:28px 0 50px;font-size:12px;color:var(--m);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}.footer a{color:var(--g)}@media(max-width:720px){.toc{grid-template-columns:1fr}.top{align-items:flex-start}.chapter h2{font-size:25px}.public-actions{display:grid;grid-template-columns:1fr}.download-note{text-align:center}}@media print{body{background:#fff}.top,.toc{display:none}.chapter{break-inside:avoid;border:0;border-radius:0;padding:12mm 0;margin:0}.wrap{width:auto;margin:0 18mm}.hero{padding-top:5mm}}
@@ -32,36 +32,9 @@
 
 <section class="chapter"><span class="no">10</span><h2>Wenn etwas nicht klappt</h2><ul><li><b>Anmeldung:</b> E-Mail/Passwort prüfen oder Passwort-Reset nutzen.</li><li><b>SEPA nicht bereit:</b> IBAN, Gläubiger-ID und Mandatsdaten prüfen.</li><li><b>Beitrag fehlt in Finanzen:</b> prüfen, ob er als bezahlt markiert ist.</li><li><b>Falscher Mitgliedsbeitrag:</b> Mitglied öffnen, Beitragsart prüfen und den Jahresbeitrag bei Bedarf individuell anpassen.</li><li><b>Beleg-Upload:</b> PDF/PNG/JPG/WebP, maximal 10 MB.</li><li><b>Keine Mitgliederdaten:</b> AVV-Status und aktiven Zugang prüfen.</li></ul><div class="note"><strong>Support</strong>Technische Probleme bitte über die im Impressum angegebene E-Mail-Adresse melden. Bitte keine Passwörter per E-Mail senden.</div></section>
 </main><footer class="wrap footer"><span>VEREINSFACH · Weniger Verwaltung. Mehr Verein.</span><span><a href="index.html">Startseite</a> · <a href="datenschutz.html">Datenschutz</a> · <a href="impressum.html">Impressum</a></span></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+<script src="supabase-client.js"></script>
+<script src="metrics.js?v=20261001-1"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
-<script>
-(function(){
-  const button=document.getElementById("downloadHandbookPdf");
-  const status=document.getElementById("downloadHandbookStatus");
-  button?.addEventListener("click",async function(){
-    if(typeof html2pdf!=="function"){
-      status.textContent="PDF-Download konnte nicht geladen werden. Bitte Seite neu laden.";
-      return;
-    }
-    button.disabled=true;
-    button.textContent="PDF wird erstellt …";
-    status.textContent="Einen Moment – das Handbuch wird lokal im Browser erzeugt.";
-    try{
-      await html2pdf().set({
-        margin:[8,8,9,8],
-        filename:"VEREINSFACH_Handbuch.pdf",
-        image:{type:"jpeg",quality:0.96},
-        html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
-        jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
-        pagebreak:{mode:["css","legacy"],avoid:[".chapter"]}
-      }).from(document.getElementById("handbookContent")).save();
-      status.textContent="PDF wurde erstellt.";
-    }catch(error){
-      console.error(error);
-      status.textContent="PDF konnte nicht erstellt werden. Du kannst das Handbuch weiterhin online lesen.";
-    }finally{
-      button.disabled=false;
-      button.textContent="Handbuch als PDF herunterladen";
-    }
-  });
-})();
-</script></body></html>
+<script src="handbuch.js?v=20261001-1"></script>
+</body></html>
