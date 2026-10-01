@@ -6,10 +6,10 @@
 
   function visitorId(){
     try{
-      let id=localStorage.getItem(KEY);
+      let id=sessionStorage.getItem(KEY);
       if(!id){
         id=crypto.randomUUID();
-        localStorage.setItem(KEY,id);
+        sessionStorage.setItem(KEY,id);
       }
       return id;
     }catch{
@@ -18,8 +18,9 @@
   }
 
   function pageName(){
+    if(location.pathname.endsWith("/")) return "index.html";
     const raw=location.pathname.split("/").filter(Boolean).pop()||"index.html";
-    return raw.toLowerCase();
+    return raw.includes(".")?raw.toLowerCase():"index.html";
   }
 
   async function track(type,path){
