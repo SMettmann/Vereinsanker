@@ -935,3 +935,29 @@ body.trial-expired .settings-form select{
 .legal-side-links{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 10px}.legal-side-links a{color:rgba(255,255,255,.46);font-size:10px;text-decoration:none}.legal-side-links a:hover{color:#fff}
 
 .legal-check{display:flex;align-items:flex-start;gap:10px;margin:16px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8faf8;font-size:12px;line-height:1.55;color:#3f4b44}.legal-check input{width:18px;height:18px;margin-top:1px;flex:0 0 auto;accent-color:var(--green)}.legal-check a{color:var(--green);font-weight:800}.avv-settings-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 0}.avv-settings-row>div{display:grid;gap:4px}.avv-settings-row strong{font-size:13px}.avv-settings-row span{font-size:11px;color:var(--muted);line-height:1.5}.avv-settings-row a{font-size:11px;font-weight:800;color:var(--green);white-space:nowrap}@media(max-width:650px){.avv-settings-row{align-items:flex-start;flex-direction:column}.avv-settings-row a{white-space:normal}}
+
+.danger-zone{border-color:#ead2ca;background:#fffdfc;margin-top:20px}
+.danger-zone .settings-title>span{background:#fff0eb;color:#a54831}
+.danger-copy{display:grid;gap:6px;padding:14px 0 4px}
+.danger-copy>strong{color:#923f2d;font-size:13px}
+.danger-copy p{margin:0;color:var(--muted);font-size:11px;line-height:1.6}
+.danger-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.danger-button{min-height:46px;border:1px solid #cf7f69;border-radius:11px;background:#fff;color:#9b4838;font-size:12px;font-weight:800;cursor:pointer;padding:0 14px}
+.danger-button:hover{background:#fff5f1}
+.danger-button.solid{background:#a54831;color:#fff;border-color:#a54831}
+.danger-button.solid:hover{filter:brightness(.96)}
+.delete-blocked{margin-top:14px;padding:14px;border-radius:12px;border:1px solid #ecd0a7;background:#fff8e9}
+.delete-blocked strong{font-size:12px;color:#7d5716}
+.delete-blocked p{margin:6px 0 8px;color:#695a3f;font-size:11px;line-height:1.55}
+.delete-blocked a{font-size:11px;font-weight:800;color:#7d5716}
+.delete-status{margin:10px 0 0;font-size:11px;line-height:1.5;color:#8a5b33}
+.delete-account-panel{margin-top:14px;padding:16px;border:1px solid #e2c7bf;border-radius:14px;background:#fff8f5}
+.delete-account-panel h3{margin:0 0 14px;font-size:15px;color:#853c2b}
+.delete-error{min-height:18px;margin:0 0 10px;color:#a54831;font-size:11px;font-weight:700}
+.delete-confirm-actions{display:flex;justify-content:flex-end;gap:10px}
+.delete-confirm-actions .skip{min-height:44px}
+@media(max-width:650px){
+  .danger-actions{grid-template-columns:1fr}
+  .delete-confirm-actions{flex-direction:column-reverse}
+  .delete-confirm-actions>*{width:100%}
+}
