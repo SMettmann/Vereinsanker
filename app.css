@@ -2302,3 +2302,44 @@ body{
     grid-template-columns:1fr;
   }
 }
+
+
+/* VEREINSANKER – SEPA Prüfliste */
+.sepa-issue-list{
+  display:grid;
+  gap:7px;
+  margin:10px 0 14px;
+}
+.sepa-issue-list[hidden]{
+  display:none!important;
+}
+.sepa-issue-row{
+  display:grid;
+  grid-template-columns:minmax(130px,.8fr) minmax(0,1.4fr);
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid #ead8d1;
+  border-radius:10px;
+  background:#fff7f3;
+}
+.sepa-issue-row strong{
+  font-size:12px;
+  font-weight:750;
+  color:#2b3730;
+}
+.sepa-issue-row span{
+  font-size:11.5px;
+  line-height:1.45;
+  color:#9a4b38;
+}
+#prepareSepa:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+@media(max-width:520px){
+  .sepa-issue-row{
+    grid-template-columns:1fr;
+    gap:3px;
+  }
+}
