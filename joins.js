@@ -22,7 +22,19 @@ function buildPreparedJoinUrl(){
 
 function refreshPreparedJoinUrl(){
   if(!settings) return;
-  $("#joinPublicUrl").value=buildPreparedJoinUrl().href;
+  const prepared=buildPreparedJoinUrl();
+  $("#joinPublicUrl").value=prepared.href;
+
+  if(!settings.form_pdf_path){
+    const std=new URL("standard-beitritt.html",location.href);
+    std.searchParams.set("t",settings.public_token);
+    const group=$("#joinPresetGroup")?.value.trim()||"";
+    const contribution=$("#joinPresetContribution")?.value||"";
+    if(group) std.searchParams.set("gruppe",group);
+    if(contribution) std.searchParams.set("beitrag",contribution);
+    const preview=$("#joinFormPreview");
+    if(preview) preview.href=std.href;
+  }
 }
 
 async function loadJoinContributionTypes(){
