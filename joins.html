@@ -1,0 +1,25 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://exginppvomebjinydrrw.supabase.co; connect-src 'self' https://exginppvomebjinydrrw.supabase.co wss://exginppvomebjinydrrw.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><title>VEREINSANKER – Digitale Beitritte</title><meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="app.css?v=20261001-15"></head><body class="app-data-loading">
+<div class="mobile-top"><a class="simple-brand" href="app.html">VEREINSANKER</a><span>Beitritte</span></div>
+<div class="app-shell"><aside class="side"><a class="simple-brand" href="app.html">VEREINSANKER</a><div class="club-mini"><span class="club-logo-shell"><img class="club-logo-img" alt="" hidden><i id="clubBadge" class="club-logo-fallback">VA</i></span><div><strong id="clubTitle">Mein Verein</strong><span>Vereinsverwaltung</span></div></div><nav class="nav-list"><a href="app.html">Übersicht</a><a href="members.html">Mitglieder</a><a class="active" href="joins.html">Beitritte</a><a href="contributions.html">Beiträge</a><a href="finances.html">Finanzen</a><a href="settings.html">Einstellungen</a></nav><div class="side-bottom"></div></aside>
+<main class="app-main" id="joinsPage">
+<div class="topline"><div><h1>Digitale Beitritte</h1><p>Link verschicken, Antrag prüfen, als Mitglied übernehmen.</p></div></div>
+
+<section class="settings-card join-link-card">
+<div class="settings-title"><span>1</span><div><h2>Beitrittslink</h2><p>Dieser Link kann beliebig oft verschickt oder auf eurer Website eingebaut werden.</p></div></div>
+<div class="join-link-row"><input id="joinPublicUrl" readonly><button class="secondary-wide" id="copyJoinLink" type="button">Link kopieren</button></div>
+<div class="join-mail-row"><input id="joinMailRecipient" type="email" placeholder="E-Mail des Interessenten"><button class="primary" id="openJoinMail" type="button">Per E-Mail schicken</button></div>
+<p class="micro">Der Mail-Button öffnet euer E-Mail-Programm mit fertigem Betreff, Text und Beitrittslink.</p>
+</section>
+
+<section class="settings-card">
+<div class="settings-title"><span>2</span><div><h2>Eure Beitrittserklärung</h2><p>Optional: bestehendes PDF hochladen. Bewerber können es auf der Beitrittsseite ansehen.</p></div></div>
+<div class="join-pdf-box"><div><strong id="joinPdfStatus">Noch kein PDF hinterlegt.</strong><span>Nur PDF · maximal 5 MB</span></div><label class="logo-upload-button" for="joinPdfInput">PDF auswählen</label><input id="joinPdfInput" type="file" accept="application/pdf" hidden><button class="logo-remove-button" id="removeJoinPdf" type="button">Entfernen</button></div>
+</section>
+
+<section class="settings-card">
+<div class="settings-title"><span>3</span><div><h2>Neue Beitritte</h2><p>Neue Anträge landen hier und werden erst nach eurer Prüfung zu Mitgliedern.</p></div></div>
+<div class="join-filter"><button class="tiny-action active" data-join-filter="pending" type="button">Offen <b id="joinPendingCount">0</b></button><button class="tiny-action" data-join-filter="accepted" type="button">Übernommen</button><button class="tiny-action" data-join-filter="rejected" type="button">Abgelehnt</button></div>
+<div id="joinApplicationRows" class="join-application-list"><div class="team-empty">Wird geladen …</div></div>
+</section>
+</main></div><div class="toast" id="toast" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase-client.js"></script><script src="app.js?v=20261001-16"></script><script src="joins.js?v=20261001-1"></script><script src="team.js?v=20261001-4"></script></body></html>
