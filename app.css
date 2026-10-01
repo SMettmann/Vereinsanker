@@ -2394,3 +2394,17 @@ body{
   text-align:left!important;
   margin:0!important;
 }
+
+
+/* VEREINSFACH – Teamstatus */
+.team-role-badge.owner{
+  background:#e7f3ec;
+  color:#1f6e4b;
+}
+.team-role-badge.pending{
+  background:#fff5dc;
+  color:#8a6500;
+}
+.team-row.pending{
+  background:#fffdf7;
+}
