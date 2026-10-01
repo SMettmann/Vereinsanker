@@ -173,7 +173,9 @@
       const role=document.createElement("div");
       role.className="team-role-inline";
       role.innerHTML='<strong>Teamzugang · volle Rechte</strong><span>'+esc(user.email||membership.email||"")+'</span>';
-      bottom.prepend(role);
+      const joinsShortcut=$(".joins-side-action",bottom);
+      if(joinsShortcut) joinsShortcut.insertAdjacentElement("afterend",role);
+      else bottom.prepend(role);
     };
 
     sideRole();
