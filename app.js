@@ -71,7 +71,7 @@ function isValidCreditorIdValue(value) {
   const id = normalizeCreditorIdValue(value);
   if (!id) return false;
 
-  // VEREINSANKER richtet sich an deutsche Vereine.
+  // VEREINSFACH richtet sich an deutsche Vereine.
   if (!/^DE[0-9]{2}[A-Z0-9]{3}[A-Z0-9]{11}$/.test(id)) return false;
 
   // Die Geschäftsbereichskennung (Stellen 5-7) wird bei der Prüfziffer ignoriert.
@@ -137,7 +137,7 @@ function memberSepaProblem(member) {
 }
 
 function initials(first = "", last = "") {
-  return ((first.trim()[0] || "") + (last.trim()[0] || "")).toUpperCase() || "VA";
+  return ((first.trim()[0] || "") + (last.trim()[0] || "")).toUpperCase() || "VF";
 }
 
 function memberFullName(member) {
@@ -239,7 +239,7 @@ function showPageLoadError(message) {
 }
 
 async function handleAppError(error, fallback = "Aktion konnte nicht ausgeführt werden.") {
-  console.error("VEREINSANKER:", error);
+  console.error("VEREINSFACH:", error);
 
   if (isNetworkAppError(error)) {
     showNetworkStatus(false);
@@ -354,7 +354,7 @@ function clubLogoPublicUrl(path) {
 function applyClubBrand(club) {
   if (!club) return;
 
-  const shortName = (club.short_name || "VA").slice(0, 4).toUpperCase();
+  const shortName = (club.short_name || "VF").slice(0, 4).toUpperCase();
   $$("#clubTitle").forEach(el => { el.textContent = club.name || "Mein Verein"; });
 
   $$(".club-logo-fallback").forEach(el => {
@@ -432,7 +432,7 @@ function applyBillingCard(club) {
     } else {
       detail.textContent = periodEnd
         ? "Aktiv · nächste Verlängerung am " + periodEnd + "."
-        : "Aktiv · VEREINSANKER ist freigeschaltet.";
+        : "Aktiv · VEREINSFACH ist freigeschaltet.";
     }
     action.href = portalUrl();
     action.textContent = "Abo verwalten →";
@@ -484,7 +484,7 @@ function applyTrialUI(club) {
       side.innerHTML = '<strong>Gekündigt zum ' + esc(periodEnd || "Laufzeitende") + '</strong><span>Zugang bleibt bis dahin aktiv.</span>';
       side.className = "trial-side-status warning";
     } else if (paid) {
-      side.innerHTML = '<strong>Abo aktiv</strong><span>' + (status === "active_yearly" ? "Jahrestarif" : "Monatstarif") + ' · VEREINSANKER freigeschaltet.</span>';
+      side.innerHTML = '<strong>Abo aktiv</strong><span>' + (status === "active_yearly" ? "Jahrestarif" : "Monatstarif") + ' · VEREINSFACH freigeschaltet.</span>';
       side.className = "trial-side-status paid";
     } else if (status === "payment_failed") {
       side.innerHTML = '<strong>Zahlung fehlgeschlagen</strong><span>Bitte Zahlungsart aktualisieren.</span>';
@@ -571,11 +571,11 @@ function applyTrialUI(club) {
     }
 
     if (status === "payment_failed") {
-      banner.innerHTML = '<div><strong>Zahlung fehlgeschlagen.</strong><span>Bitte aktualisiere deine Zahlungsart. Sobald Stripe die Zahlung bestätigt, wird VEREINSANKER automatisch wieder freigeschaltet.</span></div><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Zahlung korrigieren</a>';
+      banner.innerHTML = '<div><strong>Zahlung fehlgeschlagen.</strong><span>Bitte aktualisiere deine Zahlungsart. Sobald Stripe die Zahlung bestätigt, wird VEREINSFACH automatisch wieder freigeschaltet.</span></div><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Zahlung korrigieren</a>';
     } else if (status === "canceled") {
-      banner.innerHTML = '<div><strong>Dein Abo ist beendet.</strong><span>Deine Daten bleiben erhalten. Du kannst VEREINSANKER jederzeit wieder freischalten.</span></div><a href="billing.html">Neu aktivieren</a>';
+      banner.innerHTML = '<div><strong>Dein Abo ist beendet.</strong><span>Deine Daten bleiben erhalten. Du kannst VEREINSFACH jederzeit wieder freischalten.</span></div><a href="billing.html">Neu aktivieren</a>';
     } else {
-      banner.innerHTML = '<div><strong>Dein 14-Tage-Test ist beendet.</strong><span>Deine Daten bleiben erhalten. Zum Weiterbearbeiten kannst du VEREINSANKER freischalten.</span></div><a href="billing.html">Tarif wählen</a>';
+      banner.innerHTML = '<div><strong>Dein 14-Tage-Test ist beendet.</strong><span>Deine Daten bleiben erhalten. Zum Weiterbearbeiten kannst du VEREINSFACH freischalten.</span></div><a href="billing.html">Tarif wählen</a>';
     }
   } else if (banner) {
     banner.remove();
@@ -853,7 +853,7 @@ async function initOnboarding() {
     const payload = {
       owner_id: vaSession.user.id,
       name,
-      short_name: ($("#clubShort").value.trim() || "VA").toUpperCase(),
+      short_name: ($("#clubShort").value.trim() || "VF").toUpperCase(),
       standard_fee: Number($("#fee").value || 0),
       due_date: $("#due").value || null,
       creditor_id: creditorId || null,
@@ -1919,7 +1919,7 @@ async function initSettings() {
       }))), "AVV-Nachweis");
 
       const stamp = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(workbook, "VEREINSANKER_Datenexport_" + stamp + ".xlsx");
+      XLSX.writeFile(workbook, "VEREINSFACH_Datenexport_" + stamp + ".xlsx");
       showToast("Kompletter Datenexport erstellt ✓");
     } catch (error) {
       await handleAppError(error, "Datenexport konnte nicht erstellt werden.");
@@ -1989,7 +1989,7 @@ async function initSettings() {
       return;
     }
 
-    if (!confirm("Letzte Bestätigung: Verein, Mitglieder, Beiträge, Finanzen, Belege, Logo und dein VEREINSANKER-Konto werden unwiderruflich gelöscht.")) return;
+    if (!confirm("Letzte Bestätigung: Verein, Mitglieder, Beiträge, Finanzen, Belege, Logo und dein VEREINSFACH-Konto werden unwiderruflich gelöscht.")) return;
 
     button.disabled = true;
     button.textContent = "Wird endgültig gelöscht …";
@@ -2104,11 +2104,11 @@ async function initBilling() {
     current.className = "billing-current-card";
 
     if (club.subscription_status === "payment_failed") {
-      current.innerHTML = '<span class="billing-state bad">Zahlung fehlgeschlagen</span><h2>Zahlungsart aktualisieren</h2><p>Öffne den sicheren Stripe-Kundenbereich. Sobald Stripe die Zahlung bestätigt, wird VEREINSANKER automatisch wieder freigeschaltet.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Stripe-Kundenbereich öffnen →</a>';
+      current.innerHTML = '<span class="billing-state bad">Zahlung fehlgeschlagen</span><h2>Zahlungsart aktualisieren</h2><p>Öffne den sicheren Stripe-Kundenbereich. Sobald Stripe die Zahlung bestätigt, wird VEREINSFACH automatisch wieder freigeschaltet.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Stripe-Kundenbereich öffnen →</a>';
     } else if (club.stripe_cancel_at_period_end) {
       current.innerHTML = '<span class="billing-state warning">Kündigung vorgemerkt</span><h2>Zugang bleibt aktiv</h2><p>Das Abo läuft noch bis ' + esc(formatBillingDate(club.stripe_current_period_end) || "zum Laufzeitende") + '. Im Stripe-Kundenbereich kannst du Zahlungsart, Rechnungen und Kündigung verwalten.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Abo verwalten →</a>';
     } else {
-      current.innerHTML = '<span class="billing-state good">Abo aktiv</span><h2>' + (club.subscription_status === "active_yearly" ? "79 € / Jahr" : "7,90 € / Monat") + '</h2><p>VEREINSANKER ist freigeschaltet. Zahlungsart, Rechnungen und Kündigung verwaltest du sicher bei Stripe.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Abo verwalten →</a>';
+      current.innerHTML = '<span class="billing-state good">Abo aktiv</span><h2>' + (club.subscription_status === "active_yearly" ? "79 € / Jahr" : "7,90 € / Monat") + '</h2><p>VEREINSFACH ist freigeschaltet. Zahlungsart, Rechnungen und Kündigung verwaltest du sicher bei Stripe.</p><a href="' + esc(portalUrl()) + '" target="_blank" rel="noopener">Abo verwalten →</a>';
     }
 
     if (billingNote) billingNote.before(current);
@@ -2128,7 +2128,7 @@ async function initBilling() {
     const url = new URL(base);
     url.searchParams.set("client_reference_id", club.id);
     if (vaSession?.user?.email) url.searchParams.set("locked_prefilled_email", vaSession.user.email);
-    url.searchParams.set("utm_source", "vereinsanker_app");
+    url.searchParams.set("utm_source", "vereinsfach_app");
     url.searchParams.set("utm_medium", "upgrade");
     url.searchParams.set("utm_campaign", plan);
 
@@ -2150,7 +2150,7 @@ async function initBillingSuccess() {
   const showState = (current) => {
     if (hasPaidAccess(current)) {
       if (icon) icon.textContent = "✓";
-      if (title) title.textContent = "VEREINSANKER ist freigeschaltet";
+      if (title) title.textContent = "VEREINSFACH ist freigeschaltet";
       if (text) text.textContent = current.subscription_status === "active_yearly"
         ? "Dein Jahresabo ist aktiv."
         : "Dein Monatsabo ist aktiv.";
@@ -2162,7 +2162,7 @@ async function initBillingSuccess() {
       if (icon) icon.textContent = "!";
       if (title) title.textContent = "Zahlung konnte nicht abgeschlossen werden";
       if (text) text.textContent = "Bitte prüfe deine Zahlungsart im Stripe-Kundenbereich.";
-      if (note) note.textContent = "VEREINSANKER wird nach erfolgreicher Zahlung automatisch freigeschaltet.";
+      if (note) note.textContent = "VEREINSFACH wird nach erfolgreicher Zahlung automatisch freigeschaltet.";
       return true;
     }
 
@@ -2172,7 +2172,7 @@ async function initBillingSuccess() {
   if (showState(club)) return;
 
   if (title) title.textContent = "Zahlung wird bestätigt …";
-  if (text) text.textContent = "Stripe meldet die Zahlung gerade an VEREINSANKER zurück.";
+  if (text) text.textContent = "Stripe meldet die Zahlung gerade an VEREINSFACH zurück.";
 
   for (let i = 0; i < 8; i++) {
     await new Promise(resolve => setTimeout(resolve, 1250));
