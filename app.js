@@ -1332,7 +1332,7 @@ async function initMembers() {
       const memberNumber = await nextMemberNumber(club.id);
       const dueDate = dueDateForContributionYear(club, currentYear);
 
-      const { error } = await sb.rpc("create_member_with_contribution", {
+      const { error } = await sb.rpc("create_member_full_with_contribution", {
         p_club_id: club.id,
         p_member_number: memberNumber,
         p_first_name: $("#firstName").value.trim(),
@@ -1346,7 +1346,12 @@ async function initMembers() {
         p_contribution_year: currentYear,
         p_due_date: dueDate,
         p_contribution_type_id: selectedContribution.contribution_type_id,
-        p_contribution_label: selectedContribution.contribution_label
+        p_contribution_label: selectedContribution.contribution_label,
+        p_birth_date: $("#memberBirthDate")?.value || null,
+        p_phone: $("#memberPhone")?.value.trim() || null,
+        p_street: $("#memberStreet")?.value.trim() || null,
+        p_postal_code: $("#memberPostalCode")?.value.trim() || null,
+        p_city: $("#memberCity")?.value.trim() || null
       });
       if (error) throw error;
 
@@ -1360,6 +1365,8 @@ async function initMembers() {
       const duplicateNumber = error?.code === "23505" && !duplicateMandate;
 
       if (invalidIban) showToast("IBAN ungültig – Mitglied wurde nicht gespeichert.");
+      else if (message.includes("INVALID_BIRTH_DATE")) showToast("Das Geburtsdatum ist ungültig.");
+      else if (message.includes("INVALID_DEPARTMENT")) showToast("Diese Abteilung / Gruppe ist nicht mehr verfügbar. Bitte Auswahl neu öffnen.");
       else if (duplicateMandate) showToast("Diese Mandatsreferenz ist bereits vergeben.");
       else if (duplicateNumber) showToast("Mitgliedsnummer bereits vergeben. Bitte erneut speichern.");
       else await handleAppError(error, "Mitglied konnte nicht gespeichert werden. Es wurde nichts angelegt.");
