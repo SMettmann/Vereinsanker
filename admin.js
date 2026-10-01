@@ -119,6 +119,51 @@
     }
   }
 
+  $("#adminCreateButton")?.addEventListener("click",async()=>{
+    const email=$("#adminEmail").value.trim();
+    const password=$("#adminPassword").value;
+    const message=$("#adminLoginMessage");
+    const button=$("#adminCreateButton");
+
+    if(email.toLowerCase()!=="s.mettmann@softwaremanufaktur-mettmann.de"){
+      message.textContent="Diese E-Mail-Adresse ist nicht für die Administration freigeschaltet.";
+      return;
+    }
+    if(password.length<12){
+      message.textContent="Das Passwort muss mindestens 12 Zeichen haben.";
+      return;
+    }
+
+    button.disabled=true;
+    button.textContent="Zugang wird angelegt …";
+    message.textContent="";
+
+    const redirectTo=new URL("admin.html",location.href).href;
+    const {data,error}=await sb.auth.signUp({
+      email,
+      password,
+      options:{emailRedirectTo:redirectTo}
+    });
+
+    if(error){
+      console.error("Admin anlegen",error);
+      message.textContent=error.code==="user_already_exists"
+        ?"Der Adminzugang existiert bereits. Bitte normal anmelden."
+        :"Adminzugang konnte nicht angelegt werden.";
+      button.disabled=false;
+      button.textContent="Adminzugang einmalig anlegen";
+      return;
+    }
+
+    if(data.session){
+      await verifyAndLoad();
+      return;
+    }
+
+    message.textContent="Bestätigungs-Mail ist unterwegs. Link öffnen – danach ist der Adminzugang bereit.";
+    button.textContent="Bestätigungs-Mail gesendet ✓";
+  });
+
   $("#adminLoginForm")?.addEventListener("submit",async event=>{
     event.preventDefault();
     const button=$("#adminLoginButton");
