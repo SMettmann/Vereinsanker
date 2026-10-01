@@ -38,10 +38,12 @@
 
   async function track(type,path){
     try{
-      await sb.rpc("track_site_event",{
-        p_event_type:type,
-        p_path:path||pageName(),
-        p_visitor_id:visitorId()
+      await sb.functions.invoke("site-metrics",{
+        body:{
+          event_type:type,
+          path:path||pageName(),
+          visitor_id:visitorId()
+        }
       });
     }catch(error){
       console.debug("VEREINSFACH metric skipped",error);
