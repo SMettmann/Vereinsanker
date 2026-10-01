@@ -9,7 +9,6 @@ if(r.error||!r.data?.ok){
   return;
 }
 const c=r.data.club;
-document.documentElement.style.setProperty("--green",c.color||"#237a55");
 $("#stdClubName").textContent=c.name||"Verein";
 $("#stdClubNameInline").textContent=c.name||"den Verein";
 $("#stdClubFallback").textContent=(c.short_name||c.name||"VA").slice(0,4).toUpperCase();
