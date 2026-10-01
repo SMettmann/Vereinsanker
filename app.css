@@ -1919,3 +1919,257 @@ body{
     grid-template-columns:repeat(5,1fr);
   }
 }
+
+
+/* VEREINSANKER – Beitragsarten */
+.contribution-types-manager{
+  margin-top:20px;
+  padding-top:20px;
+  border-top:1px solid var(--line);
+}
+.contribution-types-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:12px;
+}
+.contribution-types-head>div{
+  display:grid;
+  gap:3px;
+}
+.contribution-types-head strong{
+  font-size:14px;
+  font-weight:700;
+  color:var(--ink);
+}
+.contribution-types-head span{
+  font-size:12.5px;
+  line-height:1.5;
+  color:var(--muted);
+}
+.contribution-types-head .secondary-wide{
+  width:auto;
+  flex:0 0 auto;
+  min-height:42px;
+}
+.contribution-type-rows{
+  display:grid;
+  gap:8px;
+}
+.contribution-type-empty{
+  padding:14px 15px;
+  border:1px dashed #d4ddd6;
+  border-radius:11px;
+  background:#fafcfb;
+  color:#69766e;
+  font-size:12.5px;
+}
+.contribution-type-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  gap:12px;
+  align-items:center;
+  padding:13px 14px;
+  border:1px solid #dce3de;
+  border-radius:11px;
+  background:#fafcfb;
+}
+.contribution-type-row>div:first-child{
+  display:grid;
+  gap:2px;
+}
+.contribution-type-row>div:first-child strong{
+  font-size:13.5px;
+  font-weight:700;
+}
+.contribution-type-row>div:first-child span{
+  font-size:12px;
+  color:var(--muted);
+}
+.contribution-type-default{
+  display:inline-flex;
+  align-items:center;
+  min-height:27px;
+  padding:0 9px;
+  border-radius:999px;
+  background:#e9f5ee;
+  color:var(--green);
+  font-size:10.5px;
+  font-weight:750;
+}
+.contribution-type-actions{
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.contribution-type-actions button{
+  border:0;
+  background:transparent;
+  padding:7px;
+  color:var(--green);
+  font:700 11px/1 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+  cursor:pointer;
+}
+.contribution-type-actions button.danger{
+  color:#a34837;
+}
+.contribution-type-editor{
+  margin-top:12px;
+  padding:16px;
+  border:1px solid #cfdad2;
+  border-radius:13px;
+  background:#f7faf8;
+}
+.contribution-type-editor-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:14px;
+}
+.contribution-type-editor-head strong{
+  font-size:14px;
+}
+.contribution-type-editor-head button{
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  font-weight:700;
+  cursor:pointer;
+}
+.contribution-default-check{
+  margin:0 0 14px;
+}
+.contribution-type-message{
+  margin:10px 0 0;
+  padding:10px 12px;
+  border-radius:9px;
+  font-size:12px;
+  font-weight:650;
+}
+.contribution-type-message.success{
+  background:#eaf7ef;
+  color:#24704f;
+}
+.contribution-type-message.error{
+  background:#fff1ed;
+  color:#9b4838;
+}
+
+/* Beitragswahl im öffentlichen Online-Beitritt */
+.join-contribution-choice{
+  margin:4px 0 16px;
+}
+.join-contribution-choice .field-label-row{
+  margin-bottom:8px;
+}
+.join-contribution-choice .field-label-row label{
+  font-size:13.5px;
+  font-weight:650;
+  color:#26362e;
+}
+.join-contribution-choice .field-label-row span{
+  font-size:11.5px;
+  color:var(--muted);
+}
+.join-contribution-options{
+  display:grid;
+  gap:8px;
+}
+.join-contribution-option{
+  position:relative;
+  display:block;
+  cursor:pointer;
+}
+.join-contribution-option input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+.join-contribution-option>span{
+  min-height:58px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:11px 14px;
+  border:1px solid #d4ddd6;
+  border-radius:12px;
+  background:#fff;
+  transition:.14s ease;
+}
+.join-contribution-option strong{
+  font-size:13.5px;
+  font-weight:700;
+  color:var(--ink);
+}
+.join-contribution-option b{
+  flex:0 0 auto;
+  font-size:12.5px;
+  font-weight:750;
+  color:var(--green);
+}
+.join-contribution-option input:checked+span{
+  border-color:var(--green);
+  background:#f0f7f3;
+  box-shadow:0 0 0 2px rgba(35,122,85,.10);
+}
+.join-contribution-option input:focus-visible+span{
+  outline:3px solid rgba(35,122,85,.15);
+  outline-offset:2px;
+}
+
+/* Beitragswahl auf der Standard-Beitrittserklärung */
+.paper-contribution-types{
+  display:grid;
+  gap:8px;
+}
+.paper-contribution-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 0;
+}
+.paper-contribution-row i{
+  width:14px;
+  height:14px;
+  flex:0 0 14px;
+  border:1.5px solid #526159;
+  border-radius:2px;
+}
+.paper-contribution-row span{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  width:100%;
+}
+.paper-contribution-row strong,
+.paper-contribution-row b{
+  font-size:10.5px;
+}
+.paper-contribution-row b{
+  font-weight:700;
+  color:#365647;
+}
+
+@media(max-width:620px){
+  .contribution-types-head{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .contribution-types-head .secondary-wide{
+    width:100%;
+  }
+  .contribution-type-row{
+    grid-template-columns:1fr;
+  }
+  .contribution-type-actions{
+    justify-content:flex-start;
+  }
+  .join-contribution-option>span{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:3px;
+  }
+}
