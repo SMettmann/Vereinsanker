@@ -2351,7 +2351,8 @@ function setupMobileNavigation() {
     ["members.html", "♙", "Mitglieder"],
     ["contributions.html", "€", "Beiträge"],
     ["finances.html", "€", "Finanzen"],
-    ["settings.html", "⚙", "Einstellungen"]
+    ["settings.html", "⚙", "Einstellungen"],
+    ["support.html", "?", "Hilfe"]
   ];
   const nav = document.createElement("nav");
   nav.className = "mobile-bottom-nav";
@@ -2444,6 +2445,16 @@ function setupLogout() {
       location.replace("onboarding.html");
       return;
     }
+
+    if ($("#supportPage")) {
+      setupLogout();
+      setupMobileNavigation();
+      if (typeof window.initSupportPage !== "function") throw new Error("Supportmodul konnte nicht geladen werden.");
+      await window.initSupportPage(guardedClub, vaSession);
+      finishAppLoad();
+      return;
+    }
+
     if (!hasCurrentAvv(guardedClub)) {
       location.replace("avv-accept.html");
       return;
