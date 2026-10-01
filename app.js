@@ -1214,7 +1214,7 @@ async function initDashboard() {
   } else {
     openList.innerHTML = open.slice(0, 3).map(c => {
       const m = c.members || {};
-      return '<div class="member-row"><i class="avatar">' + esc(initials(m.first_name, m.last_name)) + '</i><div class="member-name"><strong>' + esc(memberFullName(m)) + '</strong><span>' + esc(m.group_name || "Ohne Gruppe") + '</span></div><span>Jahresbeitrag</span><span class="status">' + esc(money(c.amount)) + ' offen</span></div>';
+      return '<div class="member-row"><i class="avatar">' + esc(initials(m.first_name, m.last_name)) + '</i><div class="member-name"><strong>' + esc(memberFullName(m)) + '</strong><span>' + esc(m.group_name || "Nicht zugeordnet") + '</span></div><span>Jahresbeitrag</span><span class="status">' + esc(money(c.amount)) + ' offen</span></div>';
     }).join("");
   }
 }
@@ -1234,7 +1234,7 @@ function renderMemberRows(members, contributionMap) {
     const status = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
     return '<button class="members-row" type="button" data-member-id="' + esc(m.id) + '">' +
       '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.member_number || "ohne Mitgliedsnummer") + '</small></b></span>' +
-      '<span>' + esc(m.group_name || "Ohne Gruppe") + '</span>' +
+      '<span>' + esc(m.group_name || "Nicht zugeordnet") + '</span>' +
       '<span>' + esc(money(m.annual_fee)) + '</span>' +
       '<em class="' + (status === "Bezahlt" ? "status-paid" : status === "Offen" ? "status-open" : "status-none") + '">' + status + '</em>' +
     '</button>';
@@ -1276,7 +1276,7 @@ async function initMembers() {
 
     $("#detailInitials").textContent = initials(member.first_name, member.last_name);
     $("#sheetTitle").textContent = memberFullName(member);
-    $("#detailGroup").textContent = member.group_name || "Ohne Gruppe";
+    $("#detailGroup").textContent = member.group_name || "Nicht zugeordnet";
     $("#detailMemberNumber").textContent = member.member_number || "–";
     $("#detailEmail").textContent = member.email || "–";
     if ($("#detailPhone")) $("#detailPhone").textContent = member.phone || "–";
@@ -1458,7 +1458,7 @@ async function initContributions() {
       return '<div class="open-row">' +
         '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
         esc(memberFullName(m)) +
-        '<small>' + esc((m.group_name || "Ohne Gruppe") + " · Jahresbeitrag") + '</small>' +
+        '<small>' + esc((m.group_name || "Nicht zugeordnet") + " · Jahresbeitrag") + '</small>' +
         (memberSepaProblem(m) ? '<small class="sepa-row-warning">SEPA nicht möglich: ' + esc(memberSepaProblem(m)) + '</small>' : '') +
         '</b></span>' +
         '<strong>' + esc(money(c.amount)) + '</strong>' +
@@ -1473,7 +1473,7 @@ async function initContributions() {
       return '<div class="payment-row" data-search="' + esc((memberFullName(m) + " " + (m.group_name || "")).toLowerCase()) + '">' +
         '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
         esc(memberFullName(m)) +
-        '<small>' + esc(m.group_name || "Ohne Gruppe") + '</small></b></span>' +
+        '<small>' + esc(m.group_name || "Nicht zugeordnet") + '</small></b></span>' +
         '<strong>' + esc(money(c.amount)) + '</strong>' +
         (c.status === "paid"
           ? '<span class="paid-check paid-with-date"><b>✓ Bezahlt</b><small>' + esc(paidDate ? "am " + paidDate : "Zahlungsdatum fehlt") + '</small><button class="payment-edit" data-id="' + esc(c.id) + '" type="button">Ändern</button></span>'
@@ -1954,7 +1954,7 @@ async function initSettings() {
         "Mitgliedsnummer": member.member_number || "",
         "Vorname": member.first_name || "",
         "Nachname": member.last_name || "",
-        "Gruppe": member.group_name || "",
+        "Abteilung / Gruppe": member.group_name || "",
         "E-Mail": member.email || "",
         "Telefon": member.phone || "",
         "Geburtsdatum": member.birth_date || "",
@@ -2011,7 +2011,7 @@ async function initSettings() {
         "Straße": entry.street || "",
         "PLZ": entry.postal_code || "",
         "Ort": entry.city || "",
-        "Gruppe/Wunsch": entry.group_name || "",
+        "Abteilung / Gruppe": entry.group_name || "",
         "Beitragsart": entry.contribution_label || "",
         "IBAN": entry.iban || "",
         "SEPA-Zustimmung": entry.sepa_consent ? "Ja" : "Nein",
