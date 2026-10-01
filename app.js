@@ -2128,6 +2128,8 @@ async function initSettings() {
       const code = payload?.error || "";
       if (code === "INVALID_PASSWORD") {
         if (errorBox) errorBox.textContent = "Das aktuelle Passwort stimmt nicht.";
+      } else if (code === "OWNER_REQUIRED") {
+        if (errorBox) errorBox.textContent = "Nur das Hauptkonto kann den Verein vollständig löschen.";
       } else if (code === "ACTIVE_SUBSCRIPTION") {
         if (errorBox) errorBox.textContent = "Das Abo verlängert sich noch. Bitte zuerst im Stripe-Kundenbereich kündigen.";
         if (deleteBlockedBox) deleteBlockedBox.hidden = false;
