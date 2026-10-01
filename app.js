@@ -1626,7 +1626,7 @@ async function initContributions() {
     }).filter(Boolean);
 
     $("#sepaMissing").textContent = issues.length
-      ? "Bitte die folgenden Angaben korrigieren. Erst danach kann die Bankdatei erstellt werden."
+      ? issues.join(" ")
       : "Alles vollständig. Die Datei kann erstellt werden.";
 
     const issueList = $("#sepaIssueList");
