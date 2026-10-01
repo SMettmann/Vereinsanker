@@ -818,7 +818,7 @@ async function enhanceMemberPage() {
       ...members.map(m => [m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",m.contribution_label||"",m.iban||"",m.annual_fee||0,m.mandate_reference||"",m.mandate_signed_at||""])
     ];
     const csv = lines.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";")).join("\r\n");
-    downloadBlob("\uFEFF" + csv, "VEREINSANKER_Mitglieder.csv", "text/csv;charset=utf-8");
+    downloadBlob("\uFEFF" + csv, "VEREINSFACH_Mitglieder.csv", "text/csv;charset=utf-8");
   });
 
   const refreshImportReview = async () => {
@@ -1291,8 +1291,8 @@ function buildSepaXml(club, rows, collectionDate) {
   const now = new Date();
   const contributionYear = Number(rows?.[0]?.contribution_year || contributionYearFromUrl() || currentYear);
   const stamp = now.toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-  const msgId = compactId("VA-" + stamp);
-  const pmtId = compactId("VA-DD-" + contributionYear + "-" + stamp.slice(-6));
+  const msgId = compactId("VF-" + stamp);
+  const pmtId = compactId("VF-DD-" + contributionYear + "-" + stamp.slice(-6));
   const total = rows.reduce((sum, c) => sum + Number(c.amount || 0), 0).toFixed(2);
   const creditorIban = normalizeIban(club.iban);
   const creditorName = safeSepaText(club.name, 70);
@@ -1300,7 +1300,7 @@ function buildSepaXml(club, rows, collectionDate) {
 
   const txs = rows.map((c, index) => {
     const m = c.members || {};
-    const endToEnd = compactId("VA-" + (m.member_number || String(index + 1)) + "-" + contributionYear);
+    const endToEnd = compactId("VF-" + (m.member_number || String(index + 1)) + "-" + contributionYear);
     const mandateId = safeSepaText(m.mandate_reference, 35);
     const debtorName = safeSepaText(memberFullName(m), 70);
 
@@ -1481,7 +1481,7 @@ async function enhanceContributionPage() {
 
       downloadBlob(
         xml,
-        "VEREINSANKER_SEPA_" + selectedYear + "_" + collectionDate + ".xml",
+        "VEREINSFACH_SEPA_" + selectedYear + "_" + collectionDate + ".xml",
         "application/xml;charset=utf-8"
       );
       showToast("SEPA-Datei für " + selectedYear + " geprüft und erstellt ✓");
@@ -1675,7 +1675,7 @@ async function enhanceContributionPage() {
 
     downloadBlob(
       "\uFEFF" + csv,
-      "VEREINSANKER_Zahlungserinnerungen_" + selectedYear + ".csv",
+      "VEREINSFACH_Zahlungserinnerungen_" + selectedYear + ".csv",
       "text/csv;charset=utf-8"
     );
 
@@ -1718,7 +1718,7 @@ async function enhanceOnboardingImport() {
   });
 }
 
-(async function enhanceVereinsanker() {
+(async function enhanceVereinsfach() {
   try {
     const needsAuth = $("#membersPage") || $("#contributionsPage") || $("#memberFile");
     if (needsAuth) {
@@ -1729,6 +1729,6 @@ async function enhanceOnboardingImport() {
     if ($("#contributionsPage")) await enhanceContributionPage();
     if ($("#memberFile")) await enhanceOnboardingImport();
   } catch (error) {
-    console.error("VEREINSANKER features:", error);
+    console.error("VEREINSFACH features:", error);
   }
 })();
