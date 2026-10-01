@@ -995,3 +995,62 @@ body.trial-expired .settings-form select{
   .team-owner-note{text-align:left}
   .team-remove{text-align:left;padding-left:0}
 }
+
+.join-link-card{margin-top:6px}
+.join-link-row,.join-mail-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin-top:12px}
+.join-link-row input,.join-mail-row input{min-height:46px;border:1px solid var(--line);border-radius:11px;padding:0 13px;font-size:12px;background:#fff;color:var(--dark)}
+.join-link-row .secondary-wide,.join-mail-row .primary{min-height:46px;white-space:nowrap;margin:0}
+.join-pdf-box{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:14px 0}
+.join-pdf-box>div{display:grid;gap:4px}
+.join-pdf-box strong{font-size:12px}
+.join-pdf-box span{font-size:10px;color:var(--muted)}
+.join-filter{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+.join-filter .tiny-action.active{background:var(--green);color:#fff;border-color:var(--green)}
+.join-application-list{display:grid;gap:12px}
+.join-app-card{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
+.join-app-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.join-app-head>div{display:grid;gap:3px}
+.join-app-head strong{font-size:14px}
+.join-app-head span{font-size:10px;color:var(--muted)}
+.join-status{display:inline-flex;align-items:center;min-height:28px;padding:0 9px;border-radius:999px;font-size:9px;font-weight:900}
+.join-status.pending{background:#fff5d9;color:#8a6615}
+.join-status.accepted{background:#eaf7ef;color:#24704f}
+.join-status.rejected{background:#fff1ed;color:#9b4838}
+.join-app-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.join-app-grid>div{display:grid;gap:3px;padding:10px;border-radius:9px;background:#f7f9f7}
+.join-app-grid span{font-size:9px;color:var(--muted)}
+.join-app-grid b{font-size:10px;overflow-wrap:anywhere}
+.join-app-actions{display:flex;gap:10px;align-items:center;margin-top:14px}
+.join-app-actions .primary{min-height:42px}
+.join-public-body{margin:0;background:#f4f7f4;color:var(--dark);font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+.join-public-shell{width:min(760px,calc(100% - 28px));margin:38px auto 70px}
+.join-public-brand{text-align:center;margin-bottom:20px}
+.join-public-logo{width:76px;height:76px;margin:0 auto 16px;border-radius:18px;overflow:hidden;display:grid;place-items:center;background:var(--green);color:#fff;font-weight:900}
+.join-public-logo img{width:100%;height:100%;object-fit:cover}
+.join-public-brand small{font-size:10px;font-weight:900;letter-spacing:.12em;color:var(--green)}
+.join-public-brand h1{font-size:clamp(32px,7vw,48px);letter-spacing:-.045em;margin:7px 0 8px}
+.join-public-brand p{max-width:580px;margin:0 auto;color:var(--muted);font-size:13px;line-height:1.65}
+.join-pdf-link{display:inline-flex;margin-top:12px;color:var(--green);font-size:11px;font-weight:800}
+.join-public-form{background:#fff;border:1px solid var(--line);border-radius:22px;padding:clamp(20px,5vw,36px);box-shadow:0 24px 60px rgba(20,40,30,.06)}
+.join-public-form .field{margin-bottom:14px}
+.join-fee-info{display:flex;justify-content:space-between;align-items:center;padding:14px 15px;border-radius:12px;background:#f4f8f5;margin:4px 0 14px}
+.join-fee-info span{font-size:11px;color:var(--muted)}
+.join-fee-info strong{font-size:17px;color:var(--green)}
+.join-honeypot{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;opacity:0!important}
+.join-public-success,.join-public-error{background:#fff;border:1px solid var(--line);border-radius:22px;padding:34px;text-align:center}
+.join-public-success>strong{display:inline-flex;width:52px;height:52px;align-items:center;justify-content:center;border-radius:50%;background:#eaf7ef;color:var(--green);font-size:20px}
+.join-public-success h2,.join-public-error h2{font-size:30px;letter-spacing:-.04em;margin:14px 0 8px}
+.join-public-success p,.join-public-error p{color:var(--muted);font-size:13px;line-height:1.65}
+@media(max-width:800px){
+  .join-app-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .join-link-row,.join-mail-row,.join-pdf-box{grid-template-columns:1fr}
+  .join-app-grid{grid-template-columns:1fr 1fr}
+  .join-app-actions{flex-direction:column;align-items:stretch}
+  .join-app-actions>*{width:100%}
+  .join-public-shell{margin-top:20px}
+}
+@media(max-width:420px){
+  .join-app-grid{grid-template-columns:1fr}
+}
