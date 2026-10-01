@@ -801,12 +801,12 @@ async function initOnboarding() {
     $("#creditor").value = existing.creditor_id || "";
     $("#controllerAddress").value = existing.controller_address || "";
     $("#controllerContact").value = existing.controller_contact_name || "";
-    $(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === existing.color));
+    $$(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === existing.color));
   }
   if ($("#controllerEmail")) $("#controllerEmail").value = vaSession?.user?.email || "";
 
-  $$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
-    $$(".color-choice").forEach(b => b.classList.remove("active"));
+  $$$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
+    $$$(".color-choice").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
   }));
 
@@ -1677,10 +1677,10 @@ async function initSettings() {
       ? "Version " + club.avv_version + " · angenommen am " + acceptedDate
       : "Vor der Verarbeitung von Mitgliederdaten muss der aktuelle AV-Vertrag abgeschlossen werden.";
   }
-  $(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === club.color));
+  $$(".color-choice").forEach(btn => btn.classList.toggle("active", btn.dataset.color === club.color));
 
-  $$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
-    $$(".color-choice").forEach(b => b.classList.remove("active"));
+  $$$(".color-choice").forEach(btn => btn.addEventListener("click", () => {
+    $$$(".color-choice").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
   }));
 
