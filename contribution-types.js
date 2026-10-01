@@ -150,7 +150,7 @@
       );
     }finally{
       button.disabled=false;
-      if(!editingId) button.textContent="Beitragsart speichern";
+      button.textContent=editingId?"Änderungen speichern":"Beitragsart speichern";
     }
   }
 
