@@ -3609,3 +3609,101 @@ textarea:focus-visible{
     display:none;
   }
 }
+
+
+/* VEREINSFACH – Tarifspende */
+.billing-choice>div{
+  display:grid;
+}
+.billing-donation-mini{
+  display:inline-flex;
+  width:max-content;
+  margin-top:10px;
+  padding:6px 9px;
+  border-radius:999px;
+  background:#edf8f2;
+  color:#1f7652;
+  font-size:10px;
+  font-style:normal;
+  font-weight:800;
+  line-height:1.2;
+}
+.billing-choice.recommended .billing-donation-mini{
+  background:#e5f6ed;
+  color:#176746;
+}
+.billing-giving{
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr);
+  gap:17px;
+  align-items:center;
+  margin-top:16px;
+  padding:20px 22px;
+  border:1px solid #cee3d6;
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 0% 100%,rgba(83,207,145,.10),transparent 16rem),
+    linear-gradient(90deg,#eef8f2 0%,#f8fcfa 58%,#ffffff 100%);
+  box-shadow:0 2px 8px rgba(17,42,29,.035);
+}
+.billing-giving-icon{
+  width:58px;
+  height:58px;
+  display:grid;
+  place-content:center;
+  border-radius:16px;
+  background:#dff3e8;
+  color:#1f7a55;
+  font-size:28px;
+  box-shadow:inset 0 0 0 1px rgba(31,122,85,.05);
+}
+.billing-giving>div:last-child{
+  display:grid;
+  gap:5px;
+}
+.billing-giving span{
+  color:#237a55;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.13em;
+}
+.billing-giving strong{
+  color:#13251b;
+  font-size:17px;
+  line-height:1.35;
+}
+.billing-giving p{
+  margin:0;
+  color:#536159;
+  font-size:12px;
+  line-height:1.6;
+}
+.billing-giving p b{
+  color:#173f2d;
+}
+.billing-giving a{
+  color:#1e7652;
+  font-weight:800;
+  text-decoration:underline;
+  text-decoration-color:rgba(30,118,82,.30);
+  text-underline-offset:2px;
+}
+.billing-giving a:hover{
+  color:#15583e;
+}
+@media(max-width:760px){
+  .billing-giving{
+    grid-template-columns:46px minmax(0,1fr);
+    padding:16px;
+    gap:13px;
+  }
+  .billing-giving-icon{
+    width:46px;
+    height:46px;
+    border-radius:13px;
+    font-size:22px;
+  }
+  .billing-giving strong{
+    font-size:15px;
+  }
+}
