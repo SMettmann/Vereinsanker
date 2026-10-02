@@ -1463,6 +1463,7 @@ async function initMembers() {
     if ($("#detailContributionType")) $("#detailContributionType").textContent = member.contribution_label || "Standard / individuell";
     $("#detailFee").textContent = money(member.annual_fee);
     $("#detailStatus").textContent = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
+    if ($("#detailJoinedAt")) $("#detailJoinedAt").textContent = member.joined_at ? new Date(member.joined_at + "T12:00:00").toLocaleDateString("de-DE") : "–";
     openBackdrop(memberSheet);
   });
 
