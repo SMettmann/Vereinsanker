@@ -2617,6 +2617,8 @@ function setupLogout() {
     }
 
     if ($("#supportPage")) {
+      applyClubBrand(guardedClub);
+      applyTrialUI(guardedClub);
       setupLogout();
       setupMobileNavigation();
       if (typeof window.initSupportPage !== "function") throw new Error("Supportmodul konnte nicht geladen werden.");
