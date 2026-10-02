@@ -174,11 +174,20 @@ function importMappingHtml(columns, mapping) {
     ["first_name", "Vorname", true],
     ["last_name", "Nachname", true],
     ["full_name", "Name komplett", false],
+    ["member_number", "Mitgliedsnummer", false],
     ["group_name", "Abteilung / Gruppe", false],
     ["email", "E-Mail", false],
-    ["iban", "IBAN", false],
+    ["birth_date", "Geburtsdatum", false],
+    ["phone", "Telefon", false],
+    ["street", "Straße / Anschrift", false],
+    ["postal_code", "PLZ", false],
+    ["city", "Ort", false],
+    ["joined_at", "Eintrittsdatum", false],
     ["annual_fee", "Jahresbeitrag", false],
-    ["member_number", "Mitgliedsnummer", false],
+    ["contribution_label", "Beitragsart", false],
+    ["contribution_status", "Beitragsstatus", false],
+    ["paid_at", "Bezahlt am", false],
+    ["iban", "IBAN", false],
     ["mandate_reference", "Mandatsreferenz", false],
     ["mandate_signed_at", "Mandatsdatum", false]
   ];
@@ -188,7 +197,7 @@ function importMappingHtml(columns, mapping) {
     const options = ['<option value="">— nicht übernehmen —</option>'].concat(columns.map(opts)).join("");
     const select = options.replace('value="' + esc(selected) + '"', 'value="' + esc(selected) + '" selected');
     return '<label><span>' + label + (required ? ' *' : '') + '</span><select data-map="' + key + '">' + select + '</select></label>';
-  }).join("") + '</div><p class="mapping-note">Für Namen reicht entweder Vorname + Nachname oder „Name komplett“.</p>';
+  }).join("") + '</div><p class="mapping-note">Für Namen reicht entweder Vorname + Nachname oder „Name komplett“. Bei „Name“ + „Vorname“ erkennt VEREINSFACH „Name“ automatisch als Nachname.</p>';
 }
 
 function importPreviewHtml(rows, mapping, fallbackFee) {
@@ -197,12 +206,19 @@ function importPreviewHtml(rows, mapping, fallbackFee) {
     return { member, errors: validateImportedMember(member), rowNo: index + 2 };
   });
   if (!mapped.length) return "";
-  return '<strong>Vorschau</strong><div class="preview-table">' + mapped.map(item =>
-    '<div class="' + (item.errors.length ? 'preview-error' : '') + '"><span>' +
-    esc(memberFullName(item.member)) +
-    (item.errors.length ? '<em>Zeile ' + item.rowNo + ': ' + esc(item.errors.join(", ")) + '</em>' : '') +
-    '</span><small>' + esc(item.member.group_name || "Nicht zugeordnet") + ' · ' + esc(money(item.member.annual_fee)) + '</small></div>'
-  ).join("") + '</div>';
+  return '<strong>Vorschau</strong><div class="preview-table">' + mapped.map(item => {
+    const status = item.member.contribution_status === "paid"
+      ? " · bezahlt"
+      : item.member.contribution_status === "none"
+        ? " · kein Beitrag"
+        : item.member.contribution_status === "open"
+          ? " · offen"
+          : "";
+    return '<div class="' + (item.errors.length ? 'preview-error' : '') + '"><span>' +
+      esc(memberFullName(item.member)) +
+      (item.errors.length ? '<em>Zeile ' + item.rowNo + ': ' + esc(item.errors.join(", ")) + '</em>' : '') +
+      '</span><small>' + esc(item.member.group_name || "Nicht zugeordnet") + ' · ' + esc(money(item.member.annual_fee)) + esc(status) + '</small></div>';
+  }).join("") + '</div>';
 }
 
 async function importPreparedMembers(rows, mapping, club) {
@@ -594,6 +610,15 @@ function renderImportCorrections(items) {
           '<label><span>E-Mail</span><input data-correct="email" value="' + esc(correctionValue(m,"email")) + '"></label>' +
           '<label><span>IBAN</span><input data-correct="iban" value="' + esc(correctionValue(m,"iban")) + '"></label>' +
           '<label><span>Jahresbeitrag</span><input data-correct="annual_fee" value="' + esc(correctionValue(m,"annual_fee")) + '"></label>' +
+          '<label><span>Beitragsart</span><input data-correct="contribution_label" value="' + esc(correctionValue(m,"contribution_label")) + '"></label>' +
+          '<label><span>Beitragsstatus</span><select data-correct="contribution_status"><option value=""' + (!m.contribution_status ? ' selected' : '') + '>nicht vorgegeben</option><option value="open"' + (m.contribution_status === "open" ? ' selected' : '') + '>offen</option><option value="paid"' + (m.contribution_status === "paid" ? ' selected' : '') + '>bezahlt</option><option value="none"' + (m.contribution_status === "none" ? ' selected' : '') + '>kein Beitrag</option></select></label>' +
+          '<label><span>Bezahlt am</span><input data-correct="paid_at" placeholder="TT.MM.JJJJ" value="' + esc(correctionValue(m,"paid_at_raw") || correctionValue(m,"paid_at")) + '"></label>' +
+          '<label><span>Geburtsdatum</span><input data-correct="birth_date" placeholder="TT.MM.JJJJ" value="' + esc(correctionValue(m,"birth_date_raw") || correctionValue(m,"birth_date")) + '"></label>' +
+          '<label><span>Telefon</span><input data-correct="phone" value="' + esc(correctionValue(m,"phone")) + '"></label>' +
+          '<label><span>Straße / Anschrift</span><input data-correct="street" value="' + esc(correctionValue(m,"street")) + '"></label>' +
+          '<label><span>PLZ</span><input data-correct="postal_code" value="' + esc(correctionValue(m,"postal_code")) + '"></label>' +
+          '<label><span>Ort</span><input data-correct="city" value="' + esc(correctionValue(m,"city")) + '"></label>' +
+          '<label><span>Eintrittsdatum</span><input data-correct="joined_at" placeholder="TT.MM.JJJJ" value="' + esc(correctionValue(m,"joined_at_raw") || correctionValue(m,"joined_at")) + '"></label>' +
           '<label><span>Mandatsreferenz</span><input data-correct="mandate_reference" value="' + esc(correctionValue(m,"mandate_reference")) + '"></label>' +
           '<label><span>Mandatsdatum</span><input data-correct="mandate_signed_at" placeholder="TT.MM.JJJJ" value="' + esc(correctionValue(m,"mandate_signed_at")) + '"></label>' +
         '</div>' +
@@ -768,6 +793,11 @@ async function reviewCorrectedCandidates(sources, club) {
     const rawDate = String(source.mandate_signed_at || "").trim();
     const parsedDate = rawDate ? parseDateValue(rawDate) : null;
 
+    const contributionStatusRaw = String(source.contribution_status_raw || source.contribution_status || "").trim();
+    const paidRaw = String(source.paid_at_raw || source.paid_at || "").trim();
+    const birthRaw = String(source.birth_date_raw || source.birth_date || "").trim();
+    const joinedRaw = String(source.joined_at_raw || source.joined_at || "").trim();
+
     const m = {
       first_name: String(source.first_name || "").trim(),
       last_name: String(source.last_name || "").trim(),
@@ -777,7 +807,20 @@ async function reviewCorrectedCandidates(sources, club) {
       annual_fee: parseFee(source.annual_fee, club.standard_fee),
       member_number: String(source.member_number || "").trim() || null,
       mandate_reference: String(source.mandate_reference || "").trim() || null,
-      mandate_signed_at: parsedDate
+      mandate_signed_at: parsedDate,
+      contribution_status: contributionStatusRaw ? (["open","paid","none"].includes(contributionStatusRaw) ? contributionStatusRaw : parseContributionStatus(contributionStatusRaw)) : null,
+      contribution_status_raw: contributionStatusRaw || null,
+      paid_at: paidRaw ? parseDateValue(paidRaw) : null,
+      paid_at_raw: paidRaw || null,
+      birth_date: birthRaw ? parseDateValue(birthRaw) : null,
+      birth_date_raw: birthRaw || null,
+      phone: String(source.phone || "").trim() || null,
+      street: String(source.street || "").trim() || null,
+      postal_code: String(source.postal_code || "").trim() || null,
+      city: String(source.city || "").trim() || null,
+      joined_at: joinedRaw ? parseDateValue(joinedRaw) : null,
+      joined_at_raw: joinedRaw || null,
+      contribution_label: String(source.contribution_label || "").trim() || null
     };
 
     const rowNo = source.__row || index + 1;
