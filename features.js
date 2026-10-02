@@ -1295,6 +1295,11 @@ Viele Grüße
 ${clubName}`;
 }
 
+function memberIsContributionExempt(member, year) {
+  return Array.isArray(member?.contribution_exempt_years) &&
+    member.contribution_exempt_years.map(Number).includes(Number(year));
+}
+
 async function enhanceContributionPage() {
   const club = vaClub || await getClub();
   const selectedYear = contributionYearFromUrl();
@@ -1305,7 +1310,7 @@ async function enhanceContributionPage() {
 
   const existingIds = new Set(contributions.map(c => c.member_id));
   const missing = selectedYear === currentYear
-    ? members.filter(m => !existingIds.has(m.id))
+    ? members.filter(m => !existingIds.has(m.id) && !memberIsContributionExempt(m, selectedYear))
     : [];
 
   if (selectedYear === currentYear && missing.length) {
@@ -1331,7 +1336,9 @@ async function enhanceContributionPage() {
       loadContributions(selectedYear)
     ]);
     const freshExistingIds = new Set(freshContributions.map(c => c.member_id));
-    const freshMissing = freshMembers.filter(m => !freshExistingIds.has(m.id));
+    const freshMissing = freshMembers.filter(
+      m => !freshExistingIds.has(m.id) && !memberIsContributionExempt(m, selectedYear)
+    );
 
     if (!freshMissing.length) {
       showToast("Alle Beiträge für " + selectedYear + " sind bereits angelegt.");
