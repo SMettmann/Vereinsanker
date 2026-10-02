@@ -256,11 +256,11 @@ async function loadApplications(){
   if(!count.error) $("#joinPendingCount").textContent=count.count||0;
   joinApplications=q.data||[];
   $("#joinApplicationRows").innerHTML=joinApplications.map(applicationCard).join("")||'<div class="team-empty">Keine Einträge.</div>';
-  $("[data-accept-join]").forEach(b=>b.addEventListener("click",e=>{
+  document.querySelectorAll("[data-accept-join]").forEach(b=>b.addEventListener("click",e=>{
     const application=joinApplications.find(item=>item.id===e.currentTarget.dataset.acceptJoin);
     if(application) openAcceptJoinSheet(application);
   }));
-  $("[data-reject-join]").forEach(b=>b.addEventListener("click",async e=>{
+  document.querySelectorAll("[data-reject-join]").forEach(b=>b.addEventListener("click",async e=>{
     if(!confirm("Diesen Beitrittsantrag ablehnen?")) return;
     const r=await sb.rpc("reject_membership_application",{p_application_id:e.currentTarget.dataset.rejectJoin});
     if(r.error){
