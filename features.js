@@ -1718,50 +1718,15 @@ async function enhanceContributionPage() {
 
 }
 
-async function enhanceOnboardingImport() {
-  const input = $("#memberFile");
-  if (!input || !window.XLSX) return;
-  input.addEventListener("change", async e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const state = await readImportFile(file);
-      const mappingOkay = state.mapping.full_name || (state.mapping.first_name && state.mapping.last_name);
-      const mapped = mappingOkay
-        ? state.rows.map(row => mapImportRow(row, state.mapping, 0))
-        : [];
-      const errorCount = mapped.filter(member => validateImportedMember(member).length).length;
-
-      state.blocked = !mappingOkay || errorCount > 0;
-      window.vaOnboardingImportState = state;
-
-      const drop = $(".drop");
-      if (drop) {
-        $("strong", drop).textContent = file.name;
-        if (!mappingOkay) {
-          $("span", drop).textContent = "Namensspalten nicht erkannt · Liste nach der Einrichtung unter „Mitglieder“ importieren.";
-        } else if (errorCount) {
-          $("span", drop).textContent = errorCount + " Zeile(n) mit Fehlern · bitte nach der Einrichtung unter „Mitglieder“ prüfen.";
-        } else {
-          $("span", drop).textContent = state.rows.length + " Mitglieder erkannt und geprüft ✓";
-        }
-      }
-    } catch (error) {
-      showToast?.(error.message || "Liste konnte nicht gelesen werden");
-    }
-  });
-}
-
 (async function enhanceVereinsfach() {
   try {
-    const needsAuth = $("#membersPage") || $("#contributionsPage") || $("#memberFile");
+    const needsAuth = $("#membersPage") || $("#contributionsPage");
     if (needsAuth) {
       const session = await requireSession();
       if (!session) return;
     }
     if ($("#membersPage")) await enhanceMemberPage();
     if ($("#contributionsPage")) await enhanceContributionPage();
-    if ($("#memberFile")) await enhanceOnboardingImport();
   } catch (error) {
     console.error("VEREINSFACH features:", error);
   }
