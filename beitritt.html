@@ -1,21 +1,27 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://exginppvomebjinydrrw.supabase.co; connect-src 'self' https://exginppvomebjinydrrw.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><title>Vereinsbeitritt</title><meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="app.css?v=20261001-24"></head><body class="join-public-body">
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://exginppvomebjinydrrw.supabase.co; connect-src 'self' https://exginppvomebjinydrrw.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><title>Vereinsbeitritt</title><meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="app.css?v=20261002-6"></head><body class="join-public-body">
 <main class="join-public-shell">
 <section class="join-public-brand"><div class="join-public-logo"><img id="publicClubLogo" alt="" hidden><span id="publicClubFallback">VF</span></div><small>ONLINE-BEITRITT</small><h1 id="publicClubName">Verein wird geladen …</h1><p id="publicJoinIntro">Fülle deine Daten aus. Der Verein prüft den Antrag anschließend.</p><a id="publicJoinPdf" class="join-pdf-link" href="#" target="_blank" rel="noopener" hidden>Beitrittserklärung des Vereins ansehen →</a></section>
 <form class="join-public-form" id="publicJoinForm" hidden>
 <div class="row"><div class="field"><label for="joinFirst">Vorname</label><input id="joinFirst" required maxlength="80"></div><div class="field"><label for="joinLast">Nachname</label><input id="joinLast" required maxlength="80"></div></div>
-<div class="row"><div class="field"><label for="joinBirth">Geburtsdatum</label><input id="joinBirth" type="date"></div><div class="field"><label for="joinPhone">Telefon <span class="optional">optional</span></label><input id="joinPhone" type="tel"></div></div>
+<div class="row"><div class="field"><label for="joinBirth">Geburtsdatum <span class="optional">optional</span></label><input id="joinBirth" type="date"></div><div class="field"><label for="joinPhone">Telefon <span class="optional">optional</span></label><input id="joinPhone" type="tel"></div></div>
 <div class="field"><label for="joinEmail">E-Mail</label><input id="joinEmail" type="email" required></div>
-<div class="field"><label for="joinStreet">Straße & Hausnummer</label><input id="joinStreet"></div>
-<div class="row"><div class="field"><label for="joinPostal">PLZ</label><input id="joinPostal" maxlength="20"></div><div class="field"><label for="joinCity">Ort</label><input id="joinCity"></div></div>
+<div class="field"><label for="joinStreet">Straße & Hausnummer <span class="optional">optional</span></label><input id="joinStreet"></div>
+<div class="row"><div class="field"><label for="joinPostal">PLZ <span class="optional">optional</span></label><input id="joinPostal" maxlength="20"></div><div class="field"><label for="joinCity">Ort <span class="optional">optional</span></label><input id="joinCity"></div></div>
 <div class="field"><label for="joinGroup">Abteilung / Gruppe <span class="optional">optional</span></label><select id="joinGroup"><option value="">Keine / bitte auswählen</option></select></div>
 <div class="join-contribution-choice" id="joinContributionChoice" hidden><div class="field-label-row"><label>Mitgliedschaft / Beitrag</label><span>Bitte auswählen</span></div><div class="join-contribution-options" id="joinContributionOptions"></div></div><div class="join-fee-info" id="publicStandardFee"><span>Jahresbeitrag</span><strong id="publicAnnualFee">–</strong></div>
-<div class="field"><label for="joinIban">IBAN <span class="optional">optional</span></label><input id="joinIban" autocomplete="off" placeholder="DE00 0000 0000 0000 0000 00"></div>
-<label class="legal-check" id="sepaJoinBox" hidden><input id="joinSepa" type="checkbox"><span id="joinSepaText">Ich ermächtige den Verein, fällige Mitgliedsbeiträge per SEPA-Lastschrift einzuziehen.</span></label>
-<div class="field" id="signatureBox" hidden><label for="joinSignature">Name zur Bestätigung des SEPA-Mandats</label><input id="joinSignature" placeholder="Vorname Nachname"></div>
+<section class="join-sepa-section" id="sepaJoinBox" hidden>
+<div class="join-sepa-head"><strong>SEPA-Lastschrift <span class="optional">optional</span></strong><span>Nur ausfüllen, wenn der Beitrag per Lastschrift eingezogen werden soll.</span></div>
+<label class="legal-check"><input id="joinSepa" type="checkbox"><span>SEPA-Lastschriftmandat erteilen</span></label>
+<div id="sepaDetails" hidden>
+<div class="row"><div class="field"><label for="joinAccountHolder">Kontoinhaber/in</label><input id="joinAccountHolder" maxlength="160"></div><div class="field"><label for="joinIban">IBAN</label><input id="joinIban" autocomplete="off" placeholder="DE00 0000 0000 0000 0000 00"></div></div>
+<div class="join-sepa-mandate"><strong>SEPA-Lastschriftmandat</strong><p id="joinSepaText"></p></div>
+<div class="field" id="signatureBox"><label for="joinSignature">Kontoinhaber/in zur Bestätigung erneut eingeben</label><input id="joinSignature" maxlength="160" placeholder="Vorname Nachname"></div>
+</div>
+</section>
 <label class="legal-check"><input id="joinPrivacy" type="checkbox" required><span>Ich stimme zu, dass meine Angaben zum Zweck der Bearbeitung meines Vereinsbeitritts verarbeitet werden. <a href="datenschutz.html" target="_blank" rel="noopener">Datenschutz</a></span></label>
 <input id="joinWebsite" tabindex="-1" autocomplete="off" class="join-honeypot">
 <button class="primary" type="submit" id="submitJoin">Beitritt absenden →</button><p class="micro">Deine Angaben werden an den oben genannten Verein übermittelt.</p>
 </form>
 <section class="join-public-success" id="joinSuccess" hidden><strong>✓ Antrag gesendet</strong><h2>Danke!</h2><p>Dein Beitrittsantrag wurde an den Verein übermittelt. Der Verein prüft ihn jetzt.</p></section>
 <section class="join-public-error" id="joinLoadError" hidden><h2>Dieser Beitrittslink ist nicht verfügbar.</h2><p>Bitte wende dich direkt an den Verein.</p></section>
-</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase-client.js"></script><script src="join-public.js?v=20261001-9"></script></body></html>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase-client.js"></script><script src="join-public.js?v=20261002-1"></script></body></html>
