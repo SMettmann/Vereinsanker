@@ -1053,47 +1053,26 @@ async function initOnboarding() {
       updated_at: new Date().toISOString()
     };
 
-    const saveQuery = existing
-      ? sb.from("clubs").update({
-          name: payload.name,
-          short_name: payload.short_name,
-          color: payload.color,
-          standard_fee: payload.standard_fee,
-          due_date: payload.due_date,
-          creditor_id: payload.creditor_id,
-          updated_at: payload.updated_at
-        }).eq("id", existing.id)
-      : sb.from("clubs").insert(payload);
-
-    const { data, error } = await saveQuery.select().single();
-
-    if (error) {
-      button.disabled = false;
-      button.textContent = "Verein öffnen →";
-      alert("Einrichtung konnte nicht gespeichert werden: " + error.message);
-      return;
-    }
-
-    const { error: avvError } = await sb.rpc("accept_current_avv", {
-      p_club_id: data.id,
-      p_version: VA_AVV_VERSION,
+    const { data, error } = await sb.rpc("complete_club_onboarding", {
+      p_club_id: existing?.id || null,
+      p_name: payload.name,
+      p_short_name: payload.short_name,
+      p_standard_fee: payload.standard_fee,
+      p_due_date: payload.due_date,
+      p_creditor_id: payload.creditor_id,
+      p_avv_version: VA_AVV_VERSION,
       p_controller_address: controllerAddress,
       p_controller_contact_name: controllerContact
     });
 
-    if (avvError) {
+    if (error) {
       button.disabled = false;
       button.textContent = "Verein öffnen →";
-      await handleAppError(avvError, "AV-Vertrag konnte nicht gespeichert werden.");
+      await handleAppError(error, "Einrichtung konnte nicht gespeichert werden.");
       return;
     }
 
-    data.controller_address = controllerAddress;
-    data.controller_contact_name = controllerContact;
-    data.avv_version = VA_AVV_VERSION;
-    data.avv_accepted_at = new Date().toISOString();
     vaClub = data;
-
     location.href = "app.html";
   });
 }
