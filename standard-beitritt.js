@@ -33,9 +33,10 @@ if(c.logo_url){$("#stdClubLogo").src=c.logo_url;$("#stdClubLogo").hidden=false;$
 $("#standardJoinPaper").hidden=false;
 $(".standard-join-actions").hidden=false;
 if(c.creditor_id){
-  $("#stdCreditor").textContent="Gläubiger-ID: "+c.creditor_id+".";
+  $("#stdSepaMandateText").textContent=c.sepa_mandate_text||("SEPA-Lastschriftmandat für "+c.name+" · Gläubiger-ID "+c.creditor_id);
 }else{
   $("#stdSepaIntro").textContent="Der Verein hat noch keine Gläubiger-ID hinterlegt. Dieser Abschnitt kann bei Bedarf später ergänzt werden.";
+  $("#stdSepaMandateText").textContent="SEPA-Lastschriftmandat ist noch nicht verfügbar.";
 }
 $("#downloadStandardJoin").addEventListener("click",async()=>{
  const btn=$("#downloadStandardJoin");
