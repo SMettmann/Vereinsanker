@@ -1689,15 +1689,25 @@ async function initContributions() {
 
     openList.innerHTML = openRows.length ? openRows.map(c => {
       const m = contributionMember(c);
-      return '<div class="open-row">' +
+      const prepared = Boolean(c.sepa_exported_at);
+      const collectionText = c.sepa_collection_date
+        ? new Date(c.sepa_collection_date + "T12:00:00").toLocaleDateString("de-DE")
+        : "";
+      return '<div class="open-row' + (prepared ? ' sepa-prepared-row' : '') + '">' +
         '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
         esc(memberFullName(m)) +
         '<small>' + esc((m.group_name || "Nicht zugeordnet") + " · Jahresbeitrag") + '</small>' +
-        (memberSepaProblem(m) ? '<small class="sepa-row-warning">SEPA nicht möglich: ' + esc(memberSepaProblem(m)) + '</small>' : '') +
+        (prepared
+          ? '<small class="sepa-row-prepared">SEPA vorbereitet' + (collectionText ? ' · Einzug am ' + esc(collectionText) : '') + '</small>'
+          : (memberSepaProblem(m) ? '<small class="sepa-row-warning">SEPA nicht möglich: ' + esc(memberSepaProblem(m)) + '</small>' : '')) +
         '</b></span>' +
         '<strong>' + esc(money(c.amount)) + '</strong>' +
         '<span>' + (c.due_date ? "Fällig " + new Date(c.due_date + "T00:00:00").toLocaleDateString("de-DE") : "Keine Fälligkeit") + '</span>' +
-        '<span class="open-actions"><button class="mark-paid" data-id="' + esc(c.id) + '">Als bezahlt markieren</button><button class="tiny-action" data-id="' + esc(c.id) + '">Erinnern</button></span>' +
+        '<span class="open-actions"><button class="mark-paid" data-id="' + esc(c.id) + '">Als bezahlt markieren</button>' +
+        (prepared
+          ? '<span class="sepa-prepared-action">Einzug vorbereitet</span>'
+          : '<button class="tiny-action" data-id="' + esc(c.id) + '">Erinnern</button>') +
+        '</span>' +
       '</div>';
     }).join("") : '<div class="empty-row"><strong>Alles erledigt ✓</strong><span>Keine offenen Beiträge.</span></div>';
 
@@ -1711,7 +1721,9 @@ async function initContributions() {
         '<strong>' + esc(money(c.amount)) + '</strong>' +
         (c.status === "paid"
           ? '<span class="paid-check paid-with-date"><b>✓ Bezahlt</b><small>' + esc(paidDate ? "am " + paidDate : "Zahlungsdatum fehlt") + '</small><button class="payment-edit" data-id="' + esc(c.id) + '" type="button">Ändern</button></span>'
-          : '<span class="payment-open-status">Offen</span>') +
+          : (c.sepa_exported_at
+            ? '<span class="payment-open-status sepa-prepared-status">SEPA vorbereitet' + (c.sepa_collection_date ? '<small>Einzug ' + esc(new Date(c.sepa_collection_date + "T12:00:00").toLocaleDateString("de-DE")) + '</small>' : '') + '</span>'
+            : '<span class="payment-open-status">Offen</span>')) +
       '</div>';
     }).join("");
   };
