@@ -213,11 +213,12 @@ async function uploadPdf(file){
 
 async function removePdf(){
   if(!settings?.form_pdf_path) return;
-  const del=await sb.storage.from("membership-forms").remove([settings.form_pdf_path]);
-  if(del.error) throw del.error;
+  const oldPath=settings.form_pdf_path;
   const save=await sb.from("membership_join_settings").update({form_pdf_path:null,updated_at:new Date().toISOString()}).eq("club_id",club.id);
   if(save.error) throw save.error;
   settings.form_pdf_path=null;
+  const del=await sb.storage.from("membership-forms").remove([oldPath]);
+  if(del.error) console.warn("Alte Beitritts-PDF konnte nicht entfernt werden:",del.error);
   await refreshFormSource();
   showToast("Eigene PDF entfernt – VEREINSFACH-Standard ist wieder aktiv.");
 }
@@ -242,6 +243,7 @@ function applicationCard(a){
       '<div><span>Abteilung / Gruppe</span><b>'+esc(a.group_name||"–")+'</b></div>'+
       '<div><span>Beitragsart</span><b>'+esc(a.contribution_label||"Standardbeitrag")+'</b></div>'+
       '<div><span>Jahresbeitrag</span><b>'+Number(a.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+'</b></div>'+
+      '<div><span>Kontoinhaber</span><b>'+esc(a.account_holder||"–")+'</b></div>'+
       '<div><span>IBAN</span><b>'+esc(a.iban||"–")+'</b></div>'+
       '<div><span>SEPA</span><b>'+(a.sepa_consent?"Zustimmung erteilt":"Nein")+'</b></div>'+
     '</div>'+actions+'</article>';
@@ -298,6 +300,7 @@ window.initJoinsPage=async function(){
     if(year!==new Date().getFullYear()) return showToast("Das Eintrittsdatum muss im aktuellen Jahr liegen.");
     if(createContribution&&amount<=0) return showToast("Bitte einen gültigen Beitrag fürs Eintrittsjahr eintragen.");
     if(createContribution&&!dueDate) return showToast("Bitte ein Fälligkeitsdatum festlegen.");
+    if(createContribution&&dueDate<entryDate) return showToast("Die Fälligkeit darf nicht vor dem Eintritt liegen.");
 
     button.disabled=true;
     button.textContent="Wird übernommen …";
@@ -311,6 +314,10 @@ window.initJoinsPage=async function(){
     if(result.error){
       button.disabled=false;
       button.textContent="Als Mitglied übernehmen";
+      const message=String(result.error?.message||"")+" "+String(result.error?.details||"");
+      if(message.includes("MEMBER_ALREADY_EXISTS")) return showToast("Dieses Mitglied scheint bereits vorhanden zu sein. Bitte Mitgliederliste prüfen.");
+      if(message.includes("APPLICATION_NOT_FOUND_OR_ALREADY_REVIEWED")) return showToast("Dieser Antrag wurde bereits von jemandem bearbeitet.");
+      if(message.includes("ENTRY_DUE_DATE_BEFORE_ENTRY")) return showToast("Die Fälligkeit darf nicht vor dem Eintritt liegen.");
       return handleAppError(result.error,"Beitritt konnte nicht übernommen werden.");
     }
 
