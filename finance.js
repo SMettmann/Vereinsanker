@@ -49,7 +49,7 @@ window.initFinancesPage = async function () {
   async function loadYears() {
     const [financeResult, contributionResult] = await Promise.all([
       sb.from("finance_transactions").select("transaction_date").order("transaction_date", { ascending: false }),
-      sb.from("contributions").select("paid_at").eq("status", "paid").not("paid_at", "is", null).order("paid_at", { ascending: false })
+      sb.from("contributions").select("contribution_year,paid_at")
     ]);
     if (financeResult.error) throw financeResult.error;
     if (contributionResult.error) throw contributionResult.error;
@@ -60,8 +60,10 @@ window.initFinancesPage = async function () {
       if (y) years.add(y);
     });
     (contributionResult.data || []).forEach(function (row) {
-      const y = Number(String(row.paid_at || "").slice(0,4));
-      if (y) years.add(y);
+      const contributionYear = Number(row.contribution_year);
+      const paymentYear = Number(String(row.paid_at || "").slice(0,4));
+      if (contributionYear) years.add(contributionYear);
+      if (paymentYear) years.add(paymentYear);
     });
     const sorted = Array.from(years).sort(function (a,b) { return b-a; });
     yearSelect.innerHTML = sorted.map(function (y) {
@@ -108,7 +110,7 @@ window.initFinancesPage = async function () {
         transaction_date: dateOnly(r.paid_at),
         type: "income",
         category: "Mitgliedsbeitrag",
-        description: memberFullName(m),
+        description: memberFullName(m) + " · Beitrag " + r.contribution_year,
         amount: Number(r.amount || 0),
         payment_method: r.payment_method || "bank",
         receipt_path: ""
