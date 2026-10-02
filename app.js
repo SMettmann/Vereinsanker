@@ -904,9 +904,9 @@ async function initResetPassword() {
 }
 
 function showStep(n) {
-  $$(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
+  $(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
   if ($("#stepNo")) $("#stepNo").textContent = n;
-  if ($("#progressBar")) $("#progressBar").style.width = (n / 4 * 100) + "%";
+  if ($("#progressBar")) $("#progressBar").style.width = (n / 3 * 100) + "%";
 }
 
 async function initOnboarding() {
@@ -944,28 +944,28 @@ async function initOnboarding() {
     const avvAccepted = $("#acceptAvv")?.checked;
 
     if (creditorId && !isValidCreditorIdValue(creditorId)) {
-      showStep(3);
+      showStep(2);
       $("#creditor").focus();
       showToast("Die Gläubiger-ID ist ungültig. Deutsche Gläubiger-IDs haben 18 Stellen und eine gültige Prüfziffer.");
       return;
     }
 
     if (controllerAddress.length < 5) {
-      showStep(4);
+      showStep(3);
       $("#controllerAddress").focus();
       showToast("Bitte die Vereinsanschrift eintragen.");
       return;
     }
 
     if (controllerContact.length < 2) {
-      showStep(4);
+      showStep(3);
       $("#controllerContact").focus();
       showToast("Bitte einen Ansprechpartner eintragen.");
       return;
     }
 
     if (!avvAccepted) {
-      showStep(4);
+      showStep(3);
       showToast("Bitte den AV-Vertrag bestätigen.");
       return;
     }
@@ -1025,13 +1025,6 @@ async function initOnboarding() {
     data.avv_accepted_at = new Date().toISOString();
     vaClub = data;
 
-    if (window.vaOnboardingImportState && window.importPreparedMembers) {
-      const state = window.vaOnboardingImportState;
-      const mappingOkay = state.mapping.full_name || (state.mapping.first_name && state.mapping.last_name);
-      if (mappingOkay && !state.blocked) {
-        try { await window.importPreparedMembers(state.rows, state.mapping, data); } catch (importError) { console.error(importError); }
-      }
-    }
     location.href = "app.html";
   });
 }
