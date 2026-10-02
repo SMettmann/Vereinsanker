@@ -1595,7 +1595,7 @@ async function enhanceContributionPage() {
     if (!button) return;
 
     const contribution = (await loadContributions(selectedYear))
-      .find(c => c.id === button.dataset.batchReminderId && c.status !== "paid");
+      .find(c => c.id === button.dataset.batchReminderId && c.status === "open" && !c.sepa_exported_at);
 
     if (!contribution) {
       showToast("Dieser Beitrag ist nicht mehr offen.");
