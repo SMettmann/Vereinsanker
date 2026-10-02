@@ -1403,7 +1403,10 @@ async function enhanceContributionPage() {
     button.textContent = "SEPA-Datei wird sicher vorbereitet …";
 
     const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-    const batchId = compactId("VF-" + selectedYear + "-" + stamp);
+    const suffix = globalThis.crypto?.randomUUID
+      ? crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase()
+      : Math.random().toString(36).slice(2, 8).toUpperCase();
+    const batchId = compactId("VF-" + selectedYear + "-" + stamp + "-" + suffix);
 
     try {
       const xml = buildSepaXml(currentClub, candidates, collectionDate, batchId);
