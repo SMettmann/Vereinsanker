@@ -38,22 +38,38 @@ function parseDateValue(value) {
 function autoMapColumns(columns) {
   const map = {};
   const aliases = {
-    first_name: ["vorname", "firstname", "first", "rufname"],
-    last_name: ["nachname", "lastname", "surname", "familienname"],
-    full_name: ["name", "mitglied", "mitgliedname", "vollstaendigername", "vollername", "fullname", "namevorname"],
-    group_name: ["gruppe", "abteilung", "mannschaft", "team", "bereich", "sektion", "sparte"],
-    email: ["email", "emailadresse", "mail", "emailprivat", "emailkontakt"],
-    iban: ["iban", "kontoiban", "bankiban"],
-    annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag", "beitrageuro", "beitragjahr"],
-    member_number: ["mitgliedsnummer", "mitgliednr", "mitgliedsnr", "nummer", "membernumber", "mitgliedid"],
+    first_name: ["vorname", "vornamen", "firstname", "first", "rufname"],
+    last_name: ["nachname", "lastname", "surname", "familienname", "familiennamegeburtsname"],
+    full_name: ["mitglied", "mitgliedname", "vollstaendigername", "vollername", "fullname", "namevorname", "nachnamevorname"],
+    group_name: ["gruppe", "abteilung", "mannschaft", "team", "bereich", "sektion", "sparte", "sportart"],
+    email: ["email", "emailadresse", "mail", "emailprivat", "emailkontakt", "mailadresse"],
+    iban: ["iban", "kontoiban", "bankiban", "kontonummeriban"],
+    annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag", "beitrageuro", "beitragjahr", "jahresbeitrag2026"],
+    member_number: ["mitgliedsnummer", "mitgliednr", "mitgliedsnr", "nummer", "membernumber", "mitgliedid", "mitgliederid"],
     mandate_reference: ["mandatsreferenz", "mandat", "mandate", "mandatref", "sepamandat", "referenz"],
-    mandate_signed_at: ["mandatsdatum", "mandatdatum", "unterschriftsdatum", "mandatesigned", "mandatunterschriebenam"]
+    mandate_signed_at: ["mandatsdatum", "mandatdatum", "unterschriftsdatum", "mandatesigned", "mandatunterschriebenam"],
+    contribution_status: ["beitragsstatus", "zahlstatus", "statusbeitrag", "bezahlt", "bezahltstatus", "zahlungstatus"],
+    paid_at: ["bezahltam", "zahlungsdatum", "bezahldatum", "zahlungam", "eingangam", "zahlungseingang"],
+    birth_date: ["geburtsdatum", "geburtstag", "dateofbirth"],
+    phone: ["telefon", "telefonnummer", "handy", "mobil", "mobilnummer", "phone"],
+    street: ["strasse", "straße", "anschrift", "street", "strassehausnummer"],
+    postal_code: ["plz", "postleitzahl", "zipcode"],
+    city: ["ort", "wohnort", "stadt", "city"],
+    joined_at: ["eintritt", "eintrittsdatum", "mitgliedseit", "beigetretenam", "joinedat"],
+    contribution_label: ["beitragsart", "beitragstyp", "tarif", "bezeichnungbeitrag"]
   };
 
   for (const [field, names] of Object.entries(aliases)) {
     const found = columns.find(col => names.includes(normalizeHeader(col)));
     if (found) map[field] = found;
   }
+
+  const genericName = columns.find(col => normalizeHeader(col) === "name");
+  if (genericName) {
+    if (map.first_name && !map.last_name) map.last_name = genericName;
+    else if (!map.first_name && !map.last_name && !map.full_name) map.full_name = genericName;
+  }
+
   return map;
 }
 
@@ -79,6 +95,19 @@ function parseFee(value, fallback = 0) {
   return Number.isFinite(n) ? Math.max(0, n) : Number(fallback || 0);
 }
 
+function parseContributionStatus(value) {
+  const raw = normalizeHeader(value);
+  if (!raw) return null;
+  if (["bezahlt","paid","erledigt","ja","yes","ok","x","beglichen"].includes(raw)) return "paid";
+  if (["offen","open","unbezahlt","faellig","fallig","nein","no"].includes(raw)) return "open";
+  if (["keinbeitrag","keiner","none","nichtfaellig","nichtfallig","entfaellt","entfallt"].includes(raw)) return "none";
+  return null;
+}
+
+function importDateValue(value) {
+  return parseDateValue(value);
+}
+
 function mapImportRow(row, mapping, fallbackFee) {
   let first = mapping.first_name ? String(row[mapping.first_name] || "").trim() : "";
   let last = mapping.last_name ? String(row[mapping.last_name] || "").trim() : "";
@@ -87,6 +116,12 @@ function mapImportRow(row, mapping, fallbackFee) {
     first ||= split.first_name;
     last ||= split.last_name;
   }
+
+  const statusRaw = mapping.contribution_status ? String(row[mapping.contribution_status] || "").trim() : "";
+  const paidAtRaw = mapping.paid_at ? row[mapping.paid_at] : "";
+  const birthRaw = mapping.birth_date ? row[mapping.birth_date] : "";
+  const joinedRaw = mapping.joined_at ? row[mapping.joined_at] : "";
+
   return {
     first_name: first,
     last_name: last,
@@ -96,7 +131,20 @@ function mapImportRow(row, mapping, fallbackFee) {
     annual_fee: mapping.annual_fee ? parseFee(row[mapping.annual_fee], fallbackFee) : Number(fallbackFee || 0),
     member_number: mapping.member_number ? String(row[mapping.member_number] || "").trim() || null : null,
     mandate_reference: mapping.mandate_reference ? String(row[mapping.mandate_reference] || "").trim() || null : null,
-    mandate_signed_at: mapping.mandate_signed_at ? parseDateValue(row[mapping.mandate_signed_at]) : null
+    mandate_signed_at: mapping.mandate_signed_at ? parseDateValue(row[mapping.mandate_signed_at]) : null,
+    contribution_status: statusRaw ? parseContributionStatus(statusRaw) : null,
+    contribution_status_raw: statusRaw || null,
+    paid_at: paidAtRaw ? importDateValue(paidAtRaw) : null,
+    paid_at_raw: paidAtRaw ? String(paidAtRaw).trim() : null,
+    birth_date: birthRaw ? importDateValue(birthRaw) : null,
+    birth_date_raw: birthRaw ? String(birthRaw).trim() : null,
+    phone: mapping.phone ? String(row[mapping.phone] || "").trim() || null : null,
+    street: mapping.street ? String(row[mapping.street] || "").trim() || null : null,
+    postal_code: mapping.postal_code ? String(row[mapping.postal_code] || "").trim() || null : null,
+    city: mapping.city ? String(row[mapping.city] || "").trim() || null : null,
+    joined_at: joinedRaw ? importDateValue(joinedRaw) : null,
+    joined_at_raw: joinedRaw ? String(joinedRaw).trim() : null,
+    contribution_label: mapping.contribution_label ? String(row[mapping.contribution_label] || "").trim() || null : null
   };
 }
 
@@ -114,6 +162,10 @@ function validateImportedMember(member) {
   if (member.mandate_reference && !isValidSepaReferenceValue(member.mandate_reference)) errors.push("Mandatsreferenz ungültig");
   if (member.mandate_reference && !member.mandate_signed_at) errors.push("Mandatsdatum fehlt/ungültig");
   if (member.mandate_signed_at && !member.mandate_reference) errors.push("Mandatsreferenz fehlt");
+  if (member.contribution_status_raw && !member.contribution_status) errors.push("Beitragsstatus unbekannt");
+  if (member.paid_at_raw && !member.paid_at) errors.push("Zahlungsdatum ungültig");
+  if (member.birth_date_raw && !member.birth_date) errors.push("Geburtsdatum ungültig");
+  if (member.joined_at_raw && !member.joined_at) errors.push("Eintrittsdatum ungültig");
   return errors;
 }
 
