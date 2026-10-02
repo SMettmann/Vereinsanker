@@ -1488,6 +1488,7 @@ async function initMembers() {
     if ($("#detailBirthDate")) $("#detailBirthDate").textContent = member.birth_date ? new Date(member.birth_date + "T00:00:00").toLocaleDateString("de-DE") : "–";
     if ($("#detailAddress")) $("#detailAddress").textContent = [member.street, [member.postal_code, member.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "–";
     $("#detailIban").textContent = member.iban || "–";
+    if ($("#detailAccountHolder")) $("#detailAccountHolder").textContent = member.account_holder || memberFullName(member) || "–";
     if ($("#detailContributionType")) $("#detailContributionType").textContent = member.contribution_label || "Standard / individuell";
     $("#detailFee").textContent = money(member.annual_fee);
     $("#detailStatus").textContent = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
@@ -1559,6 +1560,12 @@ async function initMembers() {
         button.textContent = "Mitglied speichern";
         return;
       }
+      if (createEntryContribution && entryDueDate < entryDate) {
+        showToast("Die Fälligkeit darf nicht vor dem Eintritt liegen.");
+        button.disabled = false;
+        button.textContent = "Mitglied speichern";
+        return;
+      }
 
       const { error } = await sb.rpc("create_member_with_entry_contribution", {
         p_club_id: club.id,
@@ -1568,6 +1575,7 @@ async function initMembers() {
         p_group_name: $("#memberGroup").value.trim() || null,
         p_email: $("#memberEmail").value.trim() || null,
         p_iban: memberIban || null,
+        p_account_holder: $("#memberAccountHolder")?.value.trim() || null,
         p_annual_fee: fee,
         p_mandate_reference: memberMandate || null,
         p_mandate_signed_at: $("#memberMandateDate")?.value || null,
