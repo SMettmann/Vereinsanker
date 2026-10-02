@@ -44,6 +44,7 @@ function autoMapColumns(columns) {
     group_name: ["gruppe", "abteilung", "mannschaft", "team", "bereich", "sektion", "sparte", "sportart"],
     email: ["email", "emailadresse", "mail", "emailprivat", "emailkontakt", "mailadresse"],
     iban: ["iban", "kontoiban", "bankiban", "kontonummeriban"],
+    account_holder: ["kontoinhaber", "kontoinhaberin", "kontoinhabername", "accountowner", "accountholder"],
     annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag", "beitrageuro", "beitragjahr", "jahresbeitrag2026"],
     member_number: ["mitgliedsnummer", "mitgliednr", "mitgliedsnr", "nummer", "membernumber", "mitgliedid", "mitgliederid"],
     mandate_reference: ["mandatsreferenz", "mandat", "mandate", "mandatref", "sepamandat", "referenz"],
@@ -128,6 +129,7 @@ function mapImportRow(row, mapping, fallbackFee) {
     group_name: mapping.group_name ? String(row[mapping.group_name] || "").trim() || null : null,
     email: mapping.email ? String(row[mapping.email] || "").trim() || null : null,
     iban: mapping.iban ? String(row[mapping.iban] || "").replace(/\s+/g, "").toUpperCase() || null : null,
+    account_holder: mapping.account_holder ? String(row[mapping.account_holder] || "").trim() || null : null,
     annual_fee: mapping.annual_fee ? parseFee(row[mapping.annual_fee], fallbackFee) : Number(fallbackFee || 0),
     member_number: mapping.member_number ? String(row[mapping.member_number] || "").trim() || null : null,
     mandate_reference: mapping.mandate_reference ? String(row[mapping.mandate_reference] || "").trim() || null : null,
@@ -188,6 +190,7 @@ function importMappingHtml(columns, mapping) {
     ["contribution_status", "Beitragsstatus", false],
     ["paid_at", "Bezahlt am", false],
     ["iban", "IBAN", false],
+    ["account_holder", "Kontoinhaber/in", false],
     ["mandate_reference", "Mandatsreferenz", false],
     ["mandate_signed_at", "Mandatsdatum", false]
   ];
@@ -286,6 +289,7 @@ function renderImportCorrections(items) {
           '<label><span>Abteilung / Gruppe</span><input data-correct="group_name" value="' + esc(correctionValue(m,"group_name")) + '"></label>' +
           '<label><span>E-Mail</span><input data-correct="email" value="' + esc(correctionValue(m,"email")) + '"></label>' +
           '<label><span>IBAN</span><input data-correct="iban" value="' + esc(correctionValue(m,"iban")) + '"></label>' +
+          '<label><span>Kontoinhaber/in</span><input data-correct="account_holder" value="' + esc(correctionValue(m,"account_holder")) + '"></label>' +
           '<label><span>Jahresbeitrag</span><input data-correct="annual_fee" value="' + esc(correctionValue(m,"annual_fee")) + '"></label>' +
           '<label><span>Beitragsart</span><input data-correct="contribution_label" value="' + esc(correctionValue(m,"contribution_label")) + '"></label>' +
           '<label><span>Beitragsstatus</span><select data-correct="contribution_status"><option value=""' + (!m.contribution_status ? ' selected' : '') + '>nicht vorgegeben</option><option value="open"' + (m.contribution_status === "open" ? ' selected' : '') + '>offen</option><option value="paid"' + (m.contribution_status === "paid" ? ' selected' : '') + '>bezahlt</option><option value="none"' + (m.contribution_status === "none" ? ' selected' : '') + '>kein Beitrag</option></select></label>' +
@@ -540,6 +544,7 @@ async function reviewCorrectedCandidates(sources, club) {
       group_name: String(source.group_name || "").trim() || null,
       email: String(source.email || "").trim() || null,
       iban: normalizeIban(source.iban) || null,
+      account_holder: String(source.account_holder || "").trim() || null,
       annual_fee: parseFee(source.annual_fee, club.standard_fee),
       member_number: String(source.member_number || "").trim() || null,
       mandate_reference: String(source.mandate_reference || "").trim() || null,
@@ -649,13 +654,13 @@ async function enhanceMemberPage() {
     const statusText = row => !row ? "Kein Beitrag" : row.status === "paid" ? "Bezahlt" : "Offen";
 
     const lines = [
-      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Geburtsdatum","Telefon","Straße","PLZ","Ort","Eintrittsdatum","Beitragsart","IBAN","Jahresbeitrag","Beitragsstatus","Bezahlt am","Mandatsreferenz","Mandatsdatum"],
+      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Geburtsdatum","Telefon","Straße","PLZ","Ort","Eintrittsdatum","Beitragsart","IBAN","Kontoinhaber/in","Jahresbeitrag","Beitragsstatus","Bezahlt am","Mandatsreferenz","Mandatsdatum"],
       ...members.map(m => {
         const contribution = contributionMap.get(m.id);
         return [
           m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",
           m.birth_date||"",m.phone||"",m.street||"",m.postal_code||"",m.city||"",m.joined_at||"",
-          m.contribution_label||"",m.iban||"",m.annual_fee||0,statusText(contribution),
+          m.contribution_label||"",m.iban||"",m.account_holder||"",m.annual_fee||0,statusText(contribution),
           contribution?.paid_at ? String(contribution.paid_at).slice(0,10) : "",
           m.mandate_reference||"",m.mandate_signed_at||""
         ];
@@ -945,6 +950,7 @@ async function enhanceMemberPage() {
       data
     );
     $("#editMemberIban").value = data.iban || "";
+    $("#editMemberAccountHolder").value = data.account_holder || "";
     $("#editMemberMandate").value = data.mandate_reference || "";
     $("#editMemberMandateDate").value = data.mandate_signed_at || "";
     closeBackdrop(memberSheet);
@@ -982,6 +988,7 @@ async function enhanceMemberPage() {
       p_contribution_type_id: selectedContribution.contribution_type_id,
       p_contribution_label: selectedContribution.contribution_label,
       p_iban: editIban || null,
+      p_account_holder: $("#editMemberAccountHolder").value.trim() || null,
       p_mandate_reference: editMandate || null,
       p_mandate_signed_at: $("#editMemberMandateDate").value || null,
       p_contribution_year: currentYear,
