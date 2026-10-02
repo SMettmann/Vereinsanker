@@ -645,18 +645,77 @@ function collectImportCorrections() {
   });
 }
 
+function importHeaderScore(values) {
+  const known = new Set([
+    "name","vorname","vornamen","nachname","familienname","email","emailadresse","mail",
+    "iban","jahresbeitrag","mitgliedsbeitrag","beitrag","betrag","mitgliedsnummer","mitgliednr",
+    "abteilung","gruppe","mannschaft","team","geburtsdatum","telefon","handy","strasse","plz",
+    "ort","eintritt","eintrittsdatum","beitragsstatus","bezahlt","zahlungsdatum",
+    "mandatsreferenz","mandatsdatum","beitragsart"
+  ]);
+  return values.reduce((score, value) => {
+    const key = normalizeHeader(value);
+    if (!key) return score;
+    if (known.has(key)) return score + 3;
+    if (/^(jahresbeitrag|mitgliedsbeitrag|beitrag)\d{4}$/.test(key)) return score + 3;
+    if (/^(email|mitglied|mandat|beitrag|zahlung|geburt|telefon|strasse|adresse)/.test(key)) return score + 1;
+    return score;
+  }, 0);
+}
+
 async function readImportFile(file) {
   if (!window.XLSX) throw new Error("Excel-Import ist noch nicht geladen.");
   const name = String(file?.name || "").toLowerCase();
   if (!/\.(csv|xlsx|xls)$/.test(name)) throw new Error("Bitte eine CSV-, XLSX- oder XLS-Datei auswählen.");
   if (file.size > 8 * 1024 * 1024) throw new Error("Die Datei ist zu groß. Maximal 8 MB.");
+
   const data = await file.arrayBuffer();
   const wb = XLSX.read(data, { type: "array", cellDates: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
-  if (!rows.length) throw new Error("Die Datei enthält keine Daten.");
-  const columns = Object.keys(rows[0]);
-  return { file, rows, columns, mapping: autoMapColumns(columns) };
+
+  let best = null;
+  wb.SheetNames.forEach(sheetName => {
+    const ws = wb.Sheets[sheetName];
+    const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true, blankrows: false });
+    const limit = Math.min(matrix.length, 12);
+    for (let i = 0; i < limit; i++) {
+      const row = Array.isArray(matrix[i]) ? matrix[i] : [];
+      const score = importHeaderScore(row);
+      if (!best || score > best.score) best = { sheetName, ws, matrix, headerIndex: i, score };
+    }
+  });
+
+  if (!best?.ws || !best.matrix?.length) throw new Error("Die Datei enthält keine Daten.");
+
+  const headerRow = best.matrix[best.headerIndex] || [];
+  const columns = headerRow.map((value, index) => {
+    const text = String(value ?? "").trim();
+    return text || "Spalte " + (index + 1);
+  });
+
+  const rows = XLSX.utils.sheet_to_json(best.ws, {
+    header: columns,
+    range: best.headerIndex + 1,
+    defval: "",
+    raw: true,
+    blankrows: false
+  }).filter(row => Object.values(row).some(value => String(value ?? "").trim() !== ""));
+
+  if (!rows.length) throw new Error("Unter den Spaltenüberschriften wurden keine Mitgliedsdaten gefunden.");
+
+  const mapping = autoMapColumns(columns);
+  if (!mapping.annual_fee) {
+    const feeColumn = columns.find(col => /^(jahresbeitrag|mitgliedsbeitrag|beitrag)\d{4}$/.test(normalizeHeader(col)));
+    if (feeColumn) mapping.annual_fee = feeColumn;
+  }
+
+  return {
+    file,
+    rows,
+    columns,
+    mapping,
+    sheetName: best.sheetName,
+    headerRow: best.headerIndex + 1
+  };
 }
 
 
