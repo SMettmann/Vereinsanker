@@ -15,7 +15,7 @@ window.initFinancesPage = async function () {
   const searchInput = $("#financeSearch");
   const sheet = $("#financeSheet");
   const form = $("#financeForm");
-  let selectedYear = currentYear;
+  let selectedYear = contributionYearFromUrl();
   let manualRows = [];
   let contributionRows = [];
   let openContributions = [];
@@ -30,8 +30,13 @@ window.initFinancesPage = async function () {
   }
   function paymentLabel(value) { return value === "cash" ? "Kasse" : "Bank"; }
   function defaultDateForYear(year) {
-    const today = new Date().toISOString().slice(0,10);
-    return Number(today.slice(0,4)) === Number(year) ? today : String(year) + "-01-01";
+    const d = new Date();
+    const today = [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0")
+    ].join("-");
+    return Number(d.getFullYear()) === Number(year) ? today : String(year) + "-01-01";
   }
 
   function setCategoryOptions(type, selected) {
@@ -49,7 +54,7 @@ window.initFinancesPage = async function () {
     if (financeResult.error) throw financeResult.error;
     if (contributionResult.error) throw contributionResult.error;
 
-    const years = new Set([currentYear]);
+    const years = new Set([currentYear, selectedYear]);
     (financeResult.data || []).forEach(function (row) {
       const y = Number(String(row.transaction_date || "").slice(0,4));
       if (y) years.add(y);
@@ -58,7 +63,6 @@ window.initFinancesPage = async function () {
       const y = Number(String(row.paid_at || "").slice(0,4));
       if (y) years.add(y);
     });
-    for (let y = currentYear - 2; y <= currentYear + 1; y++) years.add(y);
     const sorted = Array.from(years).sort(function (a,b) { return b-a; });
     yearSelect.innerHTML = sorted.map(function (y) {
       return '<option value="' + y + '"' + (y === selectedYear ? ' selected' : '') + '>' + y + '</option>';
@@ -70,8 +74,8 @@ window.initFinancesPage = async function () {
     const end = nextYearStart(selectedYear);
     const results = await Promise.all([
       sb.from("finance_transactions").select("*").gte("transaction_date", selectedYear + "-01-01").lte("transaction_date", selectedYear + "-12-31").order("transaction_date", { ascending: false }).order("created_at", { ascending: false }),
-      sb.from("contributions").select("id,amount,paid_at,contribution_year,members(first_name,last_name)").eq("status","paid").gte("paid_at", start).lt("paid_at", end).order("paid_at", { ascending: false }),
-      sb.from("contributions").select("id,amount,status,contribution_year").eq("contribution_year", selectedYear).neq("status","paid")
+      sb.from("contributions").select("id,amount,paid_at,payment_method,contribution_year,members(first_name,last_name)").eq("status","paid").gte("paid_at", start).lt("paid_at", end).order("paid_at", { ascending: false }),
+      sb.from("contributions").select("id,amount,status,contribution_year").eq("contribution_year", selectedYear).eq("status","open")
     ]);
     if (results[0].error) throw results[0].error;
     if (results[1].error) throw results[1].error;
@@ -106,7 +110,7 @@ window.initFinancesPage = async function () {
         category: "Mitgliedsbeitrag",
         description: memberFullName(m),
         amount: Number(r.amount || 0),
-        payment_method: "bank",
+        payment_method: r.payment_method || "bank",
         receipt_path: ""
       };
     });
@@ -225,21 +229,30 @@ window.initFinancesPage = async function () {
     window.open(result.data.signedUrl, "_blank", "noopener");
   }
 
-  async function uploadReceipt(transactionId, file, oldPath) {
-    if (!file) return oldPath || null;
+  function validateReceiptFile(file) {
+    if (!file) return;
     if (file.size > 10485760) throw new Error("Beleg ist größer als 10 MB.");
     const allowed = ["application/pdf","image/png","image/jpeg","image/webp"];
     if (allowed.indexOf(file.type) < 0) throw new Error("Dieses Belegformat wird nicht unterstützt.");
+  }
+
+  function makeFinanceId() {
+    if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    globalThis.crypto?.getRandomValues?.(bytes);
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    const hex = [...bytes].map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    return hex.slice(0,8) + "-" + hex.slice(8,12) + "-" + hex.slice(12,16) + "-" + hex.slice(16,20) + "-" + hex.slice(20);
+  }
+
+  async function uploadReceiptFile(transactionId, file) {
+    if (!file) return null;
+    validateReceiptFile(file);
     const safeName = String(file.name || "beleg").replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-90);
     const path = club.id + "/" + transactionId + "/" + Date.now() + "-" + safeName;
     const upload = await sb.storage.from("finance-receipts").upload(path, file, { upsert:false, contentType:file.type });
     if (upload.error) throw upload.error;
-    const update = await sb.from("finance_transactions").update({ receipt_path:path, updated_at:new Date().toISOString() }).eq("id", transactionId);
-    if (update.error) {
-      await sb.storage.from("finance-receipts").remove([path]);
-      throw update.error;
-    }
-    if (oldPath && oldPath !== path) await sb.storage.from("finance-receipts").remove([oldPath]);
     return path;
   }
 
@@ -249,6 +262,9 @@ window.initFinancesPage = async function () {
     const id = $("#financeId").value;
     const amount = Number($("#financeAmount").value || 0);
     const transactionDate = $("#financeDate").value;
+    const file = $("#financeReceipt").files[0] || null;
+    const oldReceipt = $("#financeOldReceipt").value || "";
+
     if (Number(String(transactionDate).slice(0,4)) !== selectedYear) {
       $("#financeDate").focus();
       showToast("Das Buchungsdatum muss im ausgewählten Finanzjahr " + selectedYear + " liegen.");
@@ -259,8 +275,18 @@ window.initFinancesPage = async function () {
       showToast("Bitte einen Betrag größer als 0 eingeben.");
       return;
     }
+
+    try {
+      validateReceiptFile(file);
+    } catch (error) {
+      showToast(error.message || "Beleg ist ungültig.");
+      return;
+    }
+
     button.disabled = true;
     button.textContent = "Wird gespeichert …";
+
+    let uploadedPath = null;
     try {
       const payload = {
         club_id: club.id,
@@ -272,20 +298,57 @@ window.initFinancesPage = async function () {
         payment_method: $("#financePayment").value,
         updated_at: new Date().toISOString()
       };
+
       let saved;
       if (id) {
-        const result = await sb.from("finance_transactions").update(payload).eq("id", id).select().single();
-        if (result.error) throw result.error;
+        if (file) uploadedPath = await uploadReceiptFile(id, file);
+        const updatePayload = uploadedPath ? { ...payload, receipt_path: uploadedPath } : payload;
+
+        const result = await sb
+          .from("finance_transactions")
+          .update(updatePayload)
+          .eq("id", id)
+          .eq("club_id", club.id)
+          .select()
+          .single();
+
+        if (result.error) {
+          if (uploadedPath) {
+            try { await sb.storage.from("finance-receipts").remove([uploadedPath]); } catch {}
+          }
+          throw result.error;
+        }
         saved = result.data;
+
+        if (uploadedPath && oldReceipt && oldReceipt !== uploadedPath) {
+          const removed = await sb.storage.from("finance-receipts").remove([oldReceipt]);
+          if (removed.error) console.warn("Alter Beleg konnte nicht entfernt werden:", removed.error);
+        }
       } else {
-        const result = await sb.from("finance_transactions").insert(payload).select().single();
-        if (result.error) throw result.error;
+        const newId = makeFinanceId();
+        if (file) uploadedPath = await uploadReceiptFile(newId, file);
+
+        const result = await sb
+          .from("finance_transactions")
+          .insert({
+            id: newId,
+            ...payload,
+            receipt_path: uploadedPath
+          })
+          .select()
+          .single();
+
+        if (result.error) {
+          if (uploadedPath) {
+            try { await sb.storage.from("finance-receipts").remove([uploadedPath]); } catch {}
+          }
+          throw result.error;
+        }
         saved = result.data;
       }
+
       $("#financeId").value = saved.id;
-      $("#financeOldReceipt").value = saved.receipt_path || $("#financeOldReceipt").value || "";
-      const file = $("#financeReceipt").files[0];
-      if (file) await uploadReceipt(saved.id, file, $("#financeOldReceipt").value || saved.receipt_path);
+      $("#financeOldReceipt").value = saved.receipt_path || "";
       closeBackdrop(sheet);
       showToast("Buchung gespeichert ✓");
       await loadData();
@@ -334,27 +397,55 @@ window.initFinancesPage = async function () {
   categoryFilter.addEventListener("change", renderRows);
   yearSelect.addEventListener("change", async function () {
     selectedYear = Number(yearSelect.value) || currentYear;
+    const url = new URL(location.href);
+    if (selectedYear === currentYear) url.searchParams.delete("year");
+    else url.searchParams.set("year", String(selectedYear));
+    history.replaceState(null, "", url);
     await loadData();
   });
   $("#financePrint").addEventListener("click", function () { window.print(); });
   $("#financeExport").addEventListener("click", function () {
+    if (!window.XLSX) {
+      showToast("Excel-Export konnte nicht geladen werden. Bitte Seite neu laden.");
+      return;
+    }
+
     const rows = combinedRows();
-    const header = ["Datum","Art","Kategorie","Beschreibung","Zahlungsart","Betrag"];
-    const table = [header].concat(rows.map(function (r) {
-      return [r.transaction_date, r.type === "income" ? "Einnahme" : "Ausgabe", r.category, r.description || "", paymentLabel(r.payment_method), (r.type === "expense" ? -1 : 1) * Number(r.amount || 0)];
-    }));
-    const html = '<html><head><meta charset="UTF-8"></head><body><table border="1">' + table.map(function (row) {
-      return '<tr>' + row.map(function (cell) { return '<td>' + esc(cell) + '</td>'; }).join("") + '</tr>';
-    }).join("") + '</table></body></html>';
-    const blob = new Blob(["\ufeff" + html], { type:"application/vnd.ms-excel;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "VEREINSFACH-Finanzen-" + selectedYear + ".xls";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const manualIncome = manualRows
+      .filter(function (r) { return r.type === "income"; })
+      .reduce(function (s,r) { return s + Number(r.amount || 0); }, 0);
+    const contributionIncome = contributionRows
+      .reduce(function (s,r) { return s + Number(r.amount || 0); }, 0);
+    const expenses = manualRows
+      .filter(function (r) { return r.type === "expense"; })
+      .reduce(function (s,r) { return s + Number(r.amount || 0); }, 0);
+
+    const workbook = XLSX.utils.book_new();
+    const overview = [
+      ["VEREINSFACH Finanzübersicht", selectedYear],
+      [],
+      ["Einnahmen", manualIncome + contributionIncome],
+      ["davon Mitgliedsbeiträge", contributionIncome],
+      ["Ausgaben", expenses],
+      ["Saldo", manualIncome + contributionIncome - expenses],
+      ["Offene Mitgliedsbeiträge", openContributions.reduce(function (s,r) { return s + Number(r.amount || 0); }, 0)]
+    ];
+
+    const bookings = rows.map(function (r) {
+      return {
+        "Datum": r.transaction_date,
+        "Art": r.type === "income" ? "Einnahme" : "Ausgabe",
+        "Kategorie": r.category,
+        "Beschreibung": r.description || "",
+        "Zahlungsart": paymentLabel(r.payment_method),
+        "Betrag": (r.type === "expense" ? -1 : 1) * Number(r.amount || 0),
+        "Quelle": r.source === "contribution" ? "Mitgliedsbeitrag" : "Manuell"
+      };
+    });
+
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(overview), "Übersicht");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(bookings), "Buchungen");
+    XLSX.writeFile(workbook, "VEREINSFACH_Finanzen_" + selectedYear + ".xlsx");
   });
 
   await loadYears();
