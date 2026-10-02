@@ -402,6 +402,7 @@ async function waitForAuthSession({ recoveryOnly = false, timeoutMs = 5000 } = {
   return await new Promise(resolve => {
     let settled = false;
     let timer = null;
+    let subscription = null;
 
     const finish = value => {
       if (settled) return;
@@ -421,7 +422,7 @@ async function waitForAuthSession({ recoveryOnly = false, timeoutMs = 5000 } = {
         if (verified) finish({ session: verified, recovery: sawRecovery });
       } catch {}
     });
-    const subscription = data?.subscription;
+    subscription = data?.subscription;
 
     (async () => {
       try {
