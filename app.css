@@ -2484,9 +2484,9 @@ body.trial-expired #openJoinMail{
 .admin-visitor-day{display:grid;grid-template-columns:48px 1fr 34px 72px;align-items:center;gap:9px;font-size:10px}
 .admin-visitor-day>span,.admin-visitor-day>small{color:var(--muted)}.admin-visitor-day>b{text-align:right}
 .admin-visitor-day>div{height:8px;border-radius:99px;background:#edf1ee;overflow:hidden}.admin-visitor-day i{display:block;height:100%;border-radius:99px;background:var(--green)}
-.admin-club-head,.admin-club-row{display:grid;grid-template-columns:minmax(220px,1.5fr) 130px 90px 150px;gap:14px;align-items:center}
+.admin-club-head,.admin-club-row{display:grid;grid-template-columns:minmax(220px,1.35fr) minmax(230px,1fr) 130px 90px 150px;gap:14px;align-items:center}
 .admin-club-head{padding:0 12px 9px;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
-.admin-club-row{padding:13px 12px;border-top:1px solid var(--line);font-size:11px}.admin-club-row>div{display:grid;gap:3px}.admin-club-row>div span,.admin-club-row small{color:var(--muted);font-size:9px}.admin-club-row>span{display:grid;gap:2px}
+.admin-club-row{padding:13px 12px;border-top:1px solid var(--line);font-size:11px}.admin-club-row>div{display:grid;gap:3px}.admin-club-row>div span,.admin-club-row small{color:var(--muted);font-size:9px}.admin-club-row>span{display:grid;gap:2px}.admin-owner-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#39463f}
 .admin-billing{display:inline-flex!important;width:max-content;padding:6px 9px;border-radius:999px;background:#eef1ef;font-size:9px!important;font-weight:900}
 .admin-billing.active_monthly,.admin-billing.active_yearly{background:#eaf5ef;color:#236b4a}.admin-billing.payment_failed{background:#fff0e8;color:#9a4d31}
 .admin-ticket{padding:16px 0;border-top:1px solid var(--line)}.admin-ticket:first-child{border-top:0}
@@ -2498,7 +2498,7 @@ body.trial-expired #openJoinMail{
   .admin-kpis{grid-template-columns:repeat(2,1fr)}
   .admin-grid{grid-template-columns:1fr}
   .admin-club-head{display:none}
-  .admin-club-row{grid-template-columns:1fr 100px 70px 120px}
+  .admin-club-row{grid-template-columns:1fr 1fr 100px 70px 120px}
 }
 @media(max-width:760px){
   .support-quick-grid{grid-template-columns:1fr}
@@ -2506,7 +2506,7 @@ body.trial-expired #openJoinMail{
   .admin-shell{width:min(100% - 20px,1380px)}
   .admin-topline{align-items:flex-start;flex-direction:column}.admin-topline>div:last-child{width:100%}.admin-topline button{flex:1}
   .admin-kpis{grid-template-columns:1fr 1fr}
-  .admin-club-row{grid-template-columns:1fr 1fr;gap:10px}.admin-club-row>span:last-child{grid-column:2}
+  .admin-club-row{grid-template-columns:1fr;gap:8px}.admin-club-row>span:last-child{grid-column:auto}.admin-owner-email{white-space:normal}
   .admin-visitor-day{grid-template-columns:42px 1fr 28px}.admin-visitor-day small{display:none}
 }
 
