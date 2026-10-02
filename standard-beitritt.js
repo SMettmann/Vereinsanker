@@ -4,6 +4,11 @@ const query=new URLSearchParams(location.search);
 const token=query.get("t")||"";
 const presetGroup=(query.get("gruppe")||"").trim();
 const presetContribution=(query.get("beitrag")||"").trim();
+$("#backStandardJoin")?.addEventListener("click",e=>{
+  e.preventDefault();
+  if(history.length>1) history.back();
+  else location.href="index.html";
+});
 const r=await sb.functions.invoke("membership-join-public",{body:{action:"get",token}});
 if(r.error||!r.data?.ok){
   $("#standardJoinPaper").hidden=true;
