@@ -191,21 +191,7 @@
     const dangerZone=$("#ownerDangerZone");
     if(dangerZone) dangerZone.hidden=membership.role!=="owner";
 
-    const sideRole=()=>{
-      const bottom=$(".side-bottom");
-      if(!bottom||$(".team-role-inline",bottom)) return;
-      const role=document.createElement("div");
-      role.className="team-role-inline";
-      role.innerHTML='<strong>'+(membership.role==="owner"?"Hauptkonto":"Teamzugang")+' · volle Arbeitsrechte</strong><span>'+esc(user.email||membership.email||"")+'</span>';
-      const joinsShortcut=$(".joins-side-action",bottom);
-      if(joinsShortcut) joinsShortcut.insertAdjacentElement("afterend",role);
-      else bottom.prepend(role);
-    };
-
-    sideRole();
-    const observer=new MutationObserver(sideRole);
-    observer.observe(document.body,{childList:true,subtree:true});
-    setTimeout(()=>observer.disconnect(),5000);
+    // Rollenhinweis in der linken Seitenleiste bewusst weggelassen.
 
     await initTeam(club,user);
   }catch(error){
