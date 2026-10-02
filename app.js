@@ -1455,7 +1455,11 @@ function renderMemberRows(members, contributionMap) {
 
   rows.innerHTML = members.map(m => {
     const c = contributionMap.get(m.id);
-    const status = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
+    const exemptThisYear = Array.isArray(m.contribution_exempt_years) &&
+      m.contribution_exempt_years.map(Number).includes(currentYear);
+    const status = !c
+      ? (exemptThisYear ? "Beitragsfrei " + currentYear : "Kein Beitrag")
+      : (c.status === "paid" ? "Bezahlt" : "Offen");
     return '<button class="members-row" type="button" data-member-id="' + esc(m.id) + '">' +
       '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.member_number || "ohne Mitgliedsnummer") + '</small></b></span>' +
       '<span>' + esc(m.group_name || "Nicht zugeordnet") + '</span>' +
