@@ -25,5 +25,19 @@
 <div class="join-filter"><button class="tiny-action active" data-join-filter="pending" type="button">Offen <b id="joinPendingCount">0</b></button><button class="tiny-action" data-join-filter="accepted" type="button">Übernommen</button><button class="tiny-action" data-join-filter="rejected" type="button">Abgelehnt</button></div>
 <div id="joinApplicationRows" class="join-application-list"><div class="team-empty">Wird geladen …</div></div>
 </section>
-</main></div><div class="toast" id="toast" hidden></div>
+</main></div>
+<div class="sheet-backdrop" id="acceptJoinSheet" hidden><section class="side-sheet">
+<button class="sheet-close" id="closeAcceptJoin" type="button">×</button>
+<small class="sheet-kicker">MITGLIED ÜBERNEHMEN</small>
+<h2 id="acceptJoinName">Neues Mitglied</h2>
+<p class="sheet-intro">Jahresbeitrag bleibt als Grundlage gespeichert. Für das Eintrittsjahr entscheidet ihr separat.</p>
+<div class="entry-contribution-box">
+<div class="entry-contribution-head"><div><strong>Beitrag im Eintrittsjahr</strong><span id="acceptJoinAnnualInfo">Jahresbeitrag wird geladen …</span></div></div>
+<div class="row"><div class="field"><label for="acceptJoinEntryDate">Eintritt am</label><input id="acceptJoinEntryDate" type="date"></div><div class="field"><label for="acceptJoinMode">Beitrag für dieses Jahr</label><select id="acceptJoinMode"><option value="full">Voller Jahresbeitrag</option><option value="prorata">Anteilig ab Eintritt</option><option value="custom">Eigener Betrag</option><option value="none">Dieses Jahr kein Beitrag</option></select></div></div>
+<div class="row"><div class="field" id="acceptJoinCustomWrap" hidden><label for="acceptJoinCustomAmount">Eigener Betrag</label><input id="acceptJoinCustomAmount" type="number" min="0.01" step="0.01"></div><div class="field" id="acceptJoinDueWrap"><label for="acceptJoinDueDate">Fällig am</label><input id="acceptJoinDueDate" type="date"></div></div>
+<p class="entry-contribution-summary" id="acceptJoinSummary"></p>
+</div>
+<button class="primary" id="confirmAcceptJoin" type="button">Als Mitglied übernehmen</button>
+</section></div>
+<div class="toast" id="toast" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase-client.js"></script><script src="joins.js?v=20261001-7"></script><script src="app.js?v=20261001-34"></script><script src="team.js?v=20261001-9"></script></body></html>
