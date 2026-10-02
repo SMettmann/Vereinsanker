@@ -131,11 +131,14 @@ function bindIbanValidation(input) {
 function memberSepaProblem(member) {
   if (!member?.iban) return "IBAN fehlt";
   if (!isValidIbanValue(member.iban)) return "IBAN ungültig";
+  const accountHolder = String(member.account_holder || memberFullName(member) || "").trim();
+  if (!accountHolder) return "Kontoinhaber fehlt";
   const mandate = String(member.mandate_reference || "").trim();
   if (!mandate) return "Mandatsreferenz fehlt";
   if (!isValidSepaReferenceValue(mandate)) return "Mandatsreferenz ungültig";
   if (!member.mandate_signed_at) return "Mandatsdatum fehlt";
-  const today = new Date().toISOString().slice(0,10);
+  const d = new Date();
+  const today = [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
   if (String(member.mandate_signed_at) > today) return "Mandatsdatum liegt in der Zukunft";
   return "";
 }
@@ -1221,7 +1224,7 @@ async function nextMemberNumber(clubId) {
 async function loadContributions(year = currentYear) {
   const { data, error } = await sb
     .from("contributions")
-    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,payment_method,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,member_number,annual_fee,mandate_reference,mandate_signed_at)")
+    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,payment_method,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,account_holder,member_number,annual_fee,mandate_reference,mandate_signed_at)")
     .eq("contribution_year", year)
     .order("due_date", { ascending: true });
   if (error) throw error;
