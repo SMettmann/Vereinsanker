@@ -343,8 +343,8 @@ footer{
   color:#fff;
 }
 .price-main>span{
-  color:#71dfa8;
-  font-size:11px;
+  color:#86efbb;
+  font-size:12px;
   font-weight:800;
   letter-spacing:.12em;
 }
@@ -355,32 +355,31 @@ footer{
 }
 .price-main .amount strong{
   color:#fff;
-  font-size:58px;
+  font-size:62px;
   line-height:.95;
   font-weight:800;
   letter-spacing:-.055em;
-  text-shadow:0 1px 0 rgba(255,255,255,.04);
 }
 .price-main .amount small{
-  color:rgba(255,255,255,.76);
-  font-size:13px;
-  margin-bottom:7px;
+  color:rgba(255,255,255,.9);
+  font-size:14px;
+  margin-bottom:8px;
 }
 .price-main>p{
-  color:rgba(255,255,255,.76);
-  font-size:13px;
+  color:rgba(255,255,255,.88);
+  font-size:14px;
   line-height:1.65;
   margin-bottom:22px;
 }
 .price-main>em{
-  color:rgba(255,255,255,.58);
-  font-size:10px;
-  margin-top:12px;
+  color:rgba(255,255,255,.72);
+  font-size:11px;
+  margin-top:13px;
 }
 .price-main .btn-primary{
   background:#fff;
   color:#0d2a1e;
-  border:1px solid rgba(255,255,255,.9);
+  border:1px solid rgba(255,255,255,.92);
   box-shadow:0 10px 24px rgba(0,0,0,.16);
 }
 .price-main .btn-primary:hover{
@@ -388,88 +387,169 @@ footer{
   color:#0b241a;
   box-shadow:0 14px 30px rgba(0,0,0,.2);
 }
-.giving-inline{
+
+/* Direkt im sichtbaren Startbereich */
+.hero-giving{
   margin-top:22px;
+  max-width:610px;
   display:grid;
-  grid-template-columns:46px 1fr;
+  grid-template-columns:44px 1fr auto;
   gap:13px;
-  align-items:start;
-  padding:15px 16px;
-  border:1px solid rgba(121,229,174,.22);
-  border-radius:16px;
-  background:rgba(255,255,255,.07);
+  align-items:center;
+  padding:13px 15px;
+  border:1px solid rgba(132,236,181,.25);
+  border-radius:15px;
+  background:rgba(255,255,255,.075);
+  color:#fff;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter:blur(6px);
 }
-.giving-inline-heart{
-  width:46px;
-  height:46px;
+.hero-giving:hover{
+  background:rgba(255,255,255,.105);
+  border-color:rgba(132,236,181,.38);
+  transform:translateY(-1px);
+}
+.hero-giving-heart{
+  width:44px;
+  height:44px;
   display:grid;
   place-content:center;
-  border-radius:13px;
-  background:rgba(88,215,150,.15);
-  color:#7ce3ae;
-  font-size:22px;
-  line-height:1;
+  border-radius:12px;
+  background:rgba(88,215,150,.16);
+  color:#8bf0bc;
+  font-size:21px;
 }
-.giving-inline-copy{
+.hero-giving-copy{
+  min-width:0;
   display:grid;
-  gap:4px;
+  gap:3px;
 }
-.giving-inline-copy>span{
-  color:#7ce3ae;
-  font-size:9px;
+.hero-giving-copy b{
+  color:#fff;
+  font-size:13px;
+  line-height:1.3;
+}
+.hero-giving-copy small{
+  color:rgba(255,255,255,.76);
+  font-size:11px;
+  line-height:1.45;
+}
+.hero-giving-copy small strong{
+  color:#9bf1c2;
+}
+.hero-giving-arrow{
+  color:#8bf0bc;
+  font-size:17px;
+  font-weight:800;
+}
+
+/* Spendenhinweis über die volle Breite der Preiskarte */
+.giving-price-wide{
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:56px minmax(0,1fr) auto;
+  gap:18px;
+  align-items:center;
+  padding:22px 26px;
+  border-top:1px solid #d8e6dd;
+  background:
+    radial-gradient(circle at 0% 100%,rgba(83,207,145,.11),transparent 18rem),
+    linear-gradient(90deg,#eef8f2 0%,#f9fcfa 55%,#ffffff 100%);
+}
+.giving-price-icon{
+  width:56px;
+  height:56px;
+  display:grid;
+  place-content:center;
+  border-radius:16px;
+  background:#dff3e8;
+  color:#1f7a55;
+  font-size:27px;
+  box-shadow:inset 0 0 0 1px rgba(31,122,85,.05);
+}
+.giving-price-copy{
+  min-width:0;
+  display:grid;
+  gap:5px;
+}
+.giving-price-copy>span{
+  color:#237a55;
+  font-size:10px;
   font-weight:800;
   letter-spacing:.13em;
 }
-.giving-inline-copy>strong{
-  color:#fff;
-  font-size:14px;
-  line-height:1.35;
+.giving-price-copy>strong{
+  color:#13251b;
+  font-size:17px;
+  line-height:1.3;
 }
-.giving-inline-copy p{
-  margin:1px 0 0;
-  color:rgba(255,255,255,.72);
-  font-size:11px;
-  line-height:1.55;
+.giving-price-copy p{
+  max-width:700px;
+  margin:0;
+  color:#526159;
+  font-size:13px;
+  line-height:1.6;
 }
-.giving-inline-copy p b{
-  color:#fff;
+.giving-price-copy p b{
+  color:#163e2c;
 }
-.giving-inline-copy a{
-  color:#9aebc0;
-  font-weight:750;
+.giving-price-copy a{
+  color:#1e7652;
+  font-weight:800;
   text-decoration:underline;
-  text-decoration-color:rgba(154,235,192,.36);
+  text-decoration-color:rgba(30,118,82,.3);
   text-underline-offset:2px;
 }
-.giving-inline-copy a:hover{
-  color:#c7f6dd;
+.giving-price-copy a:hover{
+  color:#15583e;
 }
-.giving-inline-copy small{
-  color:rgba(255,255,255,.48);
-  font-size:9px;
+.giving-price-note{
+  max-width:155px;
+  padding:9px 11px;
+  border:1px solid #cce3d5;
+  border-radius:12px;
+  background:#fff;
+  color:#37604b;
+  font-size:10px;
+  font-weight:800;
   line-height:1.4;
+  text-align:center;
 }
 
 @media(max-width:760px){
   .price-main .amount strong{
-    font-size:50px;
+    font-size:52px;
   }
-  .giving-inline{
+  .hero-giving{
     grid-template-columns:40px 1fr;
-    gap:11px;
-    padding:14px;
   }
-  .giving-inline-heart{
+  .hero-giving-heart{
     width:40px;
     height:40px;
-    border-radius:12px;
-    font-size:19px;
   }
-  .giving-inline-copy>strong{
-    font-size:13px;
+  .hero-giving-arrow{
+    display:none;
   }
-  .giving-inline-copy p{
-    font-size:10.5px;
+  .giving-price-wide{
+    grid-template-columns:46px 1fr;
+    gap:13px;
+    padding:18px;
+  }
+  .giving-price-icon{
+    width:46px;
+    height:46px;
+    border-radius:13px;
+    font-size:22px;
+  }
+  .giving-price-copy>strong{
+    font-size:15px;
+  }
+  .giving-price-copy p{
+    font-size:12px;
+  }
+  .giving-price-note{
+    grid-column:1/-1;
+    max-width:none;
+    text-align:left;
   }
 }
