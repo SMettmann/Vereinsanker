@@ -3414,3 +3414,198 @@ textarea:focus-visible{
     padding-right:2px;
   }
 }
+
+
+/* VEREINSFACH – Admin Spendenverwaltung */
+.admin-donation-panel{
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(83,207,145,.07),transparent 22rem),
+    #fff;
+}
+.admin-donation-recipient{
+  flex:0 0 auto;
+  padding:8px 11px;
+  border:1px solid #d5e5db;
+  border-radius:999px;
+  background:#eff8f3;
+  color:var(--green-deep);
+  font-size:11px;
+  font-weight:800;
+}
+.admin-donation-intro{
+  margin:2px 0 20px;
+  color:#68756d;
+  font-size:12px;
+  line-height:1.6;
+  max-width:780px;
+}
+.admin-donation-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:14px;
+}
+.admin-donation-kpis>div{
+  min-width:0;
+  padding:17px;
+  border:1px solid #dce4de;
+  border-radius:16px;
+  background:#fbfdfb;
+  display:grid;
+  gap:5px;
+}
+.admin-donation-kpis span{
+  color:#68756d;
+  font-size:10px;
+  font-weight:700;
+}
+.admin-donation-kpis strong{
+  color:#17261d;
+  font-size:23px;
+  line-height:1.1;
+  font-weight:750;
+  letter-spacing:-.035em;
+}
+.admin-donation-kpis small{
+  color:#8a958e;
+  font-size:9px;
+}
+.admin-donation-kpis .admin-donation-open{
+  border-color:#b9dcc8;
+  background:linear-gradient(145deg,#edf8f2,#f8fcf9);
+}
+.admin-donation-kpis .admin-donation-open strong{
+  color:var(--green-deep);
+}
+.admin-donation-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:22px;
+}
+.admin-donation-meta span{
+  padding:7px 10px;
+  border-radius:999px;
+  background:#f1f5f2;
+  color:#526159;
+  font-size:10px;
+}
+.admin-donation-meta b{
+  color:#1e6f4f;
+}
+.admin-donation-transfer{
+  display:grid;
+  grid-template-columns:minmax(210px,1fr) 140px minmax(180px,1fr) auto;
+  gap:12px;
+  align-items:end;
+  padding:18px;
+  border:1px solid #dce4de;
+  border-radius:16px;
+  background:#f8faf8;
+}
+.admin-donation-transfer>div{
+  align-self:center;
+  display:grid;
+  gap:4px;
+}
+.admin-donation-transfer>div strong{
+  font-size:12px;
+}
+.admin-donation-transfer>div span{
+  color:#727e76;
+  font-size:9px;
+  line-height:1.45;
+}
+.admin-donation-transfer label{
+  display:grid;
+  gap:6px;
+  color:#526159;
+  font-size:9px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.admin-donation-transfer input{
+  width:100%;
+  min-height:40px;
+  box-sizing:border-box;
+  border:1px solid #cfd9d1;
+  border-radius:10px;
+  background:#fff;
+  color:#17261d;
+  padding:0 11px;
+  font:600 11px/1 inherit;
+  text-transform:none;
+  letter-spacing:0;
+}
+.admin-donation-transfer input:focus{
+  outline:none;
+  border-color:#79a98f;
+  box-shadow:0 0 0 4px rgba(32,118,83,.08);
+}
+.admin-donation-transfer .primary{
+  min-height:40px;
+  white-space:nowrap;
+}
+.admin-donation-message{
+  grid-column:1/-1;
+  min-height:14px;
+  margin:0;
+  color:#557066;
+  font-size:10px;
+}
+.admin-donation-history{
+  margin-top:18px;
+}
+.admin-donation-history>strong{
+  display:block;
+  margin-bottom:7px;
+  font-size:11px;
+}
+.admin-donation-history-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:10px 2px;
+  border-top:1px solid #edf1ee;
+}
+.admin-donation-history-row>div{
+  display:grid;
+  gap:2px;
+}
+.admin-donation-history-row strong{
+  font-size:11px;
+}
+.admin-donation-history-row span,
+.admin-donation-history-row time{
+  color:#7b8780;
+  font-size:9px;
+}
+@media(max-width:900px){
+  .admin-donation-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .admin-donation-transfer{
+    grid-template-columns:1fr 1fr;
+  }
+  .admin-donation-transfer>div{
+    grid-column:1/-1;
+  }
+}
+@media(max-width:620px){
+  .admin-donation-kpis{
+    grid-template-columns:1fr;
+  }
+  .admin-donation-transfer{
+    grid-template-columns:1fr;
+  }
+  .admin-donation-transfer>div,
+  .admin-donation-message{
+    grid-column:auto;
+  }
+  .admin-donation-recipient{
+    display:none;
+  }
+}
