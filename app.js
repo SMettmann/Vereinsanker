@@ -904,7 +904,7 @@ async function initResetPassword() {
 }
 
 function showStep(n) {
-  $(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
+  $$(".step").forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
   if ($("#stepNo")) $("#stepNo").textContent = n;
   if ($("#progressBar")) $("#progressBar").style.width = (n / 3 * 100) + "%";
 }
