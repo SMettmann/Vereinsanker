@@ -1102,6 +1102,79 @@ function memberContributionSelection(select, types) {
     : { contribution_type_id: null, contribution_label: "Individuell" };
 }
 
+function localTodayIso() {
+  const d = new Date();
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function addDaysIso(dateIso, days) {
+  const d = new Date(String(dateIso || localTodayIso()) + "T12:00:00");
+  if (Number.isNaN(d.getTime())) return localTodayIso();
+  d.setDate(d.getDate() + Number(days || 0));
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function entryContributionProrata(annualFee, entryDate) {
+  const d = new Date(String(entryDate || localTodayIso()) + "T12:00:00");
+  if (Number.isNaN(d.getTime())) return Number(annualFee || 0);
+  const months = 12 - d.getMonth();
+  return Math.round((Number(annualFee || 0) * months / 12) * 100) / 100;
+}
+
+function entryContributionAmount(mode, annualFee, entryDate, customAmount = 0) {
+  if (mode === "none") return 0;
+  if (mode === "custom") return Number(customAmount || 0);
+  if (mode === "prorata") return entryContributionProrata(annualFee, entryDate);
+  return Number(annualFee || 0);
+}
+
+function entryContributionMonth(entryDate) {
+  const d = new Date(String(entryDate || localTodayIso()) + "T12:00:00");
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleDateString("de-DE", { month: "long" });
+}
+
+function refreshMemberEntryContribution() {
+  const entryDate = $("#memberEntryDate");
+  const mode = $("#memberEntryMode");
+  const annualFee = $("#memberFee");
+  const customWrap = $("#memberEntryCustomWrap");
+  const custom = $("#memberEntryCustomAmount");
+  const dueWrap = $("#memberEntryDueWrap");
+  const due = $("#memberEntryDueDate");
+  const summary = $("#memberEntrySummary");
+  if (!entryDate || !mode || !annualFee || !summary) return;
+
+  const fee = Number(annualFee.value || 0);
+  const prorata = entryContributionProrata(fee, entryDate.value);
+  const month = entryContributionMonth(entryDate.value);
+
+  const fullOption = mode.querySelector('option[value="full"]');
+  const prorataOption = mode.querySelector('option[value="prorata"]');
+  if (fullOption) fullOption.textContent = "Voller Jahresbeitrag – " + money(fee);
+  if (prorataOption) prorataOption.textContent = "Anteilig ab " + (month || "Eintritt") + " – " + money(prorata);
+
+  if (customWrap) customWrap.hidden = mode.value !== "custom";
+  if (dueWrap) dueWrap.hidden = mode.value === "none";
+
+  if (mode.value === "custom" && custom && !custom.value) custom.value = String(fee || "");
+  if (mode.value !== "none" && due && !due.value) due.value = addDaysIso(entryDate.value, 14);
+
+  const amount = entryContributionAmount(mode.value, fee, entryDate.value, custom?.value);
+  summary.textContent = mode.value === "none"
+    ? "Für " + currentYear + " wird kein Beitrag angelegt. Ab " + (currentYear + 1) + " gilt der normale Jahresbeitrag von " + money(fee) + "."
+    : "Beitrag " + currentYear + ": " + money(amount) + " · fällig " + (due?.value ? new Date(due.value + "T12:00:00").toLocaleDateString("de-DE") : "nach Festlegung") + ". Ab " + (currentYear + 1) + ": " + money(fee) + " / Jahr.";
+}
+
 async function nextMemberNumber(clubId) {
   const { data, error } = await sb
     .from("members")
@@ -1293,7 +1366,29 @@ async function initMembers() {
   const memberSheet = $("#memberSheet");
   const addMemberSheet = $("#addMemberSheet");
 
-  $("#addMemberBtn")?.addEventListener("click", () => openBackdrop(addMemberSheet));
+  const prepareEntryContribution = () => {
+    const entryDate = $("#memberEntryDate");
+    const dueDate = $("#memberEntryDueDate");
+    if (entryDate && !entryDate.value) entryDate.value = localTodayIso();
+    if (dueDate && !dueDate.value) dueDate.value = addDaysIso(entryDate?.value || localTodayIso(), 14);
+    refreshMemberEntryContribution();
+  };
+
+  $("#memberEntryDate")?.addEventListener("change", () => {
+    const dueDate = $("#memberEntryDueDate");
+    if (dueDate) dueDate.value = addDaysIso($("#memberEntryDate").value, 14);
+    refreshMemberEntryContribution();
+  });
+  $("#memberEntryMode")?.addEventListener("change", refreshMemberEntryContribution);
+  $("#memberEntryCustomAmount")?.addEventListener("input", refreshMemberEntryContribution);
+  $("#memberEntryDueDate")?.addEventListener("change", refreshMemberEntryContribution);
+  $("#memberFee")?.addEventListener("input", refreshMemberEntryContribution);
+  $("#memberContributionType")?.addEventListener("change", () => setTimeout(refreshMemberEntryContribution, 0));
+
+  $("#addMemberBtn")?.addEventListener("click", () => {
+    prepareEntryContribution();
+    openBackdrop(addMemberSheet);
+  });
   $("#closeSheet")?.addEventListener("click", () => closeBackdrop(memberSheet));
   $("#closeAddMember")?.addEventListener("click", () => closeBackdrop(addMemberSheet));
   memberSheet?.addEventListener("click", e => { if (e.target === memberSheet) closeBackdrop(memberSheet); });
@@ -1362,9 +1457,31 @@ async function initMembers() {
 
     try {
       const memberNumber = await nextMemberNumber(club.id);
-      const dueDate = dueDateForContributionYear(club, currentYear);
+      const entryDate = $("#memberEntryDate")?.value || localTodayIso();
+      const entryMode = $("#memberEntryMode")?.value || "full";
+      const createEntryContribution = entryMode !== "none";
+      const entryDueDate = createEntryContribution ? ($("#memberEntryDueDate")?.value || addDaysIso(entryDate, 14)) : null;
+      const entryAmount = entryContributionAmount(
+        entryMode,
+        fee,
+        entryDate,
+        $("#memberEntryCustomAmount")?.value
+      );
 
-      const { error } = await sb.rpc("create_member_full_with_contribution", {
+      if (new Date(entryDate + "T12:00:00").getFullYear() !== currentYear) {
+        showToast("Das Eintrittsdatum muss im aktuellen Jahr liegen.");
+        button.disabled = false;
+        button.textContent = "Mitglied speichern";
+        return;
+      }
+      if (createEntryContribution && entryAmount <= 0) {
+        showToast("Bitte einen gültigen Beitrag fürs Eintrittsjahr eintragen.");
+        button.disabled = false;
+        button.textContent = "Mitglied speichern";
+        return;
+      }
+
+      const { error } = await sb.rpc("create_member_with_entry_contribution", {
         p_club_id: club.id,
         p_member_number: memberNumber,
         p_first_name: $("#firstName").value.trim(),
@@ -1375,15 +1492,17 @@ async function initMembers() {
         p_annual_fee: fee,
         p_mandate_reference: memberMandate || null,
         p_mandate_signed_at: $("#memberMandateDate")?.value || null,
-        p_contribution_year: currentYear,
-        p_due_date: dueDate,
         p_contribution_type_id: selectedContribution.contribution_type_id,
         p_contribution_label: selectedContribution.contribution_label,
         p_birth_date: $("#memberBirthDate")?.value || null,
         p_phone: $("#memberPhone")?.value.trim() || null,
         p_street: $("#memberStreet")?.value.trim() || null,
         p_postal_code: $("#memberPostalCode")?.value.trim() || null,
-        p_city: $("#memberCity")?.value.trim() || null
+        p_city: $("#memberCity")?.value.trim() || null,
+        p_entry_date: entryDate,
+        p_entry_amount: createEntryContribution ? entryAmount : 0,
+        p_entry_due_date: entryDueDate,
+        p_create_entry_contribution: createEntryContribution
       });
       if (error) throw error;
 
