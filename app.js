@@ -1291,35 +1291,85 @@ async function initDashboard() {
   applyClubBrand(club);
   applyTrialUI(club);
 
-  const [members, contributions, pendingJoinsResult] = await Promise.all([
+  const selectedYear = contributionYearFromUrl();
+
+  const [members, contributions, pendingJoinsResult, contributionYears, financeDates] = await Promise.all([
     loadMembers(),
-    loadContributions(),
-    sb.from("membership_applications").select("id", { count: "exact", head: true }).eq("club_id", club.id).eq("status", "pending")
+    loadContributions(selectedYear),
+    sb.from("membership_applications").select("id", { count: "exact", head: true }).eq("club_id", club.id).eq("status", "pending"),
+    loadContributionYears(),
+    sb.from("finance_transactions").select("transaction_date")
   ]);
 
-  const paid = contributions.filter(c => c.status === "paid");
-  const open = contributions.filter(c => c.status !== "paid");
+  const years = new Set(contributionYears);
+  (financeDates.data || []).forEach(row => {
+    const year = Number(String(row.transaction_date || "").slice(0, 4));
+    if (Number.isInteger(year)) years.add(year);
+  });
+  years.add(currentYear);
+  if (!years.has(selectedYear)) years.add(selectedYear);
+  const availableYears = [...years].sort((a, b) => b - a);
+
+  const yearSelect = $("#dashboardYearSelect");
+  if (yearSelect) {
+    yearSelect.innerHTML = availableYears.map(year =>
+      '<option value="' + year + '"' + (year === selectedYear ? ' selected' : '') + '>' + year + '</option>'
+    ).join("");
+    yearSelect.addEventListener("change", () => {
+      const year = Number(yearSelect.value);
+      const url = new URL(location.href);
+      if (year === currentYear) url.searchParams.delete("year");
+      else url.searchParams.set("year", String(year));
+      location.href = url.toString();
+    });
+  }
+
+  const paid = contributions.filter(row => row.status === "paid");
+  const open = contributions.filter(row => row.status !== "paid");
   const completedPercent = contributions.length
     ? Math.round((paid.length / contributions.length) * 100)
     : 0;
 
-  $("#dashboardYear").textContent = currentYear;
-  $("#dashMembers").textContent = String(members.length);
+  const historical = selectedYear !== currentYear;
+  const historicalMembers = new Set(contributions.map(row => row.member_id).filter(Boolean)).size;
+  const memberCount = historical ? historicalMembers : members.length;
+
+  $("#dashMembers").textContent = String(memberCount);
+  if ($("#dashMembersLabel")) $("#dashMembersLabel").textContent = historical ? "Beitragspflichtige" : "Mitglieder";
   $("#dashPaid").textContent = String(paid.length);
   $("#dashOpen").textContent = String(open.length);
   if ($("#dashJoinCount")) $("#dashJoinCount").textContent = String(pendingJoinsResult.error ? 0 : (pendingJoinsResult.count || 0));
   $("#dashPercent").textContent = completedPercent + " %";
   $("#dashProgress").style.width = completedPercent + "%";
 
+  const summaryLink = $(".summary-link");
+  if (summaryLink) summaryLink.href = historical ? "contributions.html?year=" + selectedYear + "#zahlungen" : "members.html";
+
+  const contributionHref = hash => {
+    const base = new URL("contributions.html", location.href);
+    if (selectedYear !== currentYear) base.searchParams.set("year", String(selectedYear));
+    if (hash) base.hash = hash;
+    return base.href;
+  };
+
+  $$(".big-actions a[href^='contributions.html']").forEach(link => {
+    const hash = link.getAttribute("href")?.includes("#") ? "#" + link.getAttribute("href").split("#")[1] : "";
+    link.href = contributionHref(hash);
+  });
+  const allOpenLink = $(".table-head a");
+  if (allOpenLink) allOpenLink.href = contributionHref("#offen");
+
   const openList = $("#dashboardOpenRows");
-  if (members.length && !contributions.length) {
-    openList.innerHTML = '<div class="empty-row"><strong>Beitragsjahr ' + currentYear + ' noch nicht angelegt</strong><span><a href="contributions.html">Beiträge für ' + currentYear + ' anlegen →</a></span></div>';
+  if (!historical && members.length && !contributions.length) {
+    openList.innerHTML = '<div class="empty-row"><strong>Beitragsjahr ' + currentYear + ' noch nicht angelegt</strong><span><a href="' + esc(contributionHref("")) + '">Beiträge für ' + currentYear + ' anlegen →</a></span></div>';
+  } else if (historical && !contributions.length) {
+    openList.innerHTML = '<div class="empty-row"><strong>Keine Beitragsdaten für ' + selectedYear + '</strong><span>Für dieses Jahr sind keine Mitgliedsbeiträge gespeichert.</span></div>';
   } else if (!open.length) {
-    openList.innerHTML = '<div class="empty-row"><strong>Alles erledigt ✓</strong><span>Aktuell sind keine Beiträge offen.</span></div>';
+    openList.innerHTML = '<div class="empty-row"><strong>Alles erledigt ✓</strong><span>Für ' + selectedYear + ' sind keine Beiträge offen.</span></div>';
   } else {
-    openList.innerHTML = open.slice(0, 3).map(c => {
-      const m = c.members || {};
-      return '<div class="member-row"><i class="avatar">' + esc(initials(m.first_name, m.last_name)) + '</i><div class="member-name"><strong>' + esc(memberFullName(m)) + '</strong><span>' + esc(m.group_name || "Nicht zugeordnet") + '</span></div><span>Jahresbeitrag</span><span class="status">' + esc(money(c.amount)) + ' offen</span></div>';
+    openList.innerHTML = open.slice(0, 3).map(row => {
+      const member = row.members || {};
+      return '<div class="member-row"><i class="avatar">' + esc(initials(member.first_name, member.last_name)) + '</i><div class="member-name"><strong>' + esc(memberFullName(member)) + '</strong><span>' + esc(member.group_name || "Nicht zugeordnet") + '</span></div><span>Beitrag ' + selectedYear + '</span><span class="status">' + esc(money(row.amount)) + ' offen</span></div>';
     }).join("");
   }
 }
