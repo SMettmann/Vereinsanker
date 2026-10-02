@@ -160,6 +160,16 @@ body{
   border-color:#d3ddd5;
   box-shadow:0 1px 3px rgba(15,40,27,.03);
 }
+.header .btn.btn-ghost{
+  background:#fff;
+  color:#1e6f4f;
+  border-color:#d3ddd5;
+  box-shadow:0 1px 3px rgba(15,40,27,.03);
+}
+.header .btn.btn-ghost:hover{
+  color:#155a3f;
+  border-color:#b9cdc0;
+}
 .hero{
   position:relative;
   overflow:hidden;
