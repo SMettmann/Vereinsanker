@@ -1113,7 +1113,7 @@ function validateSepaRows(club, rows, collectionDate) {
     const amount = Number(c.amount || 0);
     const mandateRaw = String(m.mandate_reference || "").trim();
     const mandate = safeSepaText(mandateRaw, 35);
-    const debtorName = safeSepaText(memberFullName(m), 70);
+    const debtorName = safeSepaText(m.account_holder || memberFullName(m), 70);
 
     if (!Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99) {
       errors.push(label + ": Betrag muss zwischen 0,01 € und 999.999.999,99 € liegen.");
@@ -1194,7 +1194,7 @@ function buildSepaXml(club, rows, collectionDate, batchId = "") {
     const m = c.members || {};
     const endToEnd = compactId("VF-" + (m.member_number || String(index + 1)) + "-" + contributionYear);
     const mandateId = safeSepaText(m.mandate_reference, 35);
-    const debtorName = safeSepaText(memberFullName(m), 70);
+    const debtorName = safeSepaText(m.account_holder || memberFullName(m), 70);
 
     return `<DrctDbtTxInf>
 <PmtId><EndToEndId>${xmlEscape(endToEnd)}</EndToEndId></PmtId>
