@@ -2541,3 +2541,12 @@ body.trial-expired #openJoinMail{
 .sepa-prepared-batch{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #dce8e1}
 .sepa-prepared-batch>div{display:grid;gap:2px}.sepa-prepared-batch b{font-size:10px}.sepa-prepared-batch small{font-size:9px;color:var(--muted)}
 .sepa-prepared-batch button{border:1px solid var(--line);background:#fff;border-radius:8px;min-height:32px;padding:0 9px;font-size:9px;font-weight:800;cursor:pointer}
+
+
+/* VEREINSFACH – öffentlicher SEPA-Beitritt */
+.join-sepa-section{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:14px;background:#f8faf8}
+.join-sepa-head{display:grid;gap:4px;margin-bottom:10px}
+.join-sepa-head strong{font-size:13px}.join-sepa-head>span{font-size:10px;color:var(--muted);line-height:1.45}
+.join-sepa-mandate{margin:10px 0 14px;padding:12px;border:1px solid #dce8e1;border-radius:10px;background:#fff}
+.join-sepa-mandate strong{display:block;font-size:10px;margin-bottom:5px}
+.join-sepa-mandate p{margin:0;font-size:10px;line-height:1.55;color:#48554e}
