@@ -87,3 +87,240 @@ footer{background:#0b1712;color:#fff;padding:56px 0 25px}.footer-grid{display:gr
 .footer-links strong{font-size:11px}
 .footer-links a{font-size:13px}
 .bottom{font-size:11px}
+
+
+/* =========================================================
+   VEREINSFACH – Landing Design v3
+   ========================================================= */
+:root{
+  --green:#207653;
+  --green2:#58d796;
+  --dark:#0c2118;
+  --ink:#15231b;
+  --muted:#637168;
+  --line:#d9e1db;
+  --soft:#ebf5ef;
+  --page:#f6f8f4;
+}
+html{
+  scroll-behavior:smooth;
+  background:var(--page);
+}
+body{
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 80% 0%,rgba(88,215,150,.055),transparent 28rem),
+    #f7f9f6;
+}
+::selection{
+  background:rgba(32,118,83,.18);
+  color:var(--dark);
+}
+.header{
+  backdrop-filter:blur(18px);
+  background:rgba(247,249,246,.88);
+  border-bottom:1px solid rgba(208,219,211,.75);
+}
+.header.scrolled{
+  box-shadow:0 8px 30px rgba(15,40,27,.055);
+}
+.brand-copy strong{
+  letter-spacing:.045em;
+}
+.nav a:not(.btn),
+.links a,
+.login{
+  color:#45544a;
+}
+.nav a:not(.btn):hover,
+.links a:hover,
+.login:hover{
+  color:var(--green);
+}
+.btn{
+  border-radius:12px;
+  font-weight:750;
+  transition:.17s ease;
+}
+.btn.primary,
+.hero-actions .btn:first-child,
+.cta-card .btn{
+  background:linear-gradient(180deg,#27845e,#1e6f4f);
+  border-color:#1b6648;
+  box-shadow:0 8px 20px rgba(30,111,79,.17),inset 0 1px 0 rgba(255,255,255,.15);
+}
+.btn.primary:hover,
+.hero-actions .btn:first-child:hover,
+.cta-card .btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 26px rgba(30,111,79,.21),inset 0 1px 0 rgba(255,255,255,.15);
+}
+.btn:not(.primary){
+  background:#fff;
+  border-color:#d3ddd5;
+  box-shadow:0 1px 3px rgba(15,40,27,.03);
+}
+.hero{
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 82% 12%,rgba(88,215,150,.17),transparent 29rem),
+    radial-gradient(circle at 15% 88%,rgba(42,122,86,.09),transparent 24rem),
+    linear-gradient(145deg,#0a1d15 0%,#0d2d20 60%,#123927 100%);
+}
+.hero:before{
+  content:"";
+  position:absolute;
+  width:520px;
+  height:520px;
+  right:-210px;
+  top:-250px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:50%;
+  pointer-events:none;
+}
+.hero-copy,
+.mock-wrap{
+  position:relative;
+  z-index:1;
+}
+.hero h1{
+  font-weight:740;
+  letter-spacing:-.052em;
+}
+.hero-copy>p{
+  color:rgba(255,255,255,.72);
+}
+.pill{
+  border-color:rgba(126,229,177,.22);
+  background:rgba(89,215,150,.10);
+  color:#9becbf;
+  backdrop-filter:blur(6px);
+}
+.proof{
+  color:rgba(255,255,255,.67);
+}
+.dashboard{
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 28px 80px rgba(0,0,0,.28);
+}
+.float-chip{
+  box-shadow:0 16px 36px rgba(3,18,10,.20);
+}
+.section{
+  position:relative;
+}
+.section:nth-of-type(even){
+  background:rgba(255,255,255,.62);
+}
+.section-head h2,
+.split h2,
+.faq-intro h2{
+  font-weight:735;
+  letter-spacing:-.04em;
+}
+.kicker{
+  letter-spacing:.11em;
+  font-weight:800;
+}
+.steps article,
+.feature,
+.identity-card,
+.before-after,
+.price-card,
+.faq-item{
+  border-color:#d8e1da;
+  box-shadow:0 2px 8px rgba(17,42,29,.035);
+}
+.steps article,
+.feature,
+.identity-card{
+  background:rgba(255,255,255,.94);
+}
+.steps article:hover,
+.feature:hover{
+  transform:translateY(-3px);
+  border-color:#c8d7cd;
+  box-shadow:0 16px 34px rgba(17,42,29,.075);
+}
+.feature i,
+.steps i{
+  background:linear-gradient(145deg,#eef8f2,#e3f2e9);
+  border:1px solid #d9e8df;
+}
+.feature-wide{
+  background:
+    radial-gradient(circle at 100% 0%,rgba(88,215,150,.08),transparent 18rem),
+    #fff;
+}
+.price-card{
+  overflow:hidden;
+  box-shadow:0 22px 60px rgba(15,40,27,.085);
+}
+.price-main{
+  background:
+    radial-gradient(circle at 90% 0%,rgba(88,215,150,.12),transparent 18rem),
+    linear-gradient(145deg,#102f22,#0d2319);
+}
+.billing button{
+  border-radius:10px;
+}
+.billing button.active{
+  box-shadow:0 7px 16px rgba(32,118,83,.13);
+}
+.included{
+  background:#fff;
+}
+.faq-item{
+  background:#fff;
+  border-radius:15px;
+  overflow:hidden;
+}
+.faq-item button{
+  background:#fff;
+}
+.faq-item.open{
+  border-color:#c5d7cb;
+  box-shadow:0 10px 24px rgba(17,42,29,.05);
+}
+.cta-card{
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 88% 0%,rgba(88,215,150,.18),transparent 22rem),
+    linear-gradient(145deg,#0c281d,#103928);
+  box-shadow:0 25px 60px rgba(10,39,24,.16);
+}
+.cta-card:after{
+  content:"";
+  position:absolute;
+  width:260px;height:260px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:50%;
+  right:-120px;bottom:-140px;
+}
+.cta-card>*{
+  position:relative;
+  z-index:1;
+}
+footer{
+  background:#0a1c14;
+}
+.mobile-nav{
+  box-shadow:0 26px 70px rgba(0,0,0,.26);
+  backdrop-filter:blur(18px);
+}
+@media(max-width:760px){
+  .hero{
+    background:
+      radial-gradient(circle at 82% 8%,rgba(88,215,150,.13),transparent 20rem),
+      linear-gradient(145deg,#0a1d15,#0f3022);
+  }
+  .dashboard{
+    box-shadow:0 20px 55px rgba(0,0,0,.22);
+  }
+  .steps article,
+  .feature{
+    border-radius:18px;
+  }
+}
