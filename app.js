@@ -1938,15 +1938,29 @@ async function initContributions() {
     if (preparedInfo) {
       preparedInfo.hidden = !prepared.length;
       if (prepared.length) {
-        const dates = [...new Set(prepared.map(c => c.sepa_collection_date).filter(Boolean))];
-        preparedInfo.textContent =
-          prepared.length + (prepared.length === 1
-            ? " offener Beitrag ist bereits als SEPA vorbereitet"
-            : " offene Beiträge sind bereits als SEPA vorbereitet") +
-          (dates.length === 1
-            ? " · Einzug am " + new Date(dates[0] + "T12:00:00").toLocaleDateString("de-DE")
-            : "") +
-          ". Diese Beiträge werden nicht erneut exportiert.";
+        const groups = new Map();
+        prepared.forEach(row => {
+          const key = row.sepa_batch_id || "legacy";
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(row);
+        });
+
+        preparedInfo.innerHTML =
+          '<strong>Bereits vorbereitete SEPA-Läufe</strong>' +
+          '<span>Diese Beiträge werden nicht erneut exportiert.</span>' +
+          [...groups.entries()].map(([batchId, rows]) => {
+            const collectionDate = rows[0]?.sepa_collection_date;
+            const dateText = collectionDate
+              ? new Date(collectionDate + "T12:00:00").toLocaleDateString("de-DE")
+              : "Datum unbekannt";
+            return '<div class="sepa-prepared-batch">' +
+              '<div><b>' + rows.length + (rows.length === 1 ? ' Beitrag' : ' Beiträge') + '</b>' +
+              '<small>Einzug ' + esc(dateText) + '</small></div>' +
+              '<button type="button" data-reset-sepa-batch="' + esc(batchId) + '" data-reset-sepa-ids="' + esc(rows.map(r => r.id).join(",")) + '">Zurücksetzen</button>' +
+            '</div>';
+          }).join("");
+      } else {
+        preparedInfo.innerHTML = "";
       }
     }
 
@@ -1993,12 +2007,6 @@ async function initContributions() {
         : "Keine neuen Lastschriften";
     }
 
-    const resetButton = $("#resetSepaPreparation");
-    if (resetButton) {
-      resetButton.hidden = !prepared.length;
-      resetButton.dataset.ids = prepared.map(c => c.id).join(",");
-    }
-
     return { openContributions, prepared, candidates, ready, issues };
   };
 
@@ -2013,14 +2021,16 @@ async function initContributions() {
     openBackdrop(sepaSheet);
   });
 
-  $("#resetSepaPreparation")?.addEventListener("click", async () => {
-    const button = $("#resetSepaPreparation");
-    const ids = String(button?.dataset.ids || "").split(",").filter(Boolean);
+  $("#sepaPreparedInfo")?.addEventListener("click", async e => {
+    const button = e.target.closest("[data-reset-sepa-batch]");
+    if (!button) return;
+
+    const ids = String(button.dataset.resetSepaIds || "").split(",").filter(Boolean);
     if (!ids.length) return;
 
     if (!confirm(
-      "SEPA-Vorbereitung wirklich zurücksetzen?\n\n" +
-      "Nur verwenden, wenn die bisher erstellte Datei NICHT bei der Bank eingereicht wurde oder von der Bank abgelehnt wurde."
+      "Diesen SEPA-Lauf wirklich zurücksetzen?\n\n" +
+      "Nur verwenden, wenn genau diese Datei NICHT bei der Bank eingereicht wurde oder von der Bank abgelehnt wurde."
     )) return;
 
     button.disabled = true;
@@ -2031,11 +2041,10 @@ async function initContributions() {
       p_contribution_ids: ids
     });
 
-    button.disabled = false;
-    button.textContent = "SEPA-Vorbereitung zurücksetzen";
-
     if (error) {
-      await handleAppError(error, "SEPA-Vorbereitung konnte nicht zurückgesetzt werden.");
+      button.disabled = false;
+      button.textContent = "Zurücksetzen";
+      await handleAppError(error, "SEPA-Lauf konnte nicht zurückgesetzt werden.");
       return;
     }
 
