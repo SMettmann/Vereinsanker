@@ -30,6 +30,10 @@
     return value==="idea"?"Verbesserung":"Support";
   }
 
+  function euroFromCents(value){
+    return (Number(value||0)/100).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
+  }
+
   async function loadDashboard(){
     const response=await sb.functions.invoke("admin-dashboard",{body:{action:"overview"}});
     if(response.error||!response.data?.ok) throw response.error||new Error(response.data?.error||"ADMIN_LOAD_FAILED");
@@ -47,6 +51,73 @@
       ["adminSupportOpen",o.support_open||0]
     ];
     cards.forEach(([id,value])=>{const el=$("#"+id);if(el)el.textContent=String(value);});
+
+    const donations=payload.donations||{};
+    const donationOpen=Number(donations.open_total_cents||0);
+    const donationMonthEntries=Number(donations.month_entries||0);
+
+    $("#adminDonationMonth").textContent=euroFromCents(donations.month_cents);
+    $("#adminDonationMonthEntries").textContent=donationMonthEntries+" "+(donationMonthEntries===1?"Zahlung":"Zahlungen");
+    $("#adminDonationAccrued").textContent=euroFromCents(donations.accrued_total_cents);
+    $("#adminDonationTransferred").textContent=euroFromCents(donations.transferred_total_cents);
+    $("#adminDonationOpen").textContent=euroFromCents(donationOpen);
+    $("#adminDonationMonthlyCount").textContent=String(donations.monthly_entries_total||0);
+    $("#adminDonationYearlyCount").textContent=String(donations.yearly_entries_total||0);
+
+    const transferInput=$("#adminDonationTransferAmount");
+    const transferButton=$("#adminDonationTransferButton");
+    if(transferInput && document.activeElement!==transferInput){
+      transferInput.value=donationOpen>0?(donationOpen/100).toFixed(2):"";
+    }
+    if(transferButton) transferButton.disabled=donationOpen<=0;
+
+    const transferRows=donations.recent_transfers||[];
+    $("#adminDonationTransfers").innerHTML=transferRows.length?transferRows.map(row=>
+      '<div class="admin-donation-history-row">'+
+        '<div><strong>'+esc(euroFromCents(row.amount_cents))+'</strong><span>'+esc(row.note||"Kindernothilfe e.V.")+'</span></div>'+
+        '<time>'+esc(dateText(row.transferred_at||row.created_at))+'</time>'+
+      '</div>'
+    ).join(""):'<div class="team-empty">Noch keine Überweisung verbucht.</div>';
+
+    if(transferButton){
+      transferButton.onclick=async()=>{
+        const message=$("#adminDonationTransferMessage");
+        const raw=String(transferInput?.value||"").replace(",",".");
+        const euros=Number(raw);
+        const cents=Math.round(euros*100);
+
+        if(!Number.isFinite(euros)||cents<=0){
+          message.textContent="Bitte einen gültigen Betrag eingeben.";
+          return;
+        }
+        if(cents>donationOpen){
+          message.textContent="Der Betrag ist höher als die aktuell offene Spendensumme.";
+          return;
+        }
+        if(!confirm("Hast du "+euroFromCents(cents)+" wirklich an die Kindernothilfe überwiesen?")){
+          return;
+        }
+
+        transferButton.disabled=true;
+        message.textContent="Wird verbucht …";
+        const result=await sb.functions.invoke("admin-dashboard",{body:{
+          action:"mark_donation_transferred",
+          amount_cents:cents,
+          note:$("#adminDonationTransferNote")?.value.trim()||"Kindernothilfe e.V."
+        }});
+
+        if(result.error||!result.data?.ok){
+          console.error("Spendenüberweisung",result.error||result.data);
+          message.textContent="Die Überweisung konnte nicht verbucht werden.";
+          transferButton.disabled=false;
+          return;
+        }
+
+        if($("#adminDonationTransferNote")) $("#adminDonationTransferNote").value="";
+        message.textContent="Überweisung wurde verbucht ✓";
+        await loadDashboard();
+      };
+    }
 
     const clubs=payload.clubs||[];
     $("#adminClubRows").innerHTML=clubs.length?clubs.map(row=>
