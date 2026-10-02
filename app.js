@@ -383,6 +383,65 @@ async function getSession() {
   return { ...data.session, user: userData.user };
 }
 
+function authUrlHasRedirectData() {
+  const text = (location.search + "&" + location.hash).toLowerCase();
+  return text.includes("access_token=") ||
+    text.includes("refresh_token=") ||
+    text.includes("code=") ||
+    text.includes("type=");
+}
+
+function authUrlLooksLikeRecovery() {
+  const text = (location.search + "&" + location.hash).toLowerCase();
+  return text.includes("type=recovery");
+}
+
+async function waitForAuthSession({ recoveryOnly = false, timeoutMs = 5000 } = {}) {
+  let sawRecovery = authUrlLooksLikeRecovery();
+
+  return await new Promise(resolve => {
+    let settled = false;
+    let timer = null;
+
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      subscription?.unsubscribe?.();
+      resolve(value);
+    };
+
+    const { data } = sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === "PASSWORD_RECOVERY") sawRecovery = true;
+      if (!session) return;
+      if (recoveryOnly && !sawRecovery) return;
+
+      try {
+        const verified = await getSession();
+        if (verified) finish({ session: verified, recovery: sawRecovery });
+      } catch {}
+    });
+    const subscription = data?.subscription;
+
+    (async () => {
+      try {
+        const existing = await getSession();
+        if (existing && (!recoveryOnly || sawRecovery)) {
+          finish({ session: existing, recovery: sawRecovery });
+          return;
+        }
+      } catch {}
+
+      if (!authUrlHasRedirectData()) {
+        finish(null);
+        return;
+      }
+
+      timer = setTimeout(() => finish(null), timeoutMs);
+    })();
+  });
+}
+
 async function requireSession() {
   vaSession = await getSession();
   if (!vaSession) {
@@ -690,7 +749,8 @@ function applyTrialUI(club) {
 }
 
 async function initSignup() {
-  const existingSession = await getSession();
+  const authReady = authUrlHasRedirectData() ? await waitForAuthSession() : null;
+  const existingSession = authReady?.session || await getSession();
   if (existingSession) {
     vaSession = existingSession;
     if (isVereinsfachAdminUser(existingSession.user)) {
@@ -766,7 +826,8 @@ async function initLogin() {
     history.replaceState(null, "", "login.html");
   }
 
-  const existingSession = await getSession();
+  const authReady = authUrlHasRedirectData() ? await waitForAuthSession() : null;
+  const existingSession = authReady?.session || await getSession();
   if (existingSession) {
     vaSession = existingSession;
     if (isVereinsfachAdminUser(existingSession.user)) {
@@ -859,9 +920,9 @@ async function initResetPassword() {
     return;
   }
 
-  await new Promise(resolve => setTimeout(resolve, 250));
-  const session = await getSession();
-  if (!session) {
+  const recovery = await waitForAuthSession({ recoveryOnly: true, timeoutMs: 6000 });
+  const session = recovery?.session || null;
+  if (!session || !recovery?.recovery) {
     setMessage(form, "Dieser Reset-Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.", "error");
     button.disabled = true;
     return;
