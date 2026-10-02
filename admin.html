@@ -1,7 +1,7 @@
 <!doctype html><html lang="de"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://exginppvomebjinydrrw.supabase.co; connect-src 'self' https://exginppvomebjinydrrw.supabase.co wss://exginppvomebjinydrrw.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><meta name="robots" content="noindex,nofollow">
 <title>Admin · VEREINSFACH</title>
-<link rel="stylesheet" href="app.css?v=20261002-8">
+<link rel="stylesheet" href="app.css?v=20261002-9">
 </head><body class="admin-body">
 <div class="admin-shell">
 <header class="admin-head"><a href="index.html" class="simple-brand">VEREINSFACH</a><div><strong>Administration</strong><span id="adminAccount"></span></div></header>
@@ -46,6 +46,46 @@
 <div class="settings-card admin-panel"><div class="admin-section-head"><div><span>HANDBUCH</span><h2>Download & Nutzung</h2></div><a href="handbuch.html" target="_blank" rel="noopener">Handbuch öffnen →</a></div><p>Der Download-Zähler erfasst Klicks auf „Handbuch als PDF herunterladen“ – ohne personenbezogene Trackingdaten.</p></div>
 </section>
 
+<section class="settings-card admin-panel admin-donation-panel">
+<div class="admin-section-head">
+  <div><span>GUTER ZWECK</span><h2>Spendenübersicht</h2></div>
+  <div class="admin-donation-recipient">Kindernothilfe e.V.</div>
+</div>
+<p class="admin-donation-intro">Die Rückstellung entsteht automatisch aus erfolgreich bezahlten VEREINSFACH-Rechnungen: 0,90 € je Monatsabo und Monat, 9 € je Jahresabo und Jahr.</p>
+
+<div class="admin-donation-kpis">
+  <div><span>Dieser Monat</span><strong id="adminDonationMonth">0,00 €</strong><small id="adminDonationMonthEntries">0 Zahlungen</small></div>
+  <div><span>Zurückgestellt gesamt</span><strong id="adminDonationAccrued">0,00 €</strong><small>aus bezahlten Abos</small></div>
+  <div><span>Bereits überwiesen</span><strong id="adminDonationTransferred">0,00 €</strong><small>an Kindernothilfe</small></div>
+  <div class="admin-donation-open"><span>Noch zu überweisen</span><strong id="adminDonationOpen">0,00 €</strong><small>offener Spendenbetrag</small></div>
+</div>
+
+<div class="admin-donation-meta">
+  <span><b id="adminDonationMonthlyCount">0</b> Monatszahlungen × 0,90 €</span>
+  <span><b id="adminDonationYearlyCount">0</b> Jahreszahlungen × 9,00 €</span>
+</div>
+
+<div class="admin-donation-transfer">
+  <div>
+    <strong>Überweisung verbuchen</strong>
+    <span>Erst markieren, nachdem du den Betrag wirklich an die Kindernothilfe überwiesen hast.</span>
+  </div>
+  <label>Betrag
+    <input id="adminDonationTransferAmount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00">
+  </label>
+  <label>Notiz
+    <input id="adminDonationTransferNote" type="text" maxlength="200" placeholder="z. B. Spende Q4 2026">
+  </label>
+  <button id="adminDonationTransferButton" class="primary" type="button">Als überwiesen markieren</button>
+  <p id="adminDonationTransferMessage" class="admin-donation-message"></p>
+</div>
+
+<div class="admin-donation-history">
+  <strong>Letzte Überweisungen</strong>
+  <div id="adminDonationTransfers"><div class="team-empty">Noch keine Überweisung verbucht.</div></div>
+</div>
+</section>
+
 <section class="settings-card admin-panel">
 <div class="admin-section-head"><div><span>VEREINE</span><h2>Kundenübersicht</h2></div></div>
 <div class="admin-club-head"><span>Verein</span><span>E-Mail</span><span>Mitglieder</span><span>Team</span><span>Status</span></div>
@@ -60,5 +100,5 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <script src="supabase-client.js"></script>
-<script src="admin.js?v=20261002-2"></script>
+<script src="admin.js?v=20261002-3"></script>
 </body></html>
