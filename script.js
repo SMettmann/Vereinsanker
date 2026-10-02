@@ -1,3 +1,25 @@
+// Beim Neuladen der Startseite immer oben beginnen.
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+
+const navigationEntry = performance.getEntriesByType?.('navigation')?.[0];
+const isReload = navigationEntry?.type === 'reload'
+  || performance.navigation?.type === 1;
+
+if (isReload) {
+  if (location.hash) {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+
+  const forceTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  forceTop();
+  window.addEventListener('pageshow', () => {
+    forceTop();
+    requestAnimationFrame(() => requestAnimationFrame(forceTop));
+  }, { once: true });
+}
+
 const menu = document.querySelector('.menu');
 const mobile = document.querySelector('.mobile-nav');
 
