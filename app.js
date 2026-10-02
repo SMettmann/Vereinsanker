@@ -131,8 +131,12 @@ function bindIbanValidation(input) {
 function memberSepaProblem(member) {
   if (!member?.iban) return "IBAN fehlt";
   if (!isValidIbanValue(member.iban)) return "IBAN ungültig";
-  if (!member.mandate_reference) return "Mandatsreferenz fehlt";
+  const mandate = String(member.mandate_reference || "").trim();
+  if (!mandate) return "Mandatsreferenz fehlt";
+  if (!isValidSepaReferenceValue(mandate)) return "Mandatsreferenz ungültig";
   if (!member.mandate_signed_at) return "Mandatsdatum fehlt";
+  const today = new Date().toISOString().slice(0,10);
+  if (String(member.mandate_signed_at) > today) return "Mandatsdatum liegt in der Zukunft";
   return "";
 }
 
@@ -1217,7 +1221,7 @@ async function nextMemberNumber(clubId) {
 async function loadContributions(year = currentYear) {
   const { data, error } = await sb
     .from("contributions")
-    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,note,members(id,first_name,last_name,group_name,email,iban,member_number,annual_fee,mandate_reference,mandate_signed_at)")
+    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,member_number,annual_fee,mandate_reference,mandate_signed_at)")
     .eq("contribution_year", year)
     .order("due_date", { ascending: true });
   if (error) throw error;
@@ -1855,93 +1859,192 @@ async function initContributions() {
 
   const updateSepaAction = () => {
     if (!sepaAction) return;
-    const openRows = contributions.filter(c => c.status !== "paid");
+    const openRows = contributions.filter(c => c.status === "open");
+    const freshRows = openRows.filter(c => !c.sepa_exported_at);
     sepaAction.classList.toggle("no-sepa-needed", !openRows.length);
+
     const sub = $("span", sepaAction);
-    if (sub) sub.textContent = openRows.length
-      ? "Beiträge für den Bankeinzug vorbereiten."
-      : "Alle Beiträge sind bereits bezahlt.";
+    if (!sub) return;
+
+    if (!openRows.length) {
+      sub.textContent = "Alle Beiträge sind bereits bezahlt.";
+    } else if (!freshRows.length) {
+      sub.textContent = "Alle offenen Beiträge sind bereits als SEPA vorbereitet.";
+    } else {
+      sub.textContent = freshRows.length + (freshRows.length === 1
+        ? " offenen Beitrag für den Bankeinzug vorbereiten."
+        : " offene Beiträge für den Bankeinzug vorbereiten.");
+    }
   };
 
-  updateSepaAction();
+  const renderSepaSheet = () => {
+    const openContributions = contributions.filter(c => c.status === "open");
+    const prepared = openContributions.filter(c => Boolean(c.sepa_exported_at));
+    const candidates = openContributions.filter(c => !c.sepa_exported_at);
 
-  sepaAction?.addEventListener("click", () => {
-    const openContributions = contributions.filter(c => c.status !== "paid");
-    if (!openContributions.length) {
-      showToast("Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
-      return;
-    }
-
-    const invalidIban = openContributions.filter(c => {
-      const m = contributionMember(c);
-      return m.iban && !isValidIbanValue(m.iban);
-    });
-    const missingIban = openContributions.filter(c => !contributionMember(c).iban);
-    const missingMandate = openContributions.filter(c => {
-      const m = contributionMember(c);
-      return !String(m.mandate_reference || "").trim() || !m.mandate_signed_at;
-    });
-    const invalidAmount = openContributions.filter(c => {
+    const invalidAmount = candidates.filter(c => {
       const amount = Number(c.amount || 0);
       return !Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99;
     });
-    const ready = openContributions.filter(c => {
-      const m = contributionMember(c);
-      const amount = Number(c.amount || 0);
-      return amount >= 0.01 &&
-        amount <= 999999999.99 &&
-        isValidIbanValue(m.iban) &&
-        String(m.mandate_reference || "").trim() &&
-        m.mandate_signed_at;
-    });
 
-    $("#sepaReadyCount").textContent = ready.length + (ready.length === 1 ? " Mitglied" : " Mitglieder");
-    $("#sepaReadySum").textContent = money(ready.reduce((s, c) => s + Number(c.amount || 0), 0));
-
-    const issues = [];
-    if (!club.iban) issues.push("Vereins-IBAN fehlt.");
-    else if (!isValidIbanValue(club.iban)) issues.push("Vereins-IBAN ist ungültig.");
-    if (!club.creditor_id) issues.push("Gläubiger-ID fehlt.");
-    else if (!isValidCreditorIdValue(club.creditor_id)) issues.push("Gläubiger-ID ist ungültig.");
-    if (invalidAmount.length) issues.push(invalidAmount.length + " Beitrag/Beiträge mit ungültigem Betrag.");
-    if (missingIban.length) issues.push(missingIban.length + " Mitglied(er) ohne IBAN.");
-    if (invalidIban.length) issues.push(invalidIban.length + " Mitglied(er) mit ungültiger IBAN.");
-    if (missingMandate.length) issues.push(missingMandate.length + " Mitglied(er) ohne vollständiges SEPA-Mandat.");
-
-    const memberIssues = openContributions.map(c => {
+    const memberIssues = candidates.map(c => {
       const m = contributionMember(c);
       const details = [];
       const amount = Number(c.amount || 0);
-      if (!Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99) details.push("Beitrag ungültig");
-      if (!m.iban) details.push("IBAN fehlt");
-      else if (!isValidIbanValue(m.iban)) details.push("IBAN ungültig");
-      if (!String(m.mandate_reference || "").trim()) details.push("Mandatsreferenz fehlt");
-      if (!m.mandate_signed_at) details.push("Mandatsdatum fehlt");
-      return details.length ? { name: memberFullName(m), details } : null;
+
+      if (!Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99) {
+        details.push("Beitrag ungültig");
+      }
+
+      const problem = memberSepaProblem(m);
+      if (problem) details.push(problem);
+
+      return details.length
+        ? { name: memberFullName(m), details }
+        : null;
     }).filter(Boolean);
 
-    $("#sepaMissing").textContent = issues.length
-      ? issues.join(" ")
-      : "Alles vollständig. Die Datei kann erstellt werden.";
+    const ready = candidates.filter(c => {
+      const amount = Number(c.amount || 0);
+      return amount >= 0.01 &&
+        amount <= 999999999.99 &&
+        !memberSepaProblem(contributionMember(c));
+    });
+
+    $("#sepaReadyCount").textContent =
+      ready.length + (ready.length === 1 ? " Mitglied" : " Mitglieder");
+    $("#sepaReadySum").textContent =
+      money(ready.reduce((s, c) => s + Number(c.amount || 0), 0));
+
+    const preparedCount = $("#sepaPreparedCount");
+    if (preparedCount) {
+      preparedCount.textContent =
+        prepared.length + (prepared.length === 1 ? " Beitrag" : " Beiträge");
+    }
+
+    const preparedInfo = $("#sepaPreparedInfo");
+    if (preparedInfo) {
+      preparedInfo.hidden = !prepared.length;
+      if (prepared.length) {
+        const dates = [...new Set(prepared.map(c => c.sepa_collection_date).filter(Boolean))];
+        preparedInfo.textContent =
+          prepared.length + (prepared.length === 1
+            ? " offener Beitrag ist bereits als SEPA vorbereitet"
+            : " offene Beiträge sind bereits als SEPA vorbereitet") +
+          (dates.length === 1
+            ? " · Einzug am " + new Date(dates[0] + "T12:00:00").toLocaleDateString("de-DE")
+            : "") +
+          ". Diese Beiträge werden nicht erneut exportiert.";
+      }
+    }
+
+    const issues = [];
+    if (candidates.length) {
+      if (!club.iban) issues.push("Vereins-IBAN fehlt.");
+      else if (!isValidIbanValue(club.iban)) issues.push("Vereins-IBAN ist ungültig.");
+
+      if (!club.creditor_id) issues.push("Gläubiger-ID fehlt.");
+      else if (!isValidCreditorIdValue(club.creditor_id)) issues.push("Gläubiger-ID ist ungültig.");
+
+      if (invalidAmount.length) {
+        issues.push(invalidAmount.length + " Beitrag/Beiträge mit ungültigem Betrag.");
+      }
+
+      if (memberIssues.length) {
+        issues.push(memberIssues.length + " Mitglied(er) mit unvollständigen SEPA-Daten.");
+      }
+    }
+
+    $("#sepaMissing").textContent = candidates.length
+      ? (issues.length
+          ? issues.join(" ")
+          : "Alles vollständig. Die neue SEPA-Datei kann erstellt werden.")
+      : (prepared.length
+          ? "Keine neuen Lastschriften. Bereits vorbereitete Beiträge werden nicht doppelt exportiert."
+          : "Keine offenen Beiträge vorhanden.");
 
     const issueList = $("#sepaIssueList");
     if (issueList) {
       issueList.hidden = !memberIssues.length;
       issueList.innerHTML = memberIssues.map(item =>
-        '<div class="sepa-issue-row"><strong>' + esc(item.name || "Mitglied") + '</strong><span>' + esc(item.details.join(" · ")) + '</span></div>'
+        '<div class="sepa-issue-row"><strong>' + esc(item.name || "Mitglied") + '</strong><span>' +
+        esc(item.details.join(" · ")) + '</span></div>'
       ).join("");
     }
 
     const prepareButton = $("#prepareSepa");
     if (prepareButton) {
-      prepareButton.disabled = issues.length > 0;
+      prepareButton.disabled = !candidates.length || issues.length > 0 || ready.length !== candidates.length;
       prepareButton.title = issues.length ? issues.join(" ") : "";
+      prepareButton.textContent = candidates.length
+        ? "SEPA-Datei fürs Online-Banking herunterladen"
+        : "Keine neuen Lastschriften";
     }
 
+    const resetButton = $("#resetSepaPreparation");
+    if (resetButton) {
+      resetButton.hidden = !prepared.length;
+      resetButton.dataset.ids = prepared.map(c => c.id).join(",");
+    }
+
+    return { openContributions, prepared, candidates, ready, issues };
+  };
+
+  updateSepaAction();
+
+  sepaAction?.addEventListener("click", () => {
+    const state = renderSepaSheet();
+    if (!state.openContributions.length) {
+      showToast("Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
+      return;
+    }
     openBackdrop(sepaSheet);
   });
+
+  $("#resetSepaPreparation")?.addEventListener("click", async () => {
+    const button = $("#resetSepaPreparation");
+    const ids = String(button?.dataset.ids || "").split(",").filter(Boolean);
+    if (!ids.length) return;
+
+    if (!confirm(
+      "SEPA-Vorbereitung wirklich zurücksetzen?\n\n" +
+      "Nur verwenden, wenn die bisher erstellte Datei NICHT bei der Bank eingereicht wurde oder von der Bank abgelehnt wurde."
+    )) return;
+
+    button.disabled = true;
+    button.textContent = "Wird zurückgesetzt …";
+
+    const { data, error } = await sb.rpc("reset_sepa_preparation", {
+      p_club_id: club.id,
+      p_contribution_ids: ids
+    });
+
+    button.disabled = false;
+    button.textContent = "SEPA-Vorbereitung zurücksetzen";
+
+    if (error) {
+      await handleAppError(error, "SEPA-Vorbereitung konnte nicht zurückgesetzt werden.");
+      return;
+    }
+
+    ids.forEach(id => {
+      const row = contributions.find(c => c.id === id);
+      if (row) {
+        row.sepa_exported_at = null;
+        row.sepa_collection_date = null;
+        row.sepa_batch_id = null;
+      }
+    });
+
+    showToast(String(data || ids.length) + " Beitrag/Beiträge wieder freigegeben ✓");
+    updateSepaAction();
+    renderSepaSheet();
+  });
+
   $("#closeSepa")?.addEventListener("click", () => closeBackdrop(sepaSheet));
-  sepaSheet?.addEventListener("click", e => { if (e.target === sepaSheet) closeBackdrop(sepaSheet); });
+  sepaSheet?.addEventListener("click", e => {
+    if (e.target === sepaSheet) closeBackdrop(sepaSheet);
+  });
 
 }
 
