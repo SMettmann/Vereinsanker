@@ -52,6 +52,7 @@
     $("#adminClubRows").innerHTML=clubs.length?clubs.map(row=>
       '<div class="admin-club-row">'+
         '<div><strong>'+esc(row.club_name)+'</strong><span>angelegt '+esc(dateText(row.created_at))+'</span></div>'+
+        '<span class="admin-owner-email">'+esc(row.owner_email||"–")+'</span>'+
         '<span><b>'+esc(row.members_active)+'</b> aktiv<br><small>'+esc(row.members_total)+' gesamt</small></span>'+
         '<span><b>'+esc(row.team_size)+'</b><small>Team</small></span>'+
         '<span class="admin-billing '+esc(row.subscription_status)+'">'+esc(billingLabel(row))+'</span>'+
