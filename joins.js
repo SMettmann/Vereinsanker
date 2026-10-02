@@ -2,10 +2,85 @@
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const sb=window.vaSupabase;
-let club=null,settings=null,currentFilter="pending",joinContributionTypes=[],joinDepartments=[];
+let club=null,settings=null,currentFilter="pending",joinContributionTypes=[],joinDepartments=[],joinApplications=[],activeJoinApplication=null;
 
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 const fmtDate=v=>v?new Date(v).toLocaleDateString("de-DE"):"–";
+
+const fmtMoney=v=>Number(v||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
+
+function todayIso(){
+  const d=new Date();
+  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+}
+
+function addDaysIso(value,days){
+  const d=new Date(String(value||todayIso())+"T12:00:00");
+  if(Number.isNaN(d.getTime())) return todayIso();
+  d.setDate(d.getDate()+Number(days||0));
+  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+}
+
+function prorataAmount(annualFee,entryDate){
+  const d=new Date(String(entryDate||todayIso())+"T12:00:00");
+  if(Number.isNaN(d.getTime())) return Number(annualFee||0);
+  const months=12-d.getMonth();
+  return Math.round((Number(annualFee||0)*months/12)*100)/100;
+}
+
+function entryAmount(mode,annualFee,entryDate,custom){
+  if(mode==="none") return 0;
+  if(mode==="custom") return Number(custom||0);
+  if(mode==="prorata") return prorataAmount(annualFee,entryDate);
+  return Number(annualFee||0);
+}
+
+function entryMonth(entryDate){
+  const d=new Date(String(entryDate||todayIso())+"T12:00:00");
+  return Number.isNaN(d.getTime())?"":d.toLocaleDateString("de-DE",{month:"long"});
+}
+
+function refreshAcceptJoinContribution(){
+  if(!activeJoinApplication) return;
+  const annualFee=Number(activeJoinApplication.annual_fee||0);
+  const entryDate=$("#acceptJoinEntryDate")?.value||todayIso();
+  const mode=$("#acceptJoinMode")?.value||"full";
+  const custom=$("#acceptJoinCustomAmount");
+  const due=$("#acceptJoinDueDate");
+  const customWrap=$("#acceptJoinCustomWrap");
+  const dueWrap=$("#acceptJoinDueWrap");
+  const summary=$("#acceptJoinSummary");
+
+  const fullOption=$("#acceptJoinMode")?.querySelector('option[value="full"]');
+  const prorataOption=$("#acceptJoinMode")?.querySelector('option[value="prorata"]');
+  if(fullOption) fullOption.textContent="Voller Jahresbeitrag – "+fmtMoney(annualFee);
+  if(prorataOption) prorataOption.textContent="Anteilig ab "+(entryMonth(entryDate)||"Eintritt")+" – "+fmtMoney(prorataAmount(annualFee,entryDate));
+
+  if(customWrap) customWrap.hidden=mode!=="custom";
+  if(dueWrap) dueWrap.hidden=mode==="none";
+  if(mode==="custom"&&custom&&!custom.value) custom.value=String(annualFee||"");
+  if(mode!=="none"&&due&&!due.value) due.value=addDaysIso(entryDate,14);
+
+  const amount=entryAmount(mode,annualFee,entryDate,custom?.value);
+  if(summary){
+    const year=new Date(entryDate+"T12:00:00").getFullYear();
+    summary.textContent=mode==="none"
+      ?"Für "+year+" wird kein Beitrag angelegt. Ab "+(year+1)+" gilt der normale Jahresbeitrag von "+fmtMoney(annualFee)+"."
+      :"Beitrag "+year+": "+fmtMoney(amount)+" · fällig "+(due?.value?new Date(due.value+"T12:00:00").toLocaleDateString("de-DE"):"nach Festlegung")+". Ab "+(year+1)+": "+fmtMoney(annualFee)+" / Jahr.";
+  }
+}
+
+function openAcceptJoinSheet(application){
+  activeJoinApplication=application;
+  $("#acceptJoinName").textContent=application.first_name+" "+application.last_name;
+  $("#acceptJoinAnnualInfo").textContent=(application.contribution_label||"Jahresbeitrag")+" · "+fmtMoney(application.annual_fee)+" / Jahr";
+  $("#acceptJoinEntryDate").value=todayIso();
+  $("#acceptJoinMode").value="full";
+  $("#acceptJoinCustomAmount").value="";
+  $("#acceptJoinDueDate").value=addDaysIso(todayIso(),14);
+  refreshAcceptJoinContribution();
+  openBackdrop($("#acceptJoinSheet"));
+}
 
 function buildPreparedJoinUrl(){
   const url=new URL("beitritt.html",location.href);
@@ -177,13 +252,11 @@ async function loadApplications(){
   if(q.error) throw q.error;
   const count=await sb.from("membership_applications").select("id",{count:"exact",head:true}).eq("club_id",club.id).eq("status","pending");
   if(!count.error) $("#joinPendingCount").textContent=count.count||0;
-  $("#joinApplicationRows").innerHTML=(q.data||[]).map(applicationCard).join("")||'<div class="team-empty">Keine Einträge.</div>';
-  $$("[data-accept-join]").forEach(b=>b.addEventListener("click",async e=>{
-    const btn=e.currentTarget; btn.disabled=true; btn.textContent="Wird übernommen …";
-    const r=await sb.rpc("accept_membership_application",{p_application_id:btn.dataset.acceptJoin});
-    if(r.error){btn.disabled=false;btn.textContent="Als Mitglied übernehmen";return handleAppError(r.error,"Beitritt konnte nicht übernommen werden.");}
-    showToast("Als Mitglied übernommen ✓");
-    await loadApplications();
+  joinApplications=q.data||[];
+  $("#joinApplicationRows").innerHTML=joinApplications.map(applicationCard).join("")||'<div class="team-empty">Keine Einträge.</div>';
+  $("[data-accept-join]").forEach(b=>b.addEventListener("click",e=>{
+    const application=joinApplications.find(item=>item.id===e.currentTarget.dataset.acceptJoin);
+    if(application) openAcceptJoinSheet(application);
   }));
   $$("[data-reject-join]").forEach(b=>b.addEventListener("click",async e=>{
     if(!confirm("Diesen Beitrittsantrag ablehnen?")) return;
@@ -201,6 +274,53 @@ window.initJoinsPage=async function(){
   applyTrialUI(club);
   await ensureSettings();
   await loadApplications();
+
+  $("#closeAcceptJoin")?.addEventListener("click",()=>{activeJoinApplication=null;closeBackdrop($("#acceptJoinSheet"));});
+  $("#acceptJoinSheet")?.addEventListener("click",e=>{if(e.target===$("#acceptJoinSheet")){activeJoinApplication=null;closeBackdrop($("#acceptJoinSheet"));}});
+  $("#acceptJoinEntryDate")?.addEventListener("change",()=>{
+    const due=$("#acceptJoinDueDate");
+    if(due) due.value=addDaysIso($("#acceptJoinEntryDate").value,14);
+    refreshAcceptJoinContribution();
+  });
+  $("#acceptJoinMode")?.addEventListener("change",refreshAcceptJoinContribution);
+  $("#acceptJoinCustomAmount")?.addEventListener("input",refreshAcceptJoinContribution);
+  $("#acceptJoinDueDate")?.addEventListener("change",refreshAcceptJoinContribution);
+  $("#confirmAcceptJoin")?.addEventListener("click",async e=>{
+    if(!activeJoinApplication) return;
+    const button=e.currentTarget;
+    const entryDate=$("#acceptJoinEntryDate").value;
+    const mode=$("#acceptJoinMode").value;
+    const createContribution=mode!=="none";
+    const amount=entryAmount(mode,activeJoinApplication.annual_fee,entryDate,$("#acceptJoinCustomAmount").value);
+    const dueDate=createContribution?$("#acceptJoinDueDate").value:null;
+    const year=new Date(entryDate+"T12:00:00").getFullYear();
+
+    if(year!==new Date().getFullYear()) return showToast("Das Eintrittsdatum muss im aktuellen Jahr liegen.");
+    if(createContribution&&amount<=0) return showToast("Bitte einen gültigen Beitrag fürs Eintrittsjahr eintragen.");
+    if(createContribution&&!dueDate) return showToast("Bitte ein Fälligkeitsdatum festlegen.");
+
+    button.disabled=true;
+    button.textContent="Wird übernommen …";
+    const result=await sb.rpc("accept_membership_application_with_entry_contribution",{
+      p_application_id:activeJoinApplication.id,
+      p_entry_date:entryDate,
+      p_entry_amount:createContribution?amount:0,
+      p_entry_due_date:dueDate,
+      p_create_entry_contribution:createContribution
+    });
+    if(result.error){
+      button.disabled=false;
+      button.textContent="Als Mitglied übernehmen";
+      return handleAppError(result.error,"Beitritt konnte nicht übernommen werden.");
+    }
+
+    closeBackdrop($("#acceptJoinSheet"));
+    activeJoinApplication=null;
+    button.disabled=false;
+    button.textContent="Als Mitglied übernehmen";
+    showToast("Als Mitglied übernommen ✓");
+    await loadApplications();
+  });
 
   $("#joinPresetGroup")?.addEventListener("change",refreshPreparedJoinUrl);
   $("#joinPresetContribution")?.addEventListener("change",refreshPreparedJoinUrl);
