@@ -1094,16 +1094,25 @@ function validateSepaRows(club, rows, collectionDate) {
   if (!rows.length) errors.push("Keine Lastschriften vorhanden.");
   if (rows.length > 100000) errors.push("Eine SEPA-Datei darf höchstens 100.000 Lastschriften enthalten.");
 
-  const today = new Date().toISOString().slice(0,10);
-  if (validSepaDate(collectionDate) && collectionDate < today) {
-    errors.push("Einzugsdatum darf nicht in der Vergangenheit liegen.");
+  const localToday = (() => {
+    const d = new Date();
+    return [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0")
+    ].join("-");
+  })();
+
+  if (validSepaDate(collectionDate) && collectionDate <= localToday) {
+    errors.push("Einzugsdatum muss mindestens morgen sein.");
   }
 
   rows.forEach((c, index) => {
     const m = c.members || {};
     const label = memberFullName(m) || ("Zeile " + (index + 1));
     const amount = Number(c.amount || 0);
-    const mandate = safeSepaText(m.mandate_reference, 35);
+    const mandateRaw = String(m.mandate_reference || "").trim();
+    const mandate = safeSepaText(mandateRaw, 35);
     const debtorName = safeSepaText(memberFullName(m), 70);
 
     if (!Number.isFinite(amount) || amount < 0.01 || amount > 999999999.99) {
@@ -1111,9 +1120,11 @@ function validateSepaRows(club, rows, collectionDate) {
     }
     if (!validIban(m.iban)) errors.push(label + ": IBAN ungültig.");
     if (!debtorName) errors.push(label + ": Name ist für SEPA nicht verwendbar.");
-    if (!mandate) errors.push(label + ": Mandatsreferenz fehlt oder enthält keine zulässigen Zeichen.");
+    if (!mandateRaw) errors.push(label + ": Mandatsreferenz fehlt.");
+    else if (!isValidSepaReferenceValue(mandateRaw)) errors.push(label + ": Mandatsreferenz ist ungültig.");
+    else if (!mandate) errors.push(label + ": Mandatsreferenz enthält keine verwendbaren Zeichen.");
     if (!validSepaDate(m.mandate_signed_at)) errors.push(label + ": Mandatsdatum ungültig.");
-    else if (m.mandate_signed_at > today) errors.push(label + ": Mandatsdatum liegt in der Zukunft.");
+    else if (m.mandate_signed_at > localToday) errors.push(label + ": Mandatsdatum liegt in der Zukunft.");
   });
 
   return [...new Set(errors)];
@@ -1168,12 +1179,12 @@ function downloadBlob(content, filename, type = "application/octet-stream") {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function buildSepaXml(club, rows, collectionDate) {
+function buildSepaXml(club, rows, collectionDate, batchId = "") {
   const now = new Date();
   const contributionYear = Number(rows?.[0]?.contribution_year || contributionYearFromUrl() || currentYear);
   const stamp = now.toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-  const msgId = compactId("VF-" + stamp);
-  const pmtId = compactId("VF-DD-" + contributionYear + "-" + stamp.slice(-6));
+  const msgId = compactId(batchId || ("VF-" + stamp));
+  const pmtId = compactId((batchId || ("VF-DD-" + contributionYear + "-" + stamp.slice(-6))) + "-P");
   const total = rows.reduce((sum, c) => sum + Number(c.amount || 0), 0).toFixed(2);
   const creditorIban = normalizeIban(club.iban);
   const creditorName = safeSepaText(club.name, 70);
@@ -1350,26 +1361,37 @@ async function enhanceContributionPage() {
   });
 
   const date = $("#collectionDate");
-  if (date && !date.value) {
-    const d = new Date();
-    d.setDate(d.getDate() + 5);
-    date.value = d.toISOString().slice(0, 10);
+  if (date) {
+    const dateOffsetIso = days => {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() + days);
+      return [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, "0"),
+        String(d.getDate()).padStart(2, "0")
+      ].join("-");
+    };
+    date.min = dateOffsetIso(1);
+    if (!date.value) date.value = dateOffsetIso(14);
   }
 
   $("#prepareSepa")?.addEventListener("click", async () => {
+    const button = $("#prepareSepa");
     const currentClub = await getClub();
     const all = await loadContributions(selectedYear);
     const collectionDate = $("#collectionDate")?.value;
-    const openRows = all.filter(c => c.status !== "paid");
+    const candidates = all.filter(c => c.status === "open" && !c.sepa_exported_at);
 
-    if (!openRows.length) {
-      showToast("Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
+    if (!candidates.length) {
+      const prepared = all.filter(c => c.status === "open" && c.sepa_exported_at);
+      showToast(prepared.length
+        ? "Alle offenen Beiträge sind bereits als SEPA vorbereitet."
+        : "Aktuell nichts einzuziehen: Alle Beiträge sind bereits bezahlt.");
       return;
     }
 
-    const exportRows = openRows.filter(c => Number(c.amount || 0) >= 0.01);
-    const errors = validateSepaRows(currentClub, exportRows, collectionDate);
-
+    const errors = validateSepaRows(currentClub, candidates, collectionDate);
     if (errors.length) {
       const first = errors[0];
       console.warn("SEPA-Prüfung:", errors);
@@ -1377,19 +1399,57 @@ async function enhanceContributionPage() {
       return;
     }
 
+    button.disabled = true;
+    button.textContent = "SEPA-Datei wird sicher vorbereitet …";
+
+    const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
+    const batchId = compactId("VF-" + selectedYear + "-" + stamp);
+
     try {
-      const xml = buildSepaXml(currentClub, exportRows, collectionDate);
-      validateGeneratedSepaXml(xml, exportRows);
+      const xml = buildSepaXml(currentClub, candidates, collectionDate, batchId);
+      validateGeneratedSepaXml(xml, candidates);
+
+      const ids = candidates.map(c => c.id);
+      const { data: markedCount, error: markError } = await sb.rpc("mark_sepa_exported", {
+        p_club_id: currentClub.id,
+        p_contribution_ids: ids,
+        p_collection_date: collectionDate,
+        p_batch_id: batchId
+      });
+
+      if (markError) {
+        const msg = String(markError.message || "");
+        if (msg.includes("SEPA_ROWS_CHANGED")) {
+          throw new Error("Beiträge wurden zwischenzeitlich verändert. Bitte Seite neu laden und erneut prüfen.");
+        }
+        if (msg.includes("INVALID_COLLECTION_DATE")) {
+          throw new Error("Einzugsdatum muss mindestens morgen sein.");
+        }
+        throw markError;
+      }
+
+      if (Number(markedCount || 0) !== ids.length) {
+        throw new Error("Nicht alle Lastschriften konnten sicher vorbereitet werden.");
+      }
 
       downloadBlob(
         xml,
         "VEREINSFACH_SEPA_" + selectedYear + "_" + collectionDate + ".xml",
         "application/xml;charset=utf-8"
       );
-      showToast("SEPA-Datei für " + selectedYear + " geprüft und erstellt ✓");
+
+      showToast(
+        candidates.length + (candidates.length === 1
+          ? " Lastschrift vorbereitet und heruntergeladen ✓"
+          : " Lastschriften vorbereitet und heruntergeladen ✓")
+      );
+
+      setTimeout(() => location.reload(), 900);
     } catch (error) {
       console.error("SEPA-Datei:", error);
       showToast("SEPA-Datei konnte nicht sicher erstellt werden: " + (error?.message || "Prüfung fehlgeschlagen"));
+      button.disabled = false;
+      button.textContent = "SEPA-Datei fürs Online-Banking herunterladen";
     }
   });
 
