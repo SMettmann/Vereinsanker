@@ -1221,7 +1221,7 @@ async function nextMemberNumber(clubId) {
 async function loadContributions(year = currentYear) {
   const { data, error } = await sb
     .from("contributions")
-    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,member_number,annual_fee,mandate_reference,mandate_signed_at)")
+    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,payment_method,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,member_number,annual_fee,mandate_reference,mandate_signed_at)")
     .eq("contribution_year", year)
     .order("due_date", { ascending: true });
   if (error) throw error;
@@ -1745,6 +1745,7 @@ async function initContributions() {
       ? "Zahlungsdatum korrigieren oder die Verbuchung zurücknehmen."
       : "Zahlungsdatum prüfen und Beitrag als bezahlt markieren.";
     paymentDate.value = paid ? localDateValue(contribution.paid_at) : localDateValue();
+    if ($("#paymentMethod")) $("#paymentMethod").value = contribution.payment_method || "bank";
     $("#savePayment").textContent = paid ? "Änderung speichern" : "Zahlung verbuchen";
     $("#undoPayment").hidden = !paid;
     paymentSheet.dataset.mode = paid ? "edit" : "new";
@@ -1803,6 +1804,7 @@ async function initContributions() {
     let query = sb.from("contributions").update({
       status: "paid",
       paid_at: paidAt,
+      payment_method: $("#paymentMethod")?.value === "cash" ? "cash" : "bank",
       updated_at: new Date().toISOString()
     }).eq("id", id);
 
