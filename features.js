@@ -908,9 +908,22 @@ async function enhanceMemberPage() {
 
   $("#exportMembers")?.addEventListener("click", async () => {
     const members = await loadMembers();
+    const contributions = await loadContributions();
+    const contributionMap = new Map(contributions.map(row => [row.member_id, row]));
+    const statusText = row => !row ? "Kein Beitrag" : row.status === "paid" ? "Bezahlt" : "Offen";
+
     const lines = [
-      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Beitragsart","IBAN","Jahresbeitrag","Mandatsreferenz","Mandatsdatum"],
-      ...members.map(m => [m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",m.contribution_label||"",m.iban||"",m.annual_fee||0,m.mandate_reference||"",m.mandate_signed_at||""])
+      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Geburtsdatum","Telefon","Straße","PLZ","Ort","Eintrittsdatum","Beitragsart","IBAN","Jahresbeitrag","Beitragsstatus","Bezahlt am","Mandatsreferenz","Mandatsdatum"],
+      ...members.map(m => {
+        const contribution = contributionMap.get(m.id);
+        return [
+          m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",
+          m.birth_date||"",m.phone||"",m.street||"",m.postal_code||"",m.city||"",m.joined_at||"",
+          m.contribution_label||"",m.iban||"",m.annual_fee||0,statusText(contribution),
+          contribution?.paid_at ? String(contribution.paid_at).slice(0,10) : "",
+          m.mandate_reference||"",m.mandate_signed_at||""
+        ];
+      })
     ];
     const csv = lines.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(";")).join("\r\n");
     downloadBlob("\uFEFF" + csv, "VEREINSFACH_Mitglieder.csv", "text/csv;charset=utf-8");
