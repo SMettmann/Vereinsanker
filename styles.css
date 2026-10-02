@@ -334,3 +334,80 @@ footer{
     border-radius:18px;
   }
 }
+
+
+/* VEREINSFACH – Guter Zweck */
+.giving-card{
+  max-width:840px;
+  margin:18px auto 0;
+  display:grid;
+  grid-template-columns:54px 1fr;
+  gap:18px;
+  align-items:center;
+  padding:20px 22px;
+  border:1px solid rgba(111,222,164,.22);
+  border-radius:18px;
+  background:rgba(255,255,255,.055);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.giving-heart{
+  width:54px;
+  height:54px;
+  display:grid;
+  place-content:center;
+  border-radius:16px;
+  background:rgba(88,215,150,.13);
+  color:#6ee0a7;
+  font-size:25px;
+  line-height:1;
+}
+.giving-copy{
+  display:grid;
+  gap:5px;
+}
+.giving-copy>span{
+  color:#72dfa6;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.12em;
+}
+.giving-copy>strong{
+  color:#fff;
+  font-size:15px;
+  line-height:1.35;
+}
+.giving-copy p{
+  margin:0;
+  color:rgba(255,255,255,.64);
+  font-size:12px;
+  line-height:1.55;
+}
+.giving-copy p b{
+  color:#fff;
+}
+.giving-copy a{
+  color:#8ae7b4;
+  font-weight:700;
+  text-decoration:underline;
+  text-decoration-color:rgba(138,231,180,.35);
+  text-underline-offset:2px;
+}
+.giving-copy a:hover{
+  color:#b1f0ce;
+}
+@media(max-width:760px){
+  .giving-card{
+    grid-template-columns:44px 1fr;
+    padding:17px;
+    gap:13px;
+  }
+  .giving-heart{
+    width:44px;
+    height:44px;
+    border-radius:13px;
+    font-size:21px;
+  }
+  .giving-copy>strong{
+    font-size:14px;
+  }
+}
