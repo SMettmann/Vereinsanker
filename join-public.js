@@ -61,15 +61,30 @@ if(data.form_pdf_url){
   $("#publicJoinPdf").textContent="Standard-Beitrittserklärung ansehen / herunterladen →";
   $("#publicJoinPdf").hidden=false;
 }
-if(c.creditor_id){$("#sepaJoinBox").hidden=false;$("#joinSepaText").textContent="Ich ermächtige "+c.name+" (Gläubiger-ID "+c.creditor_id+"), fällige Mitgliedsbeiträge per SEPA-Lastschrift von meinem Konto einzuziehen.";}
-$("#joinSepa").addEventListener("change",e=>{$("#signatureBox").hidden=!e.target.checked;});
+if(c.creditor_id){
+  $("#sepaJoinBox").hidden=false;
+  $("#joinSepaText").textContent=c.sepa_mandate_text||"SEPA-Lastschriftmandat für "+c.name;
+}
+const syncSepaFields=()=>{
+  const checked=$("#joinSepa").checked;
+  $("#sepaDetails").hidden=!checked;
+  $("#joinIban").required=checked;
+  $("#joinAccountHolder").required=checked;
+  $("#joinSignature").required=checked;
+  if(checked&&!$("#joinAccountHolder").value.trim()){
+    $("#joinAccountHolder").value=[$("#joinFirst").value,$("#joinLast").value].filter(Boolean).join(" ").trim();
+  }
+};
+$("#joinSepa").addEventListener("change",syncSepaFields);
+syncSepaFields();
 form.hidden=false;
 form.addEventListener("submit",async e=>{
  e.preventDefault();const btn=$("#submitJoin");btn.disabled=true;btn.textContent="Wird übermittelt …";
  const selectedContribution=document.querySelector('input[name="joinContributionType"]:checked');
- const payload={action:"submit",token,first_name:$("#joinFirst").value,last_name:$("#joinLast").value,email:$("#joinEmail").value,phone:$("#joinPhone").value,birth_date:$("#joinBirth").value,street:$("#joinStreet").value,postal_code:$("#joinPostal").value,city:$("#joinCity").value,group_name:$("#joinGroup").value,contribution_type_id:selectedContribution?.value||"",iban:$("#joinIban").value,sepa_consent:$("#joinSepa").checked,applicant_signature:$("#joinSignature").value,privacy_consent:$("#joinPrivacy").checked,website:$("#joinWebsite").value};
+ const sepaConsent=$("#joinSepa").checked;
+ const payload={action:"submit",token,first_name:$("#joinFirst").value,last_name:$("#joinLast").value,email:$("#joinEmail").value,phone:$("#joinPhone").value,birth_date:$("#joinBirth").value,street:$("#joinStreet").value,postal_code:$("#joinPostal").value,city:$("#joinCity").value,group_name:$("#joinGroup").value,contribution_type_id:selectedContribution?.value||"",iban:sepaConsent?$("#joinIban").value:"",account_holder:sepaConsent?$("#joinAccountHolder").value:"",sepa_consent:sepaConsent,applicant_signature:sepaConsent?$("#joinSignature").value:"",privacy_consent:$("#joinPrivacy").checked,website:$("#joinWebsite").value};
  const r=await sb.functions.invoke("membership-join-public",{body:payload});
- if(r.error||!r.data?.ok){let code="";try{code=(await r.error?.context?.json?.())?.error||"";}catch{}const map={INVALID_EMAIL:"Bitte eine gültige E-Mail-Adresse eingeben.",INVALID_IBAN:"Die IBAN ist ungültig.",PRIVACY_REQUIRED:"Bitte dem Datenschutz-Hinweis zustimmen.",SIGNATURE_REQUIRED:"Bitte den Namen zur SEPA-Bestätigung eintragen.",CONTRIBUTION_TYPE_REQUIRED:"Bitte eine Beitragsart auswählen.",INVALID_CONTRIBUTION_TYPE:"Die ausgewählte Beitragsart ist nicht mehr verfügbar. Bitte Seite neu laden.",INVALID_DEPARTMENT:"Die ausgewählte Abteilung ist nicht mehr verfügbar. Bitte Seite neu laden.",DUPLICATE_RECENT:"Dieser Antrag wurde gerade bereits übermittelt."};msg(map[code]||"Der Antrag konnte nicht übermittelt werden. Bitte erneut versuchen.");btn.disabled=false;btn.textContent="Beitritt absenden →";return;}
+ if(r.error||!r.data?.ok){let code="";try{code=(await r.error?.context?.json?.())?.error||"";}catch{}const map={NAME_REQUIRED:"Bitte Vorname und Nachname eintragen.",INVALID_EMAIL:"Bitte eine gültige E-Mail-Adresse eingeben.",INVALID_BIRTH_DATE:"Das Geburtsdatum ist ungültig.",INVALID_IBAN:"Die IBAN ist ungültig.",PRIVACY_REQUIRED:"Bitte dem Datenschutz-Hinweis zustimmen.",SEPA_NOT_AVAILABLE:"Für SEPA werden Kontoinhaber, gültige IBAN und die Gläubiger-ID des Vereins benötigt.",SIGNATURE_REQUIRED:"Bitte den Kontoinhaber zur SEPA-Bestätigung erneut eintragen.",SIGNATURE_MISMATCH:"Die SEPA-Bestätigung muss mit dem Kontoinhaber übereinstimmen.",CONTRIBUTION_TYPE_REQUIRED:"Bitte eine Beitragsart auswählen.",INVALID_CONTRIBUTION_TYPE:"Die ausgewählte Beitragsart ist nicht mehr verfügbar. Bitte Seite neu laden.",INVALID_DEPARTMENT:"Die ausgewählte Abteilung ist nicht mehr verfügbar. Bitte Seite neu laden.",DUPLICATE_PENDING:"Für diese Person liegt bereits ein offener Beitrittsantrag vor.",RATE_LIMITED:"Der Beitrittslink erhält gerade ungewöhnlich viele Anfragen. Bitte später erneut versuchen."};msg(map[code]||"Der Antrag konnte nicht übermittelt werden. Bitte erneut versuchen.");btn.disabled=false;btn.textContent="Beitritt absenden →";return;}
  form.hidden=true;$("#joinSuccess").hidden=false;window.scrollTo({top:0,behavior:"smooth"});
 });
 })();
