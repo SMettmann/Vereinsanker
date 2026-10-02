@@ -22,6 +22,11 @@
 <button class="secondary-wide" data-admin-logout type="button">Abmelden</button>
 </section>
 
+<section class="admin-login-card" id="adminLoadError" hidden>
+<span>TECHNISCHER FEHLER</span><h1>Adminbereich konnte nicht geladen werden</h1><p>Dein Adminzugang ist korrekt, aber die Daten konnten gerade nicht geladen werden.</p>
+<div class="admin-auth-actions"><button class="primary" id="adminRetry" type="button">Erneut laden</button><button class="secondary-wide" data-admin-logout type="button">Abmelden</button></div>
+</section>
+
 <main id="adminDashboard" hidden>
 <div class="admin-topline"><div><span>VEREINSFACH</span><h1>Adminübersicht</h1><p>Besucher, Vereine, Mitglieder und Rückmeldungen auf einen Blick.</p></div><div><button id="adminReload" class="secondary-wide" type="button">Aktualisieren</button><button class="secondary-wide" data-admin-logout type="button">Abmelden</button></div></div>
 
@@ -55,5 +60,5 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <script src="supabase-client.js"></script>
-<script src="admin.js?v=20261001-3"></script>
+<script src="admin.js?v=20261002-1"></script>
 </body></html>
