@@ -2528,3 +2528,16 @@ body.trial-expired #openJoinMail{
 .onboard .field input,.onboard .field select{box-sizing:border-box;min-width:0;max-width:100%}
 .onboard #controllerEmail{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:680px){.onboard .row{grid-template-columns:1fr}}
+
+
+/* VEREINSFACH – vorbereitete SEPA-Läufe */
+.sepa-row-prepared{color:#1f7b55!important;font-weight:800}
+.sepa-prepared-row{background:#fbfdfb}
+.sepa-prepared-action{display:inline-flex;align-items:center;padding:7px 9px;border-radius:999px;background:#eaf5ef;color:#236b4a;font-size:9px;font-weight:900;white-space:nowrap}
+.sepa-prepared-status{display:grid!important;gap:2px;background:#eaf5ef!important;color:#236b4a!important}
+.sepa-prepared-status small{font-size:9px;font-weight:700;opacity:.8}
+.sepa-prepared-info{display:grid;gap:8px;padding:12px;border:1px solid #cfe0d7;border-radius:11px;background:#f6fbf8;margin:10px 0}
+.sepa-prepared-info>strong{font-size:11px}.sepa-prepared-info>span{font-size:10px;color:var(--muted)}
+.sepa-prepared-batch{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #dce8e1}
+.sepa-prepared-batch>div{display:grid;gap:2px}.sepa-prepared-batch b{font-size:10px}.sepa-prepared-batch small{font-size:9px;color:var(--muted)}
+.sepa-prepared-batch button{border:1px solid var(--line);background:#fff;border-radius:8px;min-height:32px;padding:0 9px;font-size:9px;font-weight:800;cursor:pointer}
