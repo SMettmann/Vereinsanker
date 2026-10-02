@@ -75,7 +75,7 @@
         const result=await sb.functions.invoke("admin-dashboard",{body:{action:"set_status",id:select.dataset.ticketStatus,status:select.value}});
         select.disabled=false;
         if(result.error||!result.data?.ok){
-          console.error(error);
+          console.error("Supportstatus",result.error||result.data);
           alert("Status konnte nicht gespeichert werden.");
         }else{
           await loadDashboard();
@@ -94,22 +94,35 @@
 
   async function verifyAndLoad(){
     const {data:{session}}=await sb.auth.getSession();
+    const loginPanel=$("#adminLoginPanel");
+    const denied=$("#adminDenied");
+    const loadError=$("#adminLoadError");
+    const dashboard=$("#adminDashboard");
+
+    if(loginPanel) loginPanel.hidden=true;
+    if(denied) denied.hidden=true;
+    if(loadError) loadError.hidden=true;
+    if(dashboard) dashboard.hidden=true;
+
     if(!session){
-      $("#adminLoginPanel").hidden=false;
-      $("#adminDashboard").hidden=true;
+      if(loginPanel) loginPanel.hidden=false;
       return;
     }
 
-    $("#adminLoginPanel").hidden=true;
-    $("#adminDashboard").hidden=false;
+    const email=String(session.user.email||"").trim().toLowerCase();
     $("#adminAccount").textContent=session.user.email||"";
+
+    if(email!=="s.mettmann@softwaremanufaktur-mettmann.de"){
+      if(denied) denied.hidden=false;
+      return;
+    }
 
     try{
       await loadDashboard();
+      if(dashboard) dashboard.hidden=false;
     }catch(error){
       console.error("Admin laden",error);
-      $("#adminDashboard").hidden=true;
-      $("#adminDenied").hidden=false;
+      if(loadError) loadError.hidden=false;
     }
   }
 
@@ -191,6 +204,8 @@
     button.disabled=true;
     await loadDashboard().finally(()=>button.disabled=false);
   });
+
+  $("#adminRetry")?.addEventListener("click",verifyAndLoad);
 
   verifyAndLoad();
 })();
