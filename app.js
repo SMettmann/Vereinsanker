@@ -2337,6 +2337,10 @@ async function initSettings() {
           "Fälligkeit": entry.due_date || "",
           "Status": entry.status || "",
           "Bezahlt am": entry.paid_at || "",
+          "Zahlungsart": entry.payment_method === "cash" ? "Kasse" : "Bank",
+          "SEPA vorbereitet am": entry.sepa_exported_at || "",
+          "SEPA Einzug am": entry.sepa_collection_date || "",
+          "SEPA Batch": entry.sepa_batch_id || "",
           "Notiz": entry.note || ""
         };
       })), "Beiträge");
