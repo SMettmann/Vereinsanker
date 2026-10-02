@@ -1499,7 +1499,7 @@ async function enhanceContributionPage() {
 
     const id = button.dataset.id;
     const contribution = (await loadContributions(selectedYear))
-      .find(row => row.id === id && row.status !== "paid");
+      .find(row => row.id === id && row.status === "open" && !row.sepa_exported_at);
 
     if (!contribution) {
       showToast("Dieser Beitrag ist nicht mehr offen.");
@@ -1572,10 +1572,10 @@ async function enhanceContributionPage() {
 
   $("#remindAll")?.addEventListener("click", async () => {
     const openRows = (await loadContributions(selectedYear))
-      .filter(c => c.status !== "paid");
+      .filter(c => c.status === "open" && !c.sepa_exported_at);
 
     if (!openRows.length) {
-      showToast("Keine offenen Beiträge.");
+      showToast("Keine unbehandelten offenen Beiträge. Bereits vorbereitete SEPA-Einzüge werden nicht erinnert.");
       return;
     }
 
@@ -1608,7 +1608,7 @@ async function enhanceContributionPage() {
 
   $("#downloadReminderCsv")?.addEventListener("click", async () => {
     const openRows = (await loadContributions(selectedYear))
-      .filter(c => c.status !== "paid");
+      .filter(c => c.status === "open" && !c.sepa_exported_at);
 
     if (!openRows.length) {
       closeBackdrop(reminderBatchSheet);
