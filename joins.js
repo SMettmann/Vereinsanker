@@ -260,10 +260,14 @@ async function loadApplications(){
     const application=joinApplications.find(item=>item.id===e.currentTarget.dataset.acceptJoin);
     if(application) openAcceptJoinSheet(application);
   }));
-  $$("[data-reject-join]").forEach(b=>b.addEventListener("click",async e=>{
+  $("[data-reject-join]").forEach(b=>b.addEventListener("click",async e=>{
     if(!confirm("Diesen Beitrittsantrag ablehnen?")) return;
-    const r=await sb.from("membership_applications").update({status:"rejected",reviewed_at:new Date().toISOString(),reviewed_by:vaSession.user.id}).eq("id",e.currentTarget.dataset.rejectJoin).eq("status","pending");
-    if(r.error) return handleAppError(r.error,"Antrag konnte nicht abgelehnt werden.");
+    const r=await sb.rpc("reject_membership_application",{p_application_id:e.currentTarget.dataset.rejectJoin});
+    if(r.error){
+      const message=String(r.error?.message||"");
+      if(message.includes("APPLICATION_NOT_FOUND_OR_ALREADY_REVIEWED")) return showToast("Dieser Antrag wurde bereits von jemandem bearbeitet.");
+      return handleAppError(r.error,"Antrag konnte nicht abgelehnt werden.");
+    }
     showToast("Antrag abgelehnt.");
     await loadApplications();
   }));
