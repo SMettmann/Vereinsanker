@@ -409,6 +409,10 @@ function clubEntryPage(club) {
   return hasCurrentAvv(club) ? "app.html" : "avv-accept.html";
 }
 
+function isVereinsfachAdminUser(user = vaSession?.user) {
+  return String(user?.email || "").trim().toLowerCase() === "s.mettmann@softwaremanufaktur-mettmann.de";
+}
+
 function clubLogoPublicUrl(path) {
   if (!path) return "";
   const { data } = sb.storage.from("club-logos").getPublicUrl(path);
@@ -682,6 +686,10 @@ async function initSignup() {
   const existingSession = await getSession();
   if (existingSession) {
     vaSession = existingSession;
+    if (isVereinsfachAdminUser(existingSession.user)) {
+      location.replace("admin.html");
+      return;
+    }
     const club = await getClub();
     location.replace(clubEntryPage(club));
     return;
@@ -692,6 +700,11 @@ async function initSignup() {
     const button = $("button[type='submit']", form);
     const email = $("#email").value.trim();
     const password = $("#password").value;
+
+    if (email.toLowerCase() === "s.mettmann@softwaremanufaktur-mettmann.de") {
+      location.replace("admin.html");
+      return;
+    }
 
     if (password.length < 12) {
       setMessage(form, "Das Passwort muss mindestens 12 Zeichen haben.", "error");
@@ -749,6 +762,10 @@ async function initLogin() {
   const existingSession = await getSession();
   if (existingSession) {
     vaSession = existingSession;
+    if (isVereinsfachAdminUser(existingSession.user)) {
+      location.replace("admin.html");
+      return;
+    }
     const club = await getClub();
     location.replace(clubEntryPage(club));
     return;
@@ -777,6 +794,12 @@ async function initLogin() {
       );
       button.disabled = false;
       button.textContent = "Anmelden →";
+      return;
+    }
+
+    const freshSession = await getSession();
+    if (freshSession && isVereinsfachAdminUser(freshSession.user)) {
+      location.href = "admin.html";
       return;
     }
 
@@ -887,6 +910,11 @@ function showStep(n) {
 }
 
 async function initOnboarding() {
+  if (isVereinsfachAdminUser(vaSession?.user)) {
+    location.replace("admin.html");
+    return;
+  }
+
   const existing = await getClub();
   if (existing) {
     $("#clubName").value = existing.name || "";
@@ -2597,6 +2625,11 @@ function setupLogout() {
 
     const session = await requireSession();
     if (!session) return;
+
+    if (isVereinsfachAdminUser(session.user)) {
+      location.replace("admin.html");
+      return;
+    }
 
     if ($("#avvAcceptPage")) {
       await initAvvAccept();
