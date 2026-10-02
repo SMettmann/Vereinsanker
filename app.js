@@ -2636,6 +2636,10 @@ async function initBilling() {
   applyClubBrand(club);
   applyTrialUI(club);
 
+  // Auf der Tarifseite ist der Teststatus links bereits sichtbar.
+  // Die zusätzliche Leiste oben mit "Tarif wählen" ist hier redundant.
+  $("#trialMobileStatus")?.remove();
+
   const choiceWrap = $(".billing-choice-wrap");
   const billingNote = $(".billing-note");
 
