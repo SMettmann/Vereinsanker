@@ -98,8 +98,8 @@ function parseFee(value, fallback = 0) {
 function parseContributionStatus(value) {
   const raw = normalizeHeader(value);
   if (!raw) return null;
-  if (["bezahlt","paid","erledigt","ja","yes","ok","x","beglichen"].includes(raw)) return "paid";
-  if (["offen","open","unbezahlt","faellig","fallig","nein","no"].includes(raw)) return "open";
+  if (["bezahlt","paid","erledigt","ja","yes","ok","x","beglichen","true","1"].includes(raw)) return "paid";
+  if (["offen","open","unbezahlt","faellig","fallig","nein","no","false","0"].includes(raw)) return "open";
   if (["keinbeitrag","keiner","none","nichtfaellig","nichtfallig","entfaellt","entfallt"].includes(raw)) return "none";
   return null;
 }
@@ -1095,37 +1095,61 @@ async function enhanceMemberPage() {
         return;
       }
 
-      runImport.textContent = "Wird importiert …";
+      runImport.textContent = "Wird vollständig importiert …";
 
-      const result = candidates.length
-        ? await importCorrectedMembers(candidates, club)
-        : { inserted: 0, errors: [], duplicates: [] };
+      const batchRows = [
+        ...candidates.map(member => ({ ...member, action: "create" })),
+        ...duplicateActions.map(action => ({
+          ...action.member,
+          action: action.action,
+          target_id: action.target_id || null
+        }))
+      ].map(row => {
+        const clean = { ...row };
+        delete clean.__row;
+        delete clean.__kind;
+        delete clean.__resolution;
+        delete clean.__existing_member_id;
+        delete clean.contribution_status_raw;
+        delete clean.paid_at_raw;
+        delete clean.birth_date_raw;
+        delete clean.joined_at_raw;
+        return clean;
+      });
 
-      if (result.errors.length || result.duplicates.length) {
-        vaImportState.valid = [];
-        vaImportState.duplicateActions = [];
-        vaImportState.corrections = [...result.errors, ...result.duplicates];
-        renderImportCorrections(vaImportState.corrections);
-        importHint.innerHTML =
-          '<strong>Import gestoppt.</strong> ' +
-          vaImportState.corrections.length + ' Zeile(n) müssen nochmals geprüft werden.';
-        runImport.disabled = false;
-        runImport.textContent = "Korrekturen prüfen";
-        return;
-      }
+      const { data: result, error } = await sb.rpc("import_members_batch", {
+        p_club_id: club.id,
+        p_rows: batchRows,
+        p_contribution_year: currentYear,
+        p_due_date: dueDateForContributionYear(club, currentYear)
+      });
+      if (error) throw error;
 
-      const duplicateResult = await applyDuplicateActions(duplicateActions, club);
-      try { await syncDepartmentsFromMembers(club); } catch (err) { console.warn("Abteilungen konnten nicht synchronisiert werden:", err); }
+      try { await syncDepartmentsFromMembers(club); }
+      catch (err) { console.warn("Abteilungen konnten nicht synchronisiert werden:", err); }
+
       const messages = [];
-      if (result.inserted) messages.push(result.inserted + " neu importiert");
-      if (duplicateResult.updated) messages.push(duplicateResult.updated + " aktualisiert");
-      if (duplicateResult.created) messages.push(duplicateResult.created + " zusätzlich neu angelegt");
+      if (Number(result?.created || 0)) messages.push(result.created + " neu importiert");
+      if (Number(result?.updated || 0)) messages.push(result.updated + " aktualisiert");
+      if (Number(result?.renumbered || 0)) messages.push(result.renumbered + " Nummer(n) automatisch vergeben");
 
       closeBackdrop(importSheet);
       showToast((messages.join(" · ") || "Import abgeschlossen") + " ✓");
-      setTimeout(() => location.reload(), 700);
+      vaImportState = null;
+      setTimeout(() => location.reload(), 500);
     } catch (error) {
-      await handleAppError(error, error?.message || "Import fehlgeschlagen. Es wurden keine weiteren Daten gespeichert.");
+      console.error("Mitgliederimport", error);
+      const message = String(error?.message || "") + " " + String(error?.details || "");
+      const friendly =
+        message.includes("members_club_mandate_reference_uidx")
+          ? "Eine Mandatsreferenz ist bereits vergeben. Bitte die betroffene Zeile korrigieren."
+          : message.includes("INVALID_IMPORT_CONTRIBUTION_STATUS")
+            ? "Ein Beitragsstatus ist ungültig. Erlaubt sind offen, bezahlt oder kein Beitrag."
+            : message.includes("ACCESS_BLOCKED")
+              ? "Der Verein ist derzeit nur lesbar. Bitte Tarif/Teststatus prüfen."
+              : "Import fehlgeschlagen. Es wurde nichts gespeichert.";
+
+      await handleAppError(error, friendly);
       runImport.disabled = false;
       runImport.textContent = vaImportState?.corrections?.length
         ? "Korrekturen prüfen"
