@@ -798,7 +798,9 @@ async function initSignup() {
           ? "Keine Internetverbindung. Konto wurde nicht angelegt."
           : (error.code === "user_already_exists"
               ? "Für diese E-Mail-Adresse gibt es bereits ein Konto."
-              : "Registrierung ist gerade nicht möglich. Bitte versuche es erneut."),
+              : error.code === "over_email_send_rate_limit"
+                ? "Es wurden gerade zu viele Bestätigungs-E-Mails angefordert. Bitte warte ein paar Minuten und versuche es dann erneut."
+                : "Registrierung ist gerade nicht möglich. Bitte versuche es erneut."),
         "error"
       );
       button.disabled = false;
@@ -897,7 +899,9 @@ async function initForgotPassword() {
         form,
         isNetworkAppError(error)
           ? "Keine Internetverbindung. Reset-Link wurde nicht angefordert."
-          : "Reset-Link konnte nicht gesendet werden. Bitte versuche es erneut.",
+          : error.code === "over_email_send_rate_limit"
+            ? "Es wurden gerade zu viele E-Mails angefordert. Bitte warte ein paar Minuten und versuche es dann erneut."
+            : "Reset-Link konnte nicht gesendet werden. Bitte versuche es erneut.",
         "error"
       );
       button.disabled = false;
