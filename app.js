@@ -372,7 +372,11 @@ async function getSession() {
   // before the app trusts the embedded user object.
   const { data: userData, error: userError } = await sb.auth.getUser();
   if (userError) {
-    if (isSessionAppError(userError)) {
+    const staleDeletedUserSession =
+      userError?.code === "user_not_found" ||
+      /user from sub claim in jwt does not exist/i.test(appErrorText(userError));
+
+    if (staleDeletedUserSession || isSessionAppError(userError)) {
       try { await sb.auth.signOut({ scope: "local" }); } catch {}
       return null;
     }
