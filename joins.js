@@ -81,7 +81,7 @@ function refreshAcceptJoinContribution(){
 function openAcceptJoinSheet(application){
   activeJoinApplication=application;
   $("#acceptJoinName").textContent=application.first_name+" "+application.last_name;
-  $("#acceptJoinAnnualInfo").textContent=(application.contribution_label||"Jahresbeitrag")+" · "+fmtMoney(application.annual_fee)+" / Jahr";
+  $("#acceptJoinAnnualInfo").textContent=(application.contribution_label||"Mitgliedsbeitrag")+" · "+joinDisplayFee(application);
   $("#acceptJoinEntryDate").value=todayIso();
   $("#acceptJoinMode").value="full";
   $("#acceptJoinCustomAmount").value="";
