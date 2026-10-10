@@ -52,7 +52,9 @@ function refreshAcceptJoinContribution(){
   if(!activeJoinApplication) return;
   const annualFee=Number(activeJoinApplication.annual_fee||0);
   const entryDate=$("#acceptJoinEntryDate")?.value||todayIso();
-  const mode=$("#acceptJoinMode")?.value||"full";
+  let mode=$("#acceptJoinMode")?.value||"full";
+  const monthly=joinPeriod(activeJoinApplication)==="monthly";
+  if(monthly && (mode==="prorata"||mode==="custom")) {$("#acceptJoinMode").value="full";mode="full";}
   const custom=$("#acceptJoinCustomAmount");
   const due=$("#acceptJoinDueDate");
   const customWrap=$("#acceptJoinCustomWrap");
@@ -61,7 +63,7 @@ function refreshAcceptJoinContribution(){
 
   const fullOption=$("#acceptJoinMode")?.querySelector('option[value="full"]');
   const prorataOption=$("#acceptJoinMode")?.querySelector('option[value="prorata"]');
-  if(fullOption) fullOption.textContent="Voller Jahresbeitrag – "+fmtMoney(annualFee);
+  if(fullOption) fullOption.textContent=(monthly?"Monatsbeitrag ab Eintritt – ":"Voller Jahresbeitrag – ")+fmtMoney(annualFee/(monthly?12:1));
   if(prorataOption) prorataOption.textContent="Anteilig ab "+(entryMonth(entryDate)||"Eintritt")+" – "+fmtMoney(prorataAmount(annualFee,entryDate));
 
   if(customWrap) customWrap.hidden=mode!=="custom";
