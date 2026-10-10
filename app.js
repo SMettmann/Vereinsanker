@@ -1247,6 +1247,7 @@ function refreshMemberEntryContribution() {
   if (!entryDate || !mode || !annualFee || !summary) return;
 
   const fee = Number(annualFee.value || 0);
+  const monthly = billingPeriodForSelection($("#memberContributionType"),window.vaMemberTypes||[])==="monthly";
   const prorata = entryContributionProrata(fee, entryDate.value);
   const month = entryContributionMonth(entryDate.value);
 
@@ -1503,6 +1504,7 @@ async function initMembers() {
   bindIbanValidation($("#memberIban"));
   setupDepartmentSelect($("#memberGroup"), club);
   const contributionTypes = await loadContributionTypes(club.id);
+  window.vaMemberTypes=contributionTypes;
   setupMemberContributionSelect($("#memberContributionType"), $("#memberFee"), contributionTypes, club);
   let members = await loadMembers();
   let contributions = await loadContributions();
@@ -1581,8 +1583,8 @@ async function initMembers() {
     e.preventDefault();
     const form = e.currentTarget;
     const button = $("button[type='submit']", form);
-    const fee = Number($("#memberFee").value || 0);
     const selectedContribution = memberContributionSelection($("#memberContributionType"), contributionTypes);
+    const fee = annualizedMemberFee($("#memberFee").value,selectedContribution.billing_interval);
     const memberIban = normalizeIbanValue($("#memberIban").value);
     const memberMandate = $("#memberMandate")?.value.trim() || "";
 
