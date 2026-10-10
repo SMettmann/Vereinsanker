@@ -64,7 +64,8 @@ function refreshAcceptJoinContribution(){
   const fullOption=$("#acceptJoinMode")?.querySelector('option[value="full"]');
   const prorataOption=$("#acceptJoinMode")?.querySelector('option[value="prorata"]');
   if(fullOption) fullOption.textContent=(monthly?"Monatsbeitrag ab Eintritt – ":"Voller Jahresbeitrag – ")+fmtMoney(annualFee/(monthly?12:1));
-  if(prorataOption) prorataOption.textContent="Anteilig ab "+(entryMonth(entryDate)||"Eintritt")+" – "+fmtMoney(prorataAmount(annualFee,entryDate));
+  if(prorataOption){prorataOption.disabled=monthly;prorataOption.hidden=monthly;prorataOption.textContent="Anteilig ab "+(entryMonth(entryDate)||"Eintritt")+" – "+fmtMoney(prorataAmount(annualFee,entryDate));}
+  const own=$("#acceptJoinMode")?.querySelector('option[value="custom"]');if(own){own.disabled=monthly;own.hidden=monthly;}
 
   if(customWrap) customWrap.hidden=mode!=="custom";
   if(dueWrap) dueWrap.hidden=mode==="none";
@@ -74,7 +75,9 @@ function refreshAcceptJoinContribution(){
   const amount=entryAmount(mode,annualFee,entryDate,custom?.value);
   if(summary){
     const year=new Date(entryDate+"T12:00:00").getFullYear();
-    summary.textContent=mode==="none"
+    summary.textContent=monthly
+      ? (mode==="none"?"Keine Beiträge für dieses Jahr.":"Ab Eintrittsmonat "+fmtMoney(annualFee/12)+" monatlich; die Monate werden einzeln erfasst.")
+      : mode==="none"
       ?"Für "+year+" wird kein Beitrag angelegt. Ab "+(year+1)+" gilt der normale Jahresbeitrag von "+fmtMoney(annualFee)+"."
       :"Beitrag "+year+": "+fmtMoney(amount)+" · fällig "+(due?.value?new Date(due.value+"T12:00:00").toLocaleDateString("de-DE"):"nach Festlegung")+". Ab "+(year+1)+": "+fmtMoney(annualFee)+" / Jahr.";
   }
