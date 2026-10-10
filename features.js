@@ -45,7 +45,8 @@ function autoMapColumns(columns) {
     email: ["email", "emailadresse", "mail", "emailprivat", "emailkontakt", "mailadresse"],
     iban: ["iban", "kontoiban", "bankiban", "kontonummeriban"],
     account_holder: ["kontoinhaber", "kontoinhaberin", "kontoinhabername", "accountowner", "accountholder"],
-    annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag", "beitrageuro", "beitragjahr", "jahresbeitrag2026"],
+    annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag", "beitrageuro", "beitragjahr", "jahresbeitrag2026", "monatsbeitrag", "monatlicherbeitrag"],
+    billing_interval: ["zahlungsrhythmus","beitragsrhythmus","beitragsintervall","zahlweise","intervall","billinginterval"],
     member_number: ["mitgliedsnummer", "mitgliednr", "mitgliedsnr", "nummer", "membernumber", "mitgliedid", "mitgliederid"],
     mandate_reference: ["mandatsreferenz", "mandat", "mandate", "mandatref", "sepamandat", "referenz"],
     mandate_signed_at: ["mandatsdatum", "mandatdatum", "unterschriftsdatum", "mandatesigned", "mandatunterschriebenam"],
@@ -122,6 +123,9 @@ function mapImportRow(row, mapping, fallbackFee) {
   const paidAtRaw = mapping.paid_at ? row[mapping.paid_at] : "";
   const birthRaw = mapping.birth_date ? row[mapping.birth_date] : "";
   const joinedRaw = mapping.joined_at ? row[mapping.joined_at] : "";
+  const isMonthlyAmountColumn = ["monatsbeitrag","monatlicherbeitrag"].includes(normalizeHeader(mapping.annual_fee||""));
+  const periodRaw = mapping.billing_interval ? normalizeHeader(row[mapping.billing_interval]) : (isMonthlyAmountColumn ? "monatlich" : "");
+  const interval = ["monatlich","monthly","monat"].includes(periodRaw) ? "monthly" : (["jaehrlich","jahrlich","yearly","jahr"].includes(periodRaw) ? "yearly" : (periodRaw ? null : "yearly"));
 
   return {
     first_name: first,
@@ -130,7 +134,9 @@ function mapImportRow(row, mapping, fallbackFee) {
     email: mapping.email ? String(row[mapping.email] || "").trim() || null : null,
     iban: mapping.iban ? String(row[mapping.iban] || "").replace(/\s+/g, "").toUpperCase() || null : null,
     account_holder: mapping.account_holder ? String(row[mapping.account_holder] || "").trim() || null : null,
-    annual_fee: mapping.annual_fee ? parseFee(row[mapping.annual_fee], fallbackFee) : Number(fallbackFee || 0),
+    annual_fee: mapping.annual_fee ? Number((parseFee(row[mapping.annual_fee], fallbackFee)*(isMonthlyAmountColumn?12:1)).toFixed(2)) : Number(fallbackFee || 0),
+    billing_interval: interval,
+    billing_interval_raw: periodRaw,
     member_number: mapping.member_number ? String(row[mapping.member_number] || "").trim() || null : null,
     mandate_reference: mapping.mandate_reference ? String(row[mapping.mandate_reference] || "").trim() || null : null,
     mandate_signed_at: mapping.mandate_signed_at ? parseDateValue(row[mapping.mandate_signed_at]) : null,
@@ -166,6 +172,9 @@ function validateImportedMember(member) {
   if (member.mandate_signed_at && !member.mandate_reference) errors.push("Mandatsreferenz fehlt");
   if (member.contribution_status_raw && !member.contribution_status) errors.push("Beitragsstatus unbekannt");
   if (member.paid_at_raw && !member.paid_at) errors.push("Zahlungsdatum ungültig");
+  if (member.billing_interval_raw && !member.billing_interval) errors.push("Zahlungsrhythmus ungültig (monatlich/jährlich)");
+  if (member.billing_interval==="monthly" && !member.joined_at) errors.push("Monatlicher Beitrag benötigt ein Eintrittsdatum");
+  if (member.billing_interval==="monthly" && ["paid","none"].includes(member.contribution_status)) errors.push("Bei Monatsbeiträgen keine pauschale Jahres-Zahlungsmarkierung importieren");
   if (member.birth_date_raw && !member.birth_date) errors.push("Geburtsdatum ungültig");
   if (member.joined_at_raw && !member.joined_at) errors.push("Eintrittsdatum ungültig");
   return errors;
@@ -185,7 +194,8 @@ function importMappingHtml(columns, mapping) {
     ["postal_code", "PLZ", false],
     ["city", "Ort", false],
     ["joined_at", "Eintrittsdatum", false],
-    ["annual_fee", "Jahresbeitrag", false],
+    ["annual_fee", "Jahres-/Monatsbeitrag", false],
+    ["billing_interval", "Zahlungsrhythmus", false],
     ["contribution_label", "Beitragsart", false],
     ["contribution_status", "Beitragsstatus", false],
     ["paid_at", "Bezahlt am", false],
@@ -877,6 +887,7 @@ async function enhanceMemberPage() {
         delete clean.paid_at_raw;
         delete clean.birth_date_raw;
         delete clean.joined_at_raw;
+        delete clean.billing_interval_raw;
         return clean;
       });
 
