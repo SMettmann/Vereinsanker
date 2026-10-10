@@ -1159,7 +1159,13 @@ function setupMemberContributionSelect(select, feeInput, types, club, member = n
     }
   }
 
+  const refreshFeeLabel=()=>{
+    const label=document.querySelector('label[for="'+feeInput.id+'"]');
+    if(label) label.textContent=billingPeriodForSelection(select,types,member)==="monthly"?"Monatsbeitrag":"Jahresbeitrag";
+  };
+  refreshFeeLabel();
   select.onchange = () => {
+    refreshFeeLabel();
     if (select.value === "standard") {
       feeInput.value = Number(club.standard_fee || 0);
       return;
@@ -1177,14 +1183,14 @@ function setupMemberContributionSelect(select, feeInput, types, club, member = n
 function memberContributionSelection(select, types) {
   const value = select?.value || "standard";
   if (value === "standard") {
-    return { contribution_type_id: null, contribution_label: "Standardbeitrag" };
+    return { contribution_type_id: null, contribution_label: "Standardbeitrag", billing_interval:"yearly" };
   }
   if (value === "custom") {
-    return { contribution_type_id: null, contribution_label: "Individuell" };
+    return { contribution_type_id: null, contribution_label: "Individuell", billing_interval:"yearly" };
   }
   const type = types.find(item => item.id === value);
   return type
-    ? { contribution_type_id: type.id, contribution_label: type.name }
+    ? { contribution_type_id: type.id, contribution_label: type.name, billing_interval:type.billing_interval||"yearly" }
     : { contribution_type_id: null, contribution_label: "Individuell" };
 }
 
