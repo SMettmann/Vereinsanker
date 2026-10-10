@@ -22,6 +22,7 @@
     editingId=null;
     $("#contributionTypeName").value="";
     $("#contributionTypeFee").value="";
+    $("#contributionTypeInterval").value="yearly";
     $("#contributionTypeDefault").checked=false;
     $("#contributionTypeEditor").hidden=true;
     $("#contributionTypeEditorTitle").textContent="Beitragsart hinzufügen";
