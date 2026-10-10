@@ -1298,7 +1298,7 @@ async function nextMemberNumber(clubId) {
 async function loadContributions(year = currentYear) {
   const { data, error } = await sb
     .from("contributions")
-    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,payment_method,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,account_holder,member_number,annual_fee,mandate_reference,mandate_signed_at)")
+    .select("id,club_id,member_id,contribution_year,contribution_month,amount,due_date,status,paid_at,payment_method,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,account_holder,member_number,annual_fee,mandate_reference,mandate_signed_at)")
     .eq("contribution_year", year)
     .order("due_date", { ascending: true });
   if (error) throw error;
@@ -1496,7 +1496,7 @@ function renderMemberRows(members, contributionMap) {
     return '<button class="members-row" type="button" data-member-id="' + esc(m.id) + '">' +
       '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.member_number || "ohne Mitgliedsnummer") + '</small></b></span>' +
       '<span>' + esc(m.group_name || "Nicht zugeordnet") + '</span>' +
-      '<span>' + esc(money(m.annual_fee)) + '</span>' +
+      '<span>' + esc(money(Number(m.annual_fee||0)/(m.billing_interval==='monthly'?12:1)) + (m.billing_interval==='monthly'?' / Monat':' / Jahr')) + '</span>' +
       '<em class="' + (status === "Bezahlt" ? "status-paid" : status === "Offen" ? "status-open" : "status-none") + '">' + status + '</em>' +
     '</button>';
   }).join("");
@@ -1517,7 +1517,11 @@ async function initMembers() {
   setupMemberContributionSelect($("#memberContributionType"), $("#memberFee"), contributionTypes, club);
   let members = await loadMembers();
   let contributions = await loadContributions();
-  let contributionMap = new Map(contributions.map(c => [c.member_id, c]));
+  let contributionMap = new Map();
+  for(const c of contributions){
+    const prev=contributionMap.get(c.member_id);
+    if(!prev || (prev.status==="paid" && c.status!=="paid")) contributionMap.set(c.member_id,c);
+  }
   renderMemberRows(members, contributionMap);
 
   const memberSheet = $("#memberSheet");
@@ -1569,7 +1573,7 @@ async function initMembers() {
     $("#detailIban").textContent = member.iban || "–";
     if ($("#detailAccountHolder")) $("#detailAccountHolder").textContent = member.account_holder || memberFullName(member) || "–";
     if ($("#detailContributionType")) $("#detailContributionType").textContent = member.contribution_label || "Standard / individuell";
-    $("#detailFee").textContent = money(member.annual_fee);
+    $("#detailFee").textContent = money(Number(member.annual_fee||0)/(member.billing_interval==="monthly"?12:1))+(member.billing_interval==="monthly"?" / Monat":" / Jahr");
     $("#detailStatus").textContent = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
     if ($("#detailJoinedAt")) $("#detailJoinedAt").textContent = member.joined_at ? new Date(member.joined_at + "T12:00:00").toLocaleDateString("de-DE") : "–";
     openBackdrop(memberSheet);
