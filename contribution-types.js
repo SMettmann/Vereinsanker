@@ -55,7 +55,7 @@
     mode.innerHTML='<strong>Mehrere Beitragsarten aktiv</strong><span>Beim digitalen Beitritt wählt das neue Mitglied eine dieser Varianten aus.</span>';
     rows.innerHTML=types.map(item=>
       '<div class="contribution-type-row">'+
-        '<div><strong>'+esc(item.name)+'</strong><span>'+euro(item.annual_fee)+' / Jahr'+(item.is_default?' · Vorauswahl':'')+'</span></div>'+
+        '<div><strong>'+esc(item.name)+'</strong><span>'+euro(Number(item.annual_fee||0)/(item.billing_interval==='monthly'?12:1))+(item.billing_interval==='monthly'?' / Monat':' / Jahr')+(item.is_default?' · Vorauswahl':'')+'</span></div>'+
         (item.is_default?'<b class="contribution-type-default">Standard</b>':'')+
         '<div class="contribution-type-actions">'+
           '<button type="button" data-edit-contribution-type="'+esc(item.id)+'">Bearbeiten</button>'+
