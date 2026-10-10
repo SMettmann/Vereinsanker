@@ -32,6 +32,7 @@
   function openEditor(item=null){
     editingId=item?.id||null;
     $("#contributionTypeName").value=item?.name||"";
+    $("#contributionTypeInterval").value=item?.billing_interval||"yearly";
     $("#contributionTypeFee").value=item?Number(item.annual_fee||0):"";
     $("#contributionTypeDefault").checked=item?.is_default||(!types.length);
     $("#contributionTypeEditorTitle").textContent=item?"Beitragsart bearbeiten":"Beitragsart hinzufügen";
