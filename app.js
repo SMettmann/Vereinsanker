@@ -1253,8 +1253,15 @@ function refreshMemberEntryContribution() {
 
   const fullOption = mode.querySelector('option[value="full"]');
   const prorataOption = mode.querySelector('option[value="prorata"]');
-  if (fullOption) fullOption.textContent = "Voller Jahresbeitrag – " + money(fee);
-  if (prorataOption) prorataOption.textContent = "Anteilig ab " + (month || "Eintritt") + " – " + money(prorata);
+  if (monthly && (mode.value==="prorata"||mode.value==="custom")) mode.value="full";
+  if (fullOption) fullOption.textContent = (monthly?"Monatsbeitrag ab Eintritt – ":"Voller Jahresbeitrag – ") + money(fee);
+  if (prorataOption) {
+    prorataOption.hidden=monthly;
+    prorataOption.disabled=monthly;
+    prorataOption.textContent = "Anteilig ab " + (month || "Eintritt") + " – " + money(prorata);
+  }
+  const customOption=mode.querySelector('option[value="custom"]');
+  if(customOption){customOption.hidden=monthly;customOption.disabled=monthly;}
 
   if (customWrap) customWrap.hidden = mode.value !== "custom";
   if (dueWrap) dueWrap.hidden = mode.value === "none";
@@ -1263,7 +1270,9 @@ function refreshMemberEntryContribution() {
   if (mode.value !== "none" && due && !due.value) due.value = addDaysIso(entryDate.value, 14);
 
   const amount = entryContributionAmount(mode.value, fee, entryDate.value, custom?.value);
-  summary.textContent = mode.value === "none"
+  summary.textContent = monthly
+    ? (mode.value==="none"?"Keine Beiträge für dieses Jahr.":"Ab Eintrittsmonat "+money(fee)+" monatlich; jeder Monat wird einzeln verbucht.")
+    : mode.value === "none"
     ? "Für " + currentYear + " wird kein Beitrag angelegt. Ab " + (currentYear + 1) + " gilt der normale Jahresbeitrag von " + money(fee) + "."
     : "Beitrag " + currentYear + ": " + money(amount) + " · fällig " + (due?.value ? new Date(due.value + "T12:00:00").toLocaleDateString("de-DE") : "nach Festlegung") + ". Ab " + (currentYear + 1) + ": " + money(fee) + " / Jahr.";
 }
