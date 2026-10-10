@@ -963,7 +963,7 @@ async function enhanceMemberPage() {
   $("#editMemberForm")?.addEventListener("submit", async e => {
     e.preventDefault();
     const id = $("#editMemberId").value;
-    const amount = Number($("#editMemberFee").value || 0);
+    const amount = annualizedMemberFee($("#editMemberFee").value,billingPeriodForSelection($("#editMemberContributionType"),memberContributionTypes));
     const selectedContribution = memberContributionSelection($("#editMemberContributionType"), memberContributionTypes);
     const editIban = normalizeIban($("#editMemberIban").value);
     const editMandate = $("#editMemberMandate").value.trim();
