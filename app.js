@@ -1127,7 +1127,7 @@ function setupMemberContributionSelect(select, feeInput, types, club, member = n
   const options = [
     '<option value="standard">Standardbeitrag – ' + esc(contributionTypeEuro(club.standard_fee)) + '</option>',
     ...types.map(type =>
-      '<option value="' + esc(type.id) + '">' + esc(type.name) + ' – ' + esc(contributionTypeEuro(type.annual_fee)) + '</option>'
+      '<option value="' + esc(type.id) + '">' + esc(type.name) + ' – ' + esc(contributionTypeEuro(Number(type.annual_fee||0)/(type.billing_interval==='monthly'?12:1))) + (type.billing_interval==='monthly'?' / Monat':' / Jahr') + '</option>'
     ),
     '<option value="custom">Individuell</option>'
   ];
@@ -1147,12 +1147,12 @@ function setupMemberContributionSelect(select, feeInput, types, club, member = n
     } else {
       select.value = "custom";
     }
-    feeInput.value = Number(member.annual_fee || 0);
+    feeInput.value = Number(member.annual_fee || 0)/(member.billing_interval==="monthly"?12:1);
   } else {
     const defaultType = types.find(type => type.is_default) || null;
     if (defaultType) {
       select.value = defaultType.id;
-      feeInput.value = Number(defaultType.annual_fee || 0);
+      feeInput.value = Number(defaultType.annual_fee || 0)/(defaultType.billing_interval==="monthly"?12:1);
     } else {
       select.value = "standard";
       feeInput.value = Number(club.standard_fee || 0);
@@ -1170,7 +1170,7 @@ function setupMemberContributionSelect(select, feeInput, types, club, member = n
       return;
     }
     const type = types.find(item => item.id === select.value);
-    if (type) feeInput.value = Number(type.annual_fee || 0);
+    if (type) feeInput.value = Number(type.annual_fee || 0)/(type.billing_interval==="monthly"?12:1);
   };
 }
 
