@@ -1262,9 +1262,14 @@ function reminderDueText(c) {
   return ", fällig am " + formatted;
 }
 
+function memberPaymentPeriod(c) {
+  const month=Number(c?.contribution_month||0);
+  return month ? new Date(Number(c.contribution_year),month-1,1).toLocaleDateString("de-DE",{month:"long"})+" "+c.contribution_year : String(c.contribution_year);
+}
+
 function reminderSubject(c) {
   const year = Number(c?.contribution_year || contributionYearFromUrl() || currentYear);
-  return "Mitgliedsbeitrag " + year + " – " + (vaClub?.name || "Verein");
+  return "Mitgliedsbeitrag " + memberPaymentPeriod(c) + " – " + (vaClub?.name || "Verein");
 }
 
 function friendlyReminder(c) {
