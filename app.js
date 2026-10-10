@@ -1702,6 +1702,10 @@ async function initMembers() {
 function contributionMember(c) {
   return c.members || {};
 }
+function contributionPeriodLabel(c) {
+  const month=Number(c.contribution_month||0);
+  return month?("Monatsbeitrag "+new Date(Number(c.contribution_year),month-1,1).toLocaleDateString("de-DE",{month:"long"})+" "+c.contribution_year):("Jahresbeitrag "+c.contribution_year);
+}
 
 async function initContributions() {
   const club = await getClub();
