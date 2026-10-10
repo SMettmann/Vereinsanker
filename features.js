@@ -1395,7 +1395,7 @@ async function enhanceContributionPage() {
     const currentClub = await getClub();
     const all = await loadContributions(selectedYear);
     const collectionDate = $("#collectionDate")?.value;
-    const candidates = all.filter(c => c.status === "open" && !c.sepa_exported_at);
+    const candidates = all.filter(c => c.status === "open" && !c.sepa_exported_at && (!c.due_date || c.due_date<=collectionDate));
 
     if (!candidates.length) {
       const prepared = all.filter(c => c.status === "open" && c.sepa_exported_at);
