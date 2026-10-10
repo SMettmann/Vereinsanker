@@ -40,6 +40,14 @@ function entryMonth(entryDate){
   return Number.isNaN(d.getTime())?"":d.toLocaleDateString("de-DE",{month:"long"});
 }
 
+function joinPeriod(application){
+  return joinContributionTypes.find(t=>t.id===application?.contribution_type_id)?.billing_interval||application?.billing_interval||"yearly";
+}
+function joinDisplayFee(application){
+  const monthly=joinPeriod(application)==="monthly";
+  return fmtMoney(Number(application?.annual_fee||0)/(monthly?12:1))+(monthly?" / Monat":" / Jahr");
+}
+
 function refreshAcceptJoinContribution(){
   if(!activeJoinApplication) return;
   const annualFee=Number(activeJoinApplication.annual_fee||0);
@@ -132,7 +140,7 @@ function loadJoinDepartments(){
 async function loadJoinContributionTypes(){
   const {data,error}=await sb
     .from("contribution_types")
-    .select("id,name,annual_fee,is_default,sort_order,created_at")
+    .select("id,name,annual_fee,billing_interval,is_default,sort_order,created_at")
     .eq("club_id",club.id)
     .eq("active",true)
     .order("sort_order",{ascending:true})
