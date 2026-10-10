@@ -1,0 +1,1 @@
+Database changes for the VEREINSFACH monthly membership contribution feature.
