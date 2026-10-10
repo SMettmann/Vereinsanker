@@ -1992,7 +1992,8 @@ async function initContributions() {
   const renderSepaSheet = () => {
     const openContributions = contributions.filter(c => c.status === "open");
     const prepared = openContributions.filter(c => Boolean(c.sepa_exported_at));
-    const candidates = openContributions.filter(c => !c.sepa_exported_at);
+    const cutoff=$("#collectionDate")?.value||localTodayIso();
+    const candidates = openContributions.filter(c => !c.sepa_exported_at && (!c.due_date || c.due_date<=cutoff));
 
     const invalidAmount = candidates.filter(c => {
       const amount = Number(c.amount || 0);
