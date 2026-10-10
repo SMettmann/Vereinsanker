@@ -125,7 +125,7 @@ function mapImportRow(row, mapping, fallbackFee) {
   const joinedRaw = mapping.joined_at ? row[mapping.joined_at] : "";
   const isMonthlyAmountColumn = ["monatsbeitrag","monatlicherbeitrag"].includes(normalizeHeader(mapping.annual_fee||""));
   const periodRaw = mapping.billing_interval ? normalizeHeader(row[mapping.billing_interval]) : (isMonthlyAmountColumn ? "monatlich" : "");
-  const interval = ["monatlich","monthly","monat"].includes(periodRaw) ? "monthly" : (["jaehrlich","jahrlich","yearly","jahr"].includes(periodRaw) ? "yearly" : (periodRaw ? null : "yearly"));
+  const interval = ["monatlich","monthly","monat"].includes(periodRaw) ? "monthly" : (["jaehrlich","jahrlich","yearly","jahr"].includes(periodRaw) ? "yearly" : null);
 
   return {
     first_name: first,
