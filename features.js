@@ -556,6 +556,8 @@ async function reviewCorrectedCandidates(sources, club) {
       iban: normalizeIban(source.iban) || null,
       account_holder: String(source.account_holder || "").trim() || null,
       annual_fee: parseFee(source.annual_fee, club.standard_fee),
+      billing_interval: source.billing_interval || null,
+      billing_interval_raw: source.billing_interval_raw || null,
       member_number: String(source.member_number || "").trim() || null,
       mandate_reference: String(source.mandate_reference || "").trim() || null,
       mandate_signed_at: parsedDate,
@@ -673,13 +675,13 @@ async function enhanceMemberPage() {
     const statusText = row => !row ? "Kein Beitrag" : row.status === "paid" ? "Bezahlt" : "Offen";
 
     const lines = [
-      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Geburtsdatum","Telefon","Straße","PLZ","Ort","Eintrittsdatum","Beitragsart","IBAN","Kontoinhaber/in","Jahresbeitrag","Beitragsstatus","Bezahlt am","Mandatsreferenz","Mandatsdatum"],
+      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Geburtsdatum","Telefon","Straße","PLZ","Ort","Eintrittsdatum","Beitragsart","IBAN","Kontoinhaber/in","Jahresbeitrag","Zahlungsrhythmus","Beitragsstatus","Bezahlt am","Mandatsreferenz","Mandatsdatum"],
       ...members.map(m => {
         const contribution = contributionMap.get(m.id);
         return [
           m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",
           m.birth_date||"",m.phone||"",m.street||"",m.postal_code||"",m.city||"",m.joined_at||"",
-          m.contribution_label||"",m.iban||"",m.account_holder||"",m.annual_fee||0,statusText(contribution),
+          m.contribution_label||"",m.iban||"",m.account_holder||"",m.annual_fee||0,m.billing_interval==="monthly"?"Monatlich":"Jährlich",statusText(contribution),
           contribution?.paid_at ? String(contribution.paid_at).slice(0,10) : "",
           m.mandate_reference||"",m.mandate_signed_at||""
         ];
