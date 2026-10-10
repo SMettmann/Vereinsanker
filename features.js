@@ -681,8 +681,8 @@ async function enhanceMemberPage() {
         return [
           m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",
           m.birth_date||"",m.phone||"",m.street||"",m.postal_code||"",m.city||"",m.joined_at||"",
-          m.contribution_label||"",m.iban||"",m.account_holder||"",m.annual_fee||0,m.billing_interval==="monthly"?"Monatlich":"Jährlich",statusText(contribution),
-          contribution?.paid_at ? String(contribution.paid_at).slice(0,10) : "",
+          m.contribution_label||"",m.iban||"",m.account_holder||"",m.annual_fee||0,m.billing_interval==="monthly"?"Monatlich":"Jährlich",m.billing_interval==="monthly"?"":statusText(contribution),
+          m.billing_interval!=="monthly" && contribution?.paid_at ? String(contribution.paid_at).slice(0,10) : "",
           m.mandate_reference||"",m.mandate_signed_at||""
         ];
       })
