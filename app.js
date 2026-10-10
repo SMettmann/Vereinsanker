@@ -1114,7 +1114,7 @@ function contributionTypeEuro(value) {
 
 function billingPeriodForSelection(select,types,member=null) {
   const type=types.find(t=>t.id===select?.value);
-  return type?.billing_interval || (select?.value==="custom" ? member?.billing_interval : "yearly") || "yearly";
+  return type?.billing_interval || (select?.value==="custom" ? (member?.billing_interval||select?.dataset?.customInterval) : "yearly") || "yearly";
 }
 
 function annualizedMemberFee(amount,period) {
@@ -1123,6 +1123,7 @@ function annualizedMemberFee(amount,period) {
 
 function setupMemberContributionSelect(select, feeInput, types, club, member = null) {
   if (!select || !feeInput) return;
+  select.dataset.customInterval=member?.billing_interval||"yearly";
 
   const options = [
     '<option value="standard">Standardbeitrag – ' + esc(contributionTypeEuro(club.standard_fee)) + '</option>',
@@ -1186,7 +1187,7 @@ function memberContributionSelection(select, types) {
     return { contribution_type_id: null, contribution_label: "Standardbeitrag", billing_interval:"yearly" };
   }
   if (value === "custom") {
-    return { contribution_type_id: null, contribution_label: "Individuell", billing_interval:"yearly" };
+    return { contribution_type_id: null, contribution_label: "Individuell", billing_interval:select?.dataset?.customInterval||"yearly" };
   }
   const type = types.find(item => item.id === value);
   return type
