@@ -1,0 +1,4 @@
+ALTER TABLE public.contribution_types ADD COLUMN IF NOT EXISTS billing_interval text NOT NULL DEFAULT 'yearly' CHECK (billing_interval IN ('yearly','monthly'));
+ALTER TABLE public.members ADD COLUMN IF NOT EXISTS billing_interval text NOT NULL DEFAULT 'yearly' CHECK (billing_interval IN ('yearly','monthly'));
+ALTER TABLE public.membership_applications ADD COLUMN IF NOT EXISTS billing_interval text NOT NULL DEFAULT 'yearly' CHECK (billing_interval IN ('yearly','monthly'));
+ALTER TABLE public.contributions ADD COLUMN IF NOT EXISTS contribution_month smallint NOT NULL DEFAULT 0 CHECK (contribution_month BETWEEN 0 AND 12);
