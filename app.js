@@ -1972,7 +1972,8 @@ async function initContributions() {
   const updateSepaAction = () => {
     if (!sepaAction) return;
     const openRows = contributions.filter(c => c.status === "open");
-    const freshRows = openRows.filter(c => !c.sepa_exported_at);
+    const cutoff=$("#collectionDate")?.value||localTodayIso();
+    const freshRows = openRows.filter(c => !c.sepa_exported_at && (!c.due_date || c.due_date<=cutoff));
     sepaAction.classList.toggle("no-sepa-needed", !openRows.length);
 
     const sub = $("span", sepaAction);
