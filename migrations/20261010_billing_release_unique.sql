@@ -1,0 +1,1 @@
+ALTER TABLE public.contributions DROP CONSTRAINT IF EXISTS contributions_member_id_contribution_year_key;
