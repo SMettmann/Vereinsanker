@@ -2375,7 +2375,7 @@ async function initSettings() {
         sb.from("finance_transactions").select("*").eq("club_id", club.id).order("transaction_date", { ascending: false }),
         sb.from("legal_acceptances").select("document_type,document_version,accepted_at,controller_name,controller_address,controller_contact_name,controller_contact_email").eq("club_id", club.id).order("accepted_at", { ascending: false }),
         sb.from("membership_applications").select("*").eq("club_id", club.id).order("submitted_at", { ascending: false }),
-        sb.from("contribution_types").select("name,annual_fee,is_default,active,sort_order").eq("club_id", club.id).order("sort_order", { ascending: true })
+        sb.from("contribution_types").select("name,annual_fee,billing_interval,is_default,active,sort_order").eq("club_id", club.id).order("sort_order", { ascending: true })
       ]);
 
       if (membersResult.error) throw membersResult.error;
@@ -2425,6 +2425,8 @@ async function initSettings() {
         "IBAN": member.iban || "",
         "Kontoinhaber/in": member.account_holder || "",
         "Jahresbeitrag": Number(member.annual_fee || 0),
+        "Zahlungsrhythmus": member.billing_interval==="monthly"?"Monatlich":"Jährlich",
+        "Periodenbeitrag": Number(member.annual_fee||0)/(member.billing_interval==="monthly"?12:1),
         "Mandatsreferenz": member.mandate_reference || "",
         "Mandat unterschrieben am": member.mandate_signed_at || "",
         "Aktiv": member.active ? "Ja" : "Nein",
@@ -2438,6 +2440,7 @@ async function initSettings() {
           "Vorname": member.first_name || "",
           "Nachname": member.last_name || "",
           "Jahr": entry.contribution_year,
+          "Monat": entry.contribution_month||"",
           "Betrag": Number(entry.amount || 0),
           "Fälligkeit": entry.due_date || "",
           "Status": entry.status || "",
@@ -2463,6 +2466,8 @@ async function initSettings() {
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(contributionTypes.map(entry => ({
         "Beitragsart": entry.name || "",
         "Jahresbeitrag": Number(entry.annual_fee || 0),
+        "Zahlungsrhythmus": entry.billing_interval==="monthly"?"Monatlich":"Jährlich",
+        "Periodenbeitrag": Number(entry.annual_fee||0)/(entry.billing_interval==="monthly"?12:1),
         "Vorauswahl": entry.is_default ? "Ja" : "Nein",
         "Aktiv": entry.active ? "Ja" : "Nein"
       }))), "Beitragsarten");
@@ -2485,6 +2490,7 @@ async function initSettings() {
         "SEPA-Mandatsversion": entry.sepa_mandate_version || "",
         "Datenschutz-Version": entry.privacy_notice_version || "",
         "Jahresbeitrag": Number(entry.annual_fee || 0),
+        "Zahlungsrhythmus": entry.billing_interval==="monthly"?"Monatlich":"Jährlich",
         "Status": entry.status || "",
         "Eingegangen am": entry.submitted_at || "",
         "Bearbeitet am": entry.reviewed_at || ""
