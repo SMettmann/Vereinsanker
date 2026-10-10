@@ -1011,6 +1011,7 @@ async function enhanceMemberPage() {
       return;
     }
 
+    if(selectedContribution.billing_interval==="monthly") await syncMonthlyOpenAmounts(id,amount);
     showToast("Mitglied aktualisiert ✓");
     closeBackdrop(editSheet);
     setTimeout(() => location.reload(), 500);
