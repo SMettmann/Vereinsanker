@@ -18,7 +18,7 @@
 
 ## Rollout
 - Auf der produktiven Datenbank sind die neuen Schemafelder und Trigger bereits vorhanden.
-- Zum Aktivieren der monatlichen Abrechnung muss die alte einmalige Jahres-Unique-Constraint `contributions_member_id_contribution_year_key` entfernt werden; der neue Index `contributions_member_year_month_key` bleibt bestehen.
+- Die alte Jahres-Unique-Constraint `contributions_member_id_contribution_year_key` wurde in Supabase entfernt; stattdessen gilt `contributions_member_year_month_key`.
 - Browserdateien müssen auf dem STRATO-Webspace veröffentlicht werden, wenn kein automatischer Deploy aktiv ist.
 - Ein authentifizierter CSV-Importtest war ohne bestehende Vereinsanmeldung nicht möglich (`ACCESS_BLOCKED`); die SQL- und Frontendänderungen sind dennoch implementiert.
 - Nach der Veröffentlichung die drei Endnutzerwege testen: Monatsbeitragsart -> Mitglied anlegen -> Beiträge; Beitrittslink; SEPA-Auszug.
