@@ -1220,7 +1220,7 @@ function buildSepaXml(club, rows, collectionDate, batchId = "") {
 <DbtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></DbtrAgt>
 <Dbtr><Nm>${xmlEscape(debtorName)}</Nm></Dbtr>
 <DbtrAcct><Id><IBAN>${xmlEscape(normalizeIban(m.iban))}</IBAN></Id></DbtrAcct>
-<RmtInf><Ustrd>${xmlEscape(safeSepaText("Mitgliedsbeitrag " + contributionYear, 140))}</Ustrd></RmtInf>
+<RmtInf><Ustrd>${xmlEscape(safeSepaText("Mitgliedsbeitrag " + memberPaymentPeriod(c), 140))}</Ustrd></RmtInf>
 </DrctDbtTxInf>`;
   }).join("");
 
@@ -1298,7 +1298,7 @@ function friendlyReminder(c) {
 
   return `Hallo ${memberName},
 
-für deinen Mitgliedsbeitrag ${contributionYear} sind noch ${money(c.amount)} offen${dueText}.
+für deinen Mitgliedsbeitrag ${memberPaymentPeriod(c)} sind noch ${money(c.amount)} offen${dueText}.
 
 Wir möchten dich freundlich daran erinnern, den offenen Betrag zu überweisen bzw. den Zahlungseingang zu prüfen.
 
