@@ -636,6 +636,15 @@ async function reviewCorrectedCandidates(sources, club) {
   return { valid, corrections, duplicateActions };
 }
 
+async function syncMonthlyOpenAmounts(memberId,annualTotal){
+  const {error}=await sb.from("contributions")
+    .update({amount:Number((annualTotal/12).toFixed(2))})
+    .eq("member_id",memberId).eq("contribution_year",currentYear)
+    .gt("contribution_month",0).eq("status","open").is("sepa_exported_at",null);
+  if(error) console.error("Monatsraten konnten nicht synchronisiert werden",error);
+  return !error;
+}
+
 async function enhanceMemberPage() {
   const memberClub = vaClub || await getClub();
   const memberContributionTypes = await loadContributionTypes(memberClub.id);
