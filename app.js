@@ -1165,8 +1165,11 @@ function setupMemberContributionSelect(select, feeInput, types, club, member = n
     if(label) label.textContent=billingPeriodForSelection(select,types,member)==="monthly"?"Monatsbeitrag":"Jahresbeitrag";
   };
   refreshFeeLabel();
+  let previousInterval=billingPeriodForSelection(select,types,member);
   select.onchange = () => {
+    if(select.value==="custom") select.dataset.customInterval=previousInterval;
     refreshFeeLabel();
+    previousInterval=billingPeriodForSelection(select,types,member);
     if (select.value === "standard") {
       feeInput.value = Number(club.standard_fee || 0);
       return;
