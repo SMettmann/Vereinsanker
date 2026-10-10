@@ -72,7 +72,7 @@ function refreshAcceptJoinContribution(){
   if(mode==="custom"&&custom&&!custom.value) custom.value=String(annualFee||"");
   if(mode!=="none"&&due&&!due.value) due.value=addDaysIso(entryDate,14);
 
-  const amount=entryAmount(mode,annualFee,entryDate,custom?.value);
+  const amount=monthly?(mode==="none"?0:annualFee/12):entryAmount(mode,annualFee,entryDate,custom?.value);
   if(summary){
     const year=new Date(entryDate+"T12:00:00").getFullYear();
     summary.textContent=monthly
@@ -310,7 +310,7 @@ window.initJoinsPage=async function(){
     const entryDate=$("#acceptJoinEntryDate").value;
     const mode=$("#acceptJoinMode").value;
     const createContribution=mode!=="none";
-    const amount=entryAmount(mode,activeJoinApplication.annual_fee,entryDate,$("#acceptJoinCustomAmount").value);
+    const amount=joinPeriod(activeJoinApplication)==="monthly"?(mode==="none"?0:Number(activeJoinApplication.annual_fee||0)/12):entryAmount(mode,activeJoinApplication.annual_fee,entryDate,$("#acceptJoinCustomAmount").value);
     const dueDate=createContribution?$("#acceptJoinDueDate").value:null;
     const year=new Date(entryDate+"T12:00:00").getFullYear();
 
