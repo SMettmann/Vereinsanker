@@ -1815,7 +1815,7 @@ async function initContributions() {
       return '<div class="payment-row" data-search="' + esc((memberFullName(m) + " " + (m.group_name || "")).toLowerCase()) + '">' +
         '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
         esc(memberFullName(m)) +
-        '<small>' + esc(m.group_name || "Nicht zugeordnet") + '</small></b></span>' +
+        '<small>' + esc((m.group_name || "Nicht zugeordnet") + ' · ' + contributionPeriodLabel(c)) + '</small></b></span>' +
         '<strong>' + esc(money(c.amount)) + '</strong>' +
         (c.status === "paid"
           ? '<span class="paid-check paid-with-date"><b>✓ Bezahlt</b><small>' + esc(paidDate ? "am " + paidDate : "Zahlungsdatum fehlt") + '</small><button class="payment-edit" data-id="' + esc(c.id) + '" type="button">Ändern</button></span>'
