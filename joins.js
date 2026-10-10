@@ -156,7 +156,7 @@ async function loadJoinContributionTypes(){
     joinContributionTypes.map(item=>
       '<option value="'+esc(item.id)+'">'+
       esc(item.name)+' – '+
-      Number(item.annual_fee||0)/(item.billing_interval==="monthly"?12:1)+
+      (Number(item.annual_fee||0)/(item.billing_interval==="monthly"?12:1)).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+
       (item.billing_interval==="monthly"?" / Monat</option>":" / Jahr</option>")
     ).join("");
 
