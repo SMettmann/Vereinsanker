@@ -1020,7 +1020,7 @@ async function enhanceMemberPage() {
       return;
     }
 
-    if(selectedContribution.billing_interval==="monthly") await syncMonthlyOpenAmounts(id,amount);
+    if(selectedContribution.billing_interval==="monthly" && !(await syncMonthlyOpenAmounts(id,amount))) return showToast("Mitglied gespeichert, aber Monatsraten konnten nicht aktualisiert werden.");
     showToast("Mitglied aktualisiert ✓");
     closeBackdrop(editSheet);
     setTimeout(() => location.reload(), 500);
