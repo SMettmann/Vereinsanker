@@ -1,0 +1,27 @@
+name: STRATO Dateien als ZIP
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/strato-dateien-zip.yml
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository herunterladen
+        uses: actions/checkout@v4
+      - name: ZIP mit Website-Dateien bauen
+        run: |
+          zip -9 VEREINSFACH_STRATO_Monats_Jahresbeitraege.zip \
+            app.js features.js finance.js contribution-types.js \
+            join-public.js joins.js standard-beitritt.js settings.html
+          unzip -l VEREINSFACH_STRATO_Monats_Jahresbeitraege.zip
+      - name: ZIP bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: VEREINSFACH_STRATO_Dateien
+          path: VEREINSFACH_STRATO_Monats_Jahresbeitraege.zip
+          if-no-files-found: error
+          retention-days: 30
