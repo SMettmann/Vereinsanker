@@ -1794,7 +1794,7 @@ async function initContributions() {
       return '<div class="open-row' + (prepared ? ' sepa-prepared-row' : '') + '">' +
         '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
         esc(memberFullName(m)) +
-        '<small>' + esc((m.group_name || "Nicht zugeordnet") + " · Jahresbeitrag") + '</small>' +
+        '<small>' + esc((m.group_name || "Nicht zugeordnet") + " · "+contributionPeriodLabel(c)) + '</small>' +
         (prepared
           ? '<small class="sepa-row-prepared">SEPA vorbereitet' + (collectionText ? ' · Einzug am ' + esc(collectionText) : '') + '</small>'
           : (memberSepaProblem(m) ? '<small class="sepa-row-warning">SEPA nicht möglich: ' + esc(memberSepaProblem(m)) + '</small>' : '')) +
