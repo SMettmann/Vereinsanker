@@ -26,7 +26,7 @@ if(contributionTypes.length){
   $("#stdContributionTypes").hidden=false;
   $("#stdContributionTypes").innerHTML=contributionTypes.map(item=>{
     const selected=item.id===presetContribution;
-    return '<div class="paper-contribution-row'+(selected?' selected':'')+'"><i>'+(selected?'✓':'')+'</i><span><strong>'+String(item.name||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))+'</strong><b>'+Number(item.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+' / Jahr</b></span></div>';
+    return '<div class="paper-contribution-row'+(selected?' selected':'')+'"><i>'+(selected?'✓':'')+'</i><span><strong>'+String(item.name||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))+'</strong><b>'+(Number(item.annual_fee||0)/(item.billing_interval==="monthly"?12:1)).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+(item.billing_interval==="monthly"?" / Monat</b></span></div>":" / Jahr</b></span></div>");
   }).join("");
 }else{
   $("#stdContributionFallback").hidden=false;
