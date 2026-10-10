@@ -77,7 +77,7 @@
   async function load(){
     const {data,error}=await sb
       .from("contribution_types")
-      .select("id,name,annual_fee,is_default,active,sort_order,created_at")
+      .select("id,name,annual_fee,billing_interval,is_default,active,sort_order,created_at")
       .eq("club_id",club.id)
       .eq("active",true)
       .order("sort_order",{ascending:true})
