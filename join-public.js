@@ -38,7 +38,7 @@ if(contributionTypes.length){
     '<label class="join-contribution-option">'+
       '<input type="radio" name="joinContributionType" value="'+item.id+'"'+(item.id===selectedDefault.id?' checked':'')+'>'+
       '<span><strong>'+String(item.name||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]))+'</strong>'+
-      '<b>'+Number(item.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+' / Jahr</b></span>'+
+      '<b>'+(Number(item.annual_fee||0)/(item.billing_interval==="monthly"?12:1)).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+' / Jahr</b></span>'+
     '</label>'
   ).join("");
 }else{
