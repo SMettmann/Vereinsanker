@@ -76,7 +76,7 @@ window.initFinancesPage = async function () {
     const end = nextYearStart(selectedYear);
     const results = await Promise.all([
       sb.from("finance_transactions").select("*").gte("transaction_date", selectedYear + "-01-01").lte("transaction_date", selectedYear + "-12-31").order("transaction_date", { ascending: false }).order("created_at", { ascending: false }),
-      sb.from("contributions").select("id,amount,paid_at,payment_method,contribution_year,members(first_name,last_name)").eq("status","paid").gte("paid_at", start).lt("paid_at", end).order("paid_at", { ascending: false }),
+      sb.from("contributions").select("id,amount,paid_at,payment_method,contribution_year,contribution_month,members(first_name,last_name)").eq("status","paid").gte("paid_at", start).lt("paid_at", end).order("paid_at", { ascending: false }),
       sb.from("contributions").select("id,amount,status,contribution_year").eq("contribution_year", selectedYear).eq("status","open")
     ]);
     if (results[0].error) throw results[0].error;
@@ -110,7 +110,7 @@ window.initFinancesPage = async function () {
         transaction_date: dateOnly(r.paid_at),
         type: "income",
         category: "Mitgliedsbeitrag",
-        description: memberFullName(m) + " · Beitrag " + r.contribution_year,
+        description: memberFullName(m) + " · Beitrag " + (r.contribution_month ? new Date(r.contribution_year,r.contribution_month-1,1).toLocaleDateString("de-DE",{month:"long",year:"numeric"}) : r.contribution_year),
         amount: Number(r.amount || 0),
         payment_method: r.payment_method || "bank",
         receipt_path: ""

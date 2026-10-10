@@ -40,11 +40,21 @@ function entryMonth(entryDate){
   return Number.isNaN(d.getTime())?"":d.toLocaleDateString("de-DE",{month:"long"});
 }
 
+function joinPeriod(application){
+  return joinContributionTypes.find(t=>t.id===application?.contribution_type_id)?.billing_interval||application?.billing_interval||"yearly";
+}
+function joinDisplayFee(application){
+  const monthly=joinPeriod(application)==="monthly";
+  return fmtMoney(Number(application?.annual_fee||0)/(monthly?12:1))+(monthly?" / Monat":" / Jahr");
+}
+
 function refreshAcceptJoinContribution(){
   if(!activeJoinApplication) return;
   const annualFee=Number(activeJoinApplication.annual_fee||0);
   const entryDate=$("#acceptJoinEntryDate")?.value||todayIso();
-  const mode=$("#acceptJoinMode")?.value||"full";
+  let mode=$("#acceptJoinMode")?.value||"full";
+  const monthly=joinPeriod(activeJoinApplication)==="monthly";
+  if(monthly && (mode==="prorata"||mode==="custom")) {$("#acceptJoinMode").value="full";mode="full";}
   const custom=$("#acceptJoinCustomAmount");
   const due=$("#acceptJoinDueDate");
   const customWrap=$("#acceptJoinCustomWrap");
@@ -53,18 +63,21 @@ function refreshAcceptJoinContribution(){
 
   const fullOption=$("#acceptJoinMode")?.querySelector('option[value="full"]');
   const prorataOption=$("#acceptJoinMode")?.querySelector('option[value="prorata"]');
-  if(fullOption) fullOption.textContent="Voller Jahresbeitrag – "+fmtMoney(annualFee);
-  if(prorataOption) prorataOption.textContent="Anteilig ab "+(entryMonth(entryDate)||"Eintritt")+" – "+fmtMoney(prorataAmount(annualFee,entryDate));
+  if(fullOption) fullOption.textContent=(monthly?"Monatsbeitrag ab Eintritt – ":"Voller Jahresbeitrag – ")+fmtMoney(annualFee/(monthly?12:1));
+  if(prorataOption){prorataOption.disabled=monthly;prorataOption.hidden=monthly;prorataOption.textContent="Anteilig ab "+(entryMonth(entryDate)||"Eintritt")+" – "+fmtMoney(prorataAmount(annualFee,entryDate));}
+  const own=$("#acceptJoinMode")?.querySelector('option[value="custom"]');if(own){own.disabled=monthly;own.hidden=monthly;}
 
   if(customWrap) customWrap.hidden=mode!=="custom";
   if(dueWrap) dueWrap.hidden=mode==="none";
   if(mode==="custom"&&custom&&!custom.value) custom.value=String(annualFee||"");
   if(mode!=="none"&&due&&!due.value) due.value=addDaysIso(entryDate,14);
 
-  const amount=entryAmount(mode,annualFee,entryDate,custom?.value);
+  const amount=monthly?(mode==="none"?0:annualFee/12):entryAmount(mode,annualFee,entryDate,custom?.value);
   if(summary){
     const year=new Date(entryDate+"T12:00:00").getFullYear();
-    summary.textContent=mode==="none"
+    summary.textContent=monthly
+      ? (mode==="none"?"Keine Beiträge für dieses Jahr.":"Ab Eintrittsmonat "+fmtMoney(annualFee/12)+" monatlich; die Monate werden einzeln erfasst.")
+      : mode==="none"
       ?"Für "+year+" wird kein Beitrag angelegt. Ab "+(year+1)+" gilt der normale Jahresbeitrag von "+fmtMoney(annualFee)+"."
       :"Beitrag "+year+": "+fmtMoney(amount)+" · fällig "+(due?.value?new Date(due.value+"T12:00:00").toLocaleDateString("de-DE"):"nach Festlegung")+". Ab "+(year+1)+": "+fmtMoney(annualFee)+" / Jahr.";
   }
@@ -73,7 +86,7 @@ function refreshAcceptJoinContribution(){
 function openAcceptJoinSheet(application){
   activeJoinApplication=application;
   $("#acceptJoinName").textContent=application.first_name+" "+application.last_name;
-  $("#acceptJoinAnnualInfo").textContent=(application.contribution_label||"Jahresbeitrag")+" · "+fmtMoney(application.annual_fee)+" / Jahr";
+  $("#acceptJoinAnnualInfo").textContent=(application.contribution_label||"Mitgliedsbeitrag")+" · "+joinDisplayFee(application);
   $("#acceptJoinEntryDate").value=todayIso();
   $("#acceptJoinMode").value="full";
   $("#acceptJoinCustomAmount").value="";
@@ -132,7 +145,7 @@ function loadJoinDepartments(){
 async function loadJoinContributionTypes(){
   const {data,error}=await sb
     .from("contribution_types")
-    .select("id,name,annual_fee,is_default,sort_order,created_at")
+    .select("id,name,annual_fee,billing_interval,is_default,sort_order,created_at")
     .eq("club_id",club.id)
     .eq("active",true)
     .order("sort_order",{ascending:true})
@@ -148,8 +161,8 @@ async function loadJoinContributionTypes(){
     joinContributionTypes.map(item=>
       '<option value="'+esc(item.id)+'">'+
       esc(item.name)+' – '+
-      Number(item.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+
-      ' / Jahr</option>'
+      (Number(item.annual_fee||0)/(item.billing_interval==="monthly"?12:1)).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+
+      (item.billing_interval==="monthly"?" / Monat</option>":" / Jahr</option>")
     ).join("");
 
   if(!joinContributionTypes.length){
@@ -242,7 +255,7 @@ function applicationCard(a){
       '<div><span>Adresse</span><b>'+esc(address)+'</b></div>'+
       '<div><span>Abteilung / Gruppe</span><b>'+esc(a.group_name||"–")+'</b></div>'+
       '<div><span>Beitragsart</span><b>'+esc(a.contribution_label||"Standardbeitrag")+'</b></div>'+
-      '<div><span>Jahresbeitrag</span><b>'+Number(a.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+'</b></div>'+
+      '<div><span>Beitrag</span><b>'+joinDisplayFee(a)+'</b></div>'+
       '<div><span>Kontoinhaber</span><b>'+esc(a.account_holder||"–")+'</b></div>'+
       '<div><span>IBAN</span><b>'+esc(a.iban||"–")+'</b></div>'+
       '<div><span>SEPA</span><b>'+(a.sepa_consent?"Zustimmung erteilt":"Nein")+'</b></div>'+
@@ -297,7 +310,7 @@ window.initJoinsPage=async function(){
     const entryDate=$("#acceptJoinEntryDate").value;
     const mode=$("#acceptJoinMode").value;
     const createContribution=mode!=="none";
-    const amount=entryAmount(mode,activeJoinApplication.annual_fee,entryDate,$("#acceptJoinCustomAmount").value);
+    const amount=joinPeriod(activeJoinApplication)==="monthly"?(mode==="none"?0:Number(activeJoinApplication.annual_fee||0)/12):entryAmount(mode,activeJoinApplication.annual_fee,entryDate,$("#acceptJoinCustomAmount").value);
     const dueDate=createContribution?$("#acceptJoinDueDate").value:null;
     const year=new Date(entryDate+"T12:00:00").getFullYear();
 

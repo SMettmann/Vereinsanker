@@ -22,6 +22,7 @@
     editingId=null;
     $("#contributionTypeName").value="";
     $("#contributionTypeFee").value="";
+    $("#contributionTypeInterval").value="yearly";
     $("#contributionTypeDefault").checked=false;
     $("#contributionTypeEditor").hidden=true;
     $("#contributionTypeEditorTitle").textContent="Beitragsart hinzufügen";
@@ -31,7 +32,8 @@
   function openEditor(item=null){
     editingId=item?.id||null;
     $("#contributionTypeName").value=item?.name||"";
-    $("#contributionTypeFee").value=item?Number(item.annual_fee||0):"";
+    $("#contributionTypeInterval").value=item?.billing_interval||"yearly";
+    $("#contributionTypeFee").value=item?Number(item.annual_fee||0)/(item.billing_interval==="monthly"?12:1):"";
     $("#contributionTypeDefault").checked=item?.is_default||(!types.length);
     $("#contributionTypeEditorTitle").textContent=item?"Beitragsart bearbeiten":"Beitragsart hinzufügen";
     $("#saveContributionType").textContent=item?"Änderungen speichern":"Beitragsart speichern";
@@ -53,7 +55,7 @@
     mode.innerHTML='<strong>Mehrere Beitragsarten aktiv</strong><span>Beim digitalen Beitritt wählt das neue Mitglied eine dieser Varianten aus.</span>';
     rows.innerHTML=types.map(item=>
       '<div class="contribution-type-row">'+
-        '<div><strong>'+esc(item.name)+'</strong><span>'+euro(item.annual_fee)+' / Jahr'+(item.is_default?' · Vorauswahl':'')+'</span></div>'+
+        '<div><strong>'+esc(item.name)+'</strong><span>'+euro(Number(item.annual_fee||0)/(item.billing_interval==='monthly'?12:1))+(item.billing_interval==='monthly'?' / Monat':' / Jahr')+(item.is_default?' · Vorauswahl':'')+'</span></div>'+
         (item.is_default?'<b class="contribution-type-default">Standard</b>':'')+
         '<div class="contribution-type-actions">'+
           '<button type="button" data-edit-contribution-type="'+esc(item.id)+'">Bearbeiten</button>'+
@@ -77,7 +79,7 @@
   async function load(){
     const {data,error}=await sb
       .from("contribution_types")
-      .select("id,name,annual_fee,is_default,active,sort_order,created_at")
+      .select("id,name,annual_fee,billing_interval,is_default,active,sort_order,created_at")
       .eq("club_id",club.id)
       .eq("active",true)
       .order("sort_order",{ascending:true})
@@ -90,6 +92,7 @@
   async function saveType(){
     const name=$("#contributionTypeName").value.trim();
     const fee=Number($("#contributionTypeFee").value);
+    const interval=$("#contributionTypeInterval").value;
     let isDefault=$("#contributionTypeDefault").checked;
 
     if(name.length<2){
@@ -98,7 +101,7 @@
       return;
     }
     if(!Number.isFinite(fee)||fee<0){
-      managerMessage("Bitte einen gültigen Jahresbeitrag eingeben.","error");
+      managerMessage("Bitte einen gültigen Beitrag eingeben.","error");
       $("#contributionTypeFee").focus();
       return;
     }
@@ -123,7 +126,8 @@
       const payload={
         club_id:club.id,
         name,
-        annual_fee:fee,
+        annual_fee:Number((fee*(interval==="monthly"?12:1)).toFixed(2)),
+        billing_interval:interval,
         is_default:isDefault,
         active:true,
         updated_at:new Date().toISOString()

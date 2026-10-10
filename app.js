@@ -1099,7 +1099,7 @@ async function loadMembers() {
 async function loadContributionTypes(clubId) {
   const { data, error } = await sb
     .from("contribution_types")
-    .select("id,name,annual_fee,is_default,active,sort_order,created_at")
+    .select("id,name,annual_fee,billing_interval,is_default,active,sort_order,created_at")
     .eq("club_id", clubId)
     .eq("active", true)
     .order("sort_order", { ascending: true })
@@ -1112,13 +1112,23 @@ function contributionTypeEuro(value) {
   return Number(value || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 }
 
+function billingPeriodForSelection(select,types,member=null) {
+  const type=types.find(t=>t.id===select?.value);
+  return type?.billing_interval || (select?.value==="custom" ? (member?.billing_interval||select?.dataset?.customInterval) : "yearly") || "yearly";
+}
+
+function annualizedMemberFee(amount,period) {
+  return Number((Number(amount||0)*(period==="monthly"?12:1)).toFixed(2));
+}
+
 function setupMemberContributionSelect(select, feeInput, types, club, member = null) {
   if (!select || !feeInput) return;
+  select.dataset.customInterval=member?.billing_interval||"yearly";
 
   const options = [
     '<option value="standard">Standardbeitrag – ' + esc(contributionTypeEuro(club.standard_fee)) + '</option>',
     ...types.map(type =>
-      '<option value="' + esc(type.id) + '">' + esc(type.name) + ' – ' + esc(contributionTypeEuro(type.annual_fee)) + '</option>'
+      '<option value="' + esc(type.id) + '">' + esc(type.name) + ' – ' + esc(contributionTypeEuro(Number(type.annual_fee||0)/(type.billing_interval==='monthly'?12:1))) + (type.billing_interval==='monthly'?' / Monat':' / Jahr') + '</option>'
     ),
     '<option value="custom">Individuell</option>'
   ];
@@ -1138,19 +1148,28 @@ function setupMemberContributionSelect(select, feeInput, types, club, member = n
     } else {
       select.value = "custom";
     }
-    feeInput.value = Number(member.annual_fee || 0);
+    feeInput.value = Number(member.annual_fee || 0)/(member.billing_interval==="monthly"?12:1);
   } else {
     const defaultType = types.find(type => type.is_default) || null;
     if (defaultType) {
       select.value = defaultType.id;
-      feeInput.value = Number(defaultType.annual_fee || 0);
+      feeInput.value = Number(defaultType.annual_fee || 0)/(defaultType.billing_interval==="monthly"?12:1);
     } else {
       select.value = "standard";
       feeInput.value = Number(club.standard_fee || 0);
     }
   }
 
+  const refreshFeeLabel=()=>{
+    const label=document.querySelector('label[for="'+feeInput.id+'"]');
+    if(label) label.textContent=billingPeriodForSelection(select,types,member)==="monthly"?"Monatsbeitrag":"Jahresbeitrag";
+  };
+  refreshFeeLabel();
+  let previousInterval=billingPeriodForSelection(select,types,member);
   select.onchange = () => {
+    if(select.value==="custom") select.dataset.customInterval=previousInterval;
+    refreshFeeLabel();
+    previousInterval=billingPeriodForSelection(select,types,member);
     if (select.value === "standard") {
       feeInput.value = Number(club.standard_fee || 0);
       return;
@@ -1161,21 +1180,21 @@ function setupMemberContributionSelect(select, feeInput, types, club, member = n
       return;
     }
     const type = types.find(item => item.id === select.value);
-    if (type) feeInput.value = Number(type.annual_fee || 0);
+    if (type) feeInput.value = Number(type.annual_fee || 0)/(type.billing_interval==="monthly"?12:1);
   };
 }
 
 function memberContributionSelection(select, types) {
   const value = select?.value || "standard";
   if (value === "standard") {
-    return { contribution_type_id: null, contribution_label: "Standardbeitrag" };
+    return { contribution_type_id: null, contribution_label: "Standardbeitrag", billing_interval:"yearly" };
   }
   if (value === "custom") {
-    return { contribution_type_id: null, contribution_label: "Individuell" };
+    return { contribution_type_id: null, contribution_label: "Individuell", billing_interval:select?.dataset?.customInterval||"yearly" };
   }
   const type = types.find(item => item.id === value);
   return type
-    ? { contribution_type_id: type.id, contribution_label: type.name }
+    ? { contribution_type_id: type.id, contribution_label: type.name, billing_interval:type.billing_interval||"yearly" }
     : { contribution_type_id: null, contribution_label: "Individuell" };
 }
 
@@ -1232,13 +1251,21 @@ function refreshMemberEntryContribution() {
   if (!entryDate || !mode || !annualFee || !summary) return;
 
   const fee = Number(annualFee.value || 0);
+  const monthly = billingPeriodForSelection($("#memberContributionType"),window.vaMemberTypes||[])==="monthly";
   const prorata = entryContributionProrata(fee, entryDate.value);
   const month = entryContributionMonth(entryDate.value);
 
   const fullOption = mode.querySelector('option[value="full"]');
   const prorataOption = mode.querySelector('option[value="prorata"]');
-  if (fullOption) fullOption.textContent = "Voller Jahresbeitrag – " + money(fee);
-  if (prorataOption) prorataOption.textContent = "Anteilig ab " + (month || "Eintritt") + " – " + money(prorata);
+  if (monthly && (mode.value==="prorata"||mode.value==="custom")) mode.value="full";
+  if (fullOption) fullOption.textContent = (monthly?"Monatsbeitrag ab Eintritt – ":"Voller Jahresbeitrag – ") + money(fee);
+  if (prorataOption) {
+    prorataOption.hidden=monthly;
+    prorataOption.disabled=monthly;
+    prorataOption.textContent = "Anteilig ab " + (month || "Eintritt") + " – " + money(prorata);
+  }
+  const customOption=mode.querySelector('option[value="custom"]');
+  if(customOption){customOption.hidden=monthly;customOption.disabled=monthly;}
 
   if (customWrap) customWrap.hidden = mode.value !== "custom";
   if (dueWrap) dueWrap.hidden = mode.value === "none";
@@ -1247,7 +1274,9 @@ function refreshMemberEntryContribution() {
   if (mode.value !== "none" && due && !due.value) due.value = addDaysIso(entryDate.value, 14);
 
   const amount = entryContributionAmount(mode.value, fee, entryDate.value, custom?.value);
-  summary.textContent = mode.value === "none"
+  summary.textContent = monthly
+    ? (mode.value==="none"?"Keine Beiträge für dieses Jahr.":"Ab Eintrittsmonat "+money(fee)+" monatlich; jeder Monat wird einzeln verbucht.")
+    : mode.value === "none"
     ? "Für " + currentYear + " wird kein Beitrag angelegt. Ab " + (currentYear + 1) + " gilt der normale Jahresbeitrag von " + money(fee) + "."
     : "Beitrag " + currentYear + ": " + money(amount) + " · fällig " + (due?.value ? new Date(due.value + "T12:00:00").toLocaleDateString("de-DE") : "nach Festlegung") + ". Ab " + (currentYear + 1) + ": " + money(fee) + " / Jahr.";
 }
@@ -1273,7 +1302,7 @@ async function nextMemberNumber(clubId) {
 async function loadContributions(year = currentYear) {
   const { data, error } = await sb
     .from("contributions")
-    .select("id,club_id,member_id,contribution_year,amount,due_date,status,paid_at,payment_method,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,account_holder,member_number,annual_fee,mandate_reference,mandate_signed_at)")
+    .select("id,club_id,member_id,contribution_year,contribution_month,amount,due_date,status,paid_at,payment_method,note,sepa_exported_at,sepa_collection_date,sepa_batch_id,members(id,first_name,last_name,group_name,email,iban,account_holder,member_number,annual_fee,mandate_reference,mandate_signed_at)")
     .eq("contribution_year", year)
     .order("due_date", { ascending: true });
   if (error) throw error;
@@ -1471,7 +1500,7 @@ function renderMemberRows(members, contributionMap) {
     return '<button class="members-row" type="button" data-member-id="' + esc(m.id) + '">' +
       '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' + esc(memberFullName(m)) + '<small>' + esc(m.member_number || "ohne Mitgliedsnummer") + '</small></b></span>' +
       '<span>' + esc(m.group_name || "Nicht zugeordnet") + '</span>' +
-      '<span>' + esc(money(m.annual_fee)) + '</span>' +
+      '<span>' + esc(money(Number(m.annual_fee||0)/(m.billing_interval==='monthly'?12:1)) + (m.billing_interval==='monthly'?' / Monat':' / Jahr')) + '</span>' +
       '<em class="' + (status === "Bezahlt" ? "status-paid" : status === "Offen" ? "status-open" : "status-none") + '">' + status + '</em>' +
     '</button>';
   }).join("");
@@ -1488,10 +1517,15 @@ async function initMembers() {
   bindIbanValidation($("#memberIban"));
   setupDepartmentSelect($("#memberGroup"), club);
   const contributionTypes = await loadContributionTypes(club.id);
+  window.vaMemberTypes=contributionTypes;
   setupMemberContributionSelect($("#memberContributionType"), $("#memberFee"), contributionTypes, club);
   let members = await loadMembers();
   let contributions = await loadContributions();
-  let contributionMap = new Map(contributions.map(c => [c.member_id, c]));
+  let contributionMap = new Map();
+  for(const c of contributions){
+    const prev=contributionMap.get(c.member_id);
+    if(!prev || (prev.status==="paid" && c.status!=="paid")) contributionMap.set(c.member_id,c);
+  }
   renderMemberRows(members, contributionMap);
 
   const memberSheet = $("#memberSheet");
@@ -1543,7 +1577,7 @@ async function initMembers() {
     $("#detailIban").textContent = member.iban || "–";
     if ($("#detailAccountHolder")) $("#detailAccountHolder").textContent = member.account_holder || memberFullName(member) || "–";
     if ($("#detailContributionType")) $("#detailContributionType").textContent = member.contribution_label || "Standard / individuell";
-    $("#detailFee").textContent = money(member.annual_fee);
+    $("#detailFee").textContent = money(Number(member.annual_fee||0)/(member.billing_interval==="monthly"?12:1))+(member.billing_interval==="monthly"?" / Monat":" / Jahr");
     $("#detailStatus").textContent = !c ? "Kein Beitrag" : (c.status === "paid" ? "Bezahlt" : "Offen");
     if ($("#detailJoinedAt")) $("#detailJoinedAt").textContent = member.joined_at ? new Date(member.joined_at + "T12:00:00").toLocaleDateString("de-DE") : "–";
     openBackdrop(memberSheet);
@@ -1566,8 +1600,8 @@ async function initMembers() {
     e.preventDefault();
     const form = e.currentTarget;
     const button = $("button[type='submit']", form);
-    const fee = Number($("#memberFee").value || 0);
     const selectedContribution = memberContributionSelection($("#memberContributionType"), contributionTypes);
+    const fee = annualizedMemberFee($("#memberFee").value,selectedContribution.billing_interval);
     const memberIban = normalizeIbanValue($("#memberIban").value);
     const memberMandate = $("#memberMandate")?.value.trim() || "";
 
@@ -1672,6 +1706,10 @@ async function initMembers() {
 function contributionMember(c) {
   return c.members || {};
 }
+function contributionPeriodLabel(c) {
+  const month=Number(c.contribution_month||0);
+  return month?("Monatsbeitrag "+new Date(Number(c.contribution_year),month-1,1).toLocaleDateString("de-DE",{month:"long"})+" "+c.contribution_year):("Jahresbeitrag "+c.contribution_year);
+}
 
 async function initContributions() {
   const club = await getClub();
@@ -1760,7 +1798,7 @@ async function initContributions() {
       return '<div class="open-row' + (prepared ? ' sepa-prepared-row' : '') + '">' +
         '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
         esc(memberFullName(m)) +
-        '<small>' + esc((m.group_name || "Nicht zugeordnet") + " · Jahresbeitrag") + '</small>' +
+        '<small>' + esc((m.group_name || "Nicht zugeordnet") + " · "+contributionPeriodLabel(c)) + '</small>' +
         (prepared
           ? '<small class="sepa-row-prepared">SEPA vorbereitet' + (collectionText ? ' · Einzug am ' + esc(collectionText) : '') + '</small>'
           : (memberSepaProblem(m) ? '<small class="sepa-row-warning">SEPA nicht möglich: ' + esc(memberSepaProblem(m)) + '</small>' : '')) +
@@ -1781,7 +1819,7 @@ async function initContributions() {
       return '<div class="payment-row" data-search="' + esc((memberFullName(m) + " " + (m.group_name || "")).toLowerCase()) + '">' +
         '<span class="member-main"><i>' + esc(initials(m.first_name, m.last_name)) + '</i><b>' +
         esc(memberFullName(m)) +
-        '<small>' + esc(m.group_name || "Nicht zugeordnet") + '</small></b></span>' +
+        '<small>' + esc((m.group_name || "Nicht zugeordnet") + ' · ' + contributionPeriodLabel(c)) + '</small></b></span>' +
         '<strong>' + esc(money(c.amount)) + '</strong>' +
         (c.status === "paid"
           ? '<span class="paid-check paid-with-date"><b>✓ Bezahlt</b><small>' + esc(paidDate ? "am " + paidDate : "Zahlungsdatum fehlt") + '</small><button class="payment-edit" data-id="' + esc(c.id) + '" type="button">Ändern</button></span>'
@@ -1938,7 +1976,8 @@ async function initContributions() {
   const updateSepaAction = () => {
     if (!sepaAction) return;
     const openRows = contributions.filter(c => c.status === "open");
-    const freshRows = openRows.filter(c => !c.sepa_exported_at);
+    const cutoff=$("#collectionDate")?.value||localTodayIso();
+    const freshRows = openRows.filter(c => !c.sepa_exported_at && (!c.due_date || c.due_date<=cutoff));
     sepaAction.classList.toggle("no-sepa-needed", !openRows.length);
 
     const sub = $("span", sepaAction);
@@ -1958,7 +1997,8 @@ async function initContributions() {
   const renderSepaSheet = () => {
     const openContributions = contributions.filter(c => c.status === "open");
     const prepared = openContributions.filter(c => Boolean(c.sepa_exported_at));
-    const candidates = openContributions.filter(c => !c.sepa_exported_at);
+    const cutoff=$("#collectionDate")?.value||localTodayIso();
+    const candidates = openContributions.filter(c => !c.sepa_exported_at && (!c.due_date || c.due_date<=cutoff));
 
     const invalidAmount = candidates.filter(c => {
       const amount = Number(c.amount || 0);
@@ -2335,7 +2375,7 @@ async function initSettings() {
         sb.from("finance_transactions").select("*").eq("club_id", club.id).order("transaction_date", { ascending: false }),
         sb.from("legal_acceptances").select("document_type,document_version,accepted_at,controller_name,controller_address,controller_contact_name,controller_contact_email").eq("club_id", club.id).order("accepted_at", { ascending: false }),
         sb.from("membership_applications").select("*").eq("club_id", club.id).order("submitted_at", { ascending: false }),
-        sb.from("contribution_types").select("name,annual_fee,is_default,active,sort_order").eq("club_id", club.id).order("sort_order", { ascending: true })
+        sb.from("contribution_types").select("name,annual_fee,billing_interval,is_default,active,sort_order").eq("club_id", club.id).order("sort_order", { ascending: true })
       ]);
 
       if (membersResult.error) throw membersResult.error;
@@ -2385,6 +2425,8 @@ async function initSettings() {
         "IBAN": member.iban || "",
         "Kontoinhaber/in": member.account_holder || "",
         "Jahresbeitrag": Number(member.annual_fee || 0),
+        "Zahlungsrhythmus": member.billing_interval==="monthly"?"Monatlich":"Jährlich",
+        "Periodenbeitrag": Number(member.annual_fee||0)/(member.billing_interval==="monthly"?12:1),
         "Mandatsreferenz": member.mandate_reference || "",
         "Mandat unterschrieben am": member.mandate_signed_at || "",
         "Aktiv": member.active ? "Ja" : "Nein",
@@ -2398,6 +2440,7 @@ async function initSettings() {
           "Vorname": member.first_name || "",
           "Nachname": member.last_name || "",
           "Jahr": entry.contribution_year,
+          "Monat": entry.contribution_month||"",
           "Betrag": Number(entry.amount || 0),
           "Fälligkeit": entry.due_date || "",
           "Status": entry.status || "",
@@ -2423,6 +2466,8 @@ async function initSettings() {
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(contributionTypes.map(entry => ({
         "Beitragsart": entry.name || "",
         "Jahresbeitrag": Number(entry.annual_fee || 0),
+        "Zahlungsrhythmus": entry.billing_interval==="monthly"?"Monatlich":"Jährlich",
+        "Periodenbeitrag": Number(entry.annual_fee||0)/(entry.billing_interval==="monthly"?12:1),
         "Vorauswahl": entry.is_default ? "Ja" : "Nein",
         "Aktiv": entry.active ? "Ja" : "Nein"
       }))), "Beitragsarten");
@@ -2445,6 +2490,7 @@ async function initSettings() {
         "SEPA-Mandatsversion": entry.sepa_mandate_version || "",
         "Datenschutz-Version": entry.privacy_notice_version || "",
         "Jahresbeitrag": Number(entry.annual_fee || 0),
+        "Zahlungsrhythmus": entry.billing_interval==="monthly"?"Monatlich":"Jährlich",
         "Status": entry.status || "",
         "Eingegangen am": entry.submitted_at || "",
         "Bearbeitet am": entry.reviewed_at || ""

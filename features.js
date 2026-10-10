@@ -45,7 +45,8 @@ function autoMapColumns(columns) {
     email: ["email", "emailadresse", "mail", "emailprivat", "emailkontakt", "mailadresse"],
     iban: ["iban", "kontoiban", "bankiban", "kontonummeriban"],
     account_holder: ["kontoinhaber", "kontoinhaberin", "kontoinhabername", "accountowner", "accountholder"],
-    annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag", "beitrageuro", "beitragjahr", "jahresbeitrag2026"],
+    annual_fee: ["beitrag", "jahresbeitrag", "mitgliedsbeitrag", "betrag", "beitrageuro", "beitragjahr", "jahresbeitrag2026", "monatsbeitrag", "monatlicherbeitrag"],
+    billing_interval: ["zahlungsrhythmus","beitragsrhythmus","beitragsintervall","zahlweise","intervall","billinginterval"],
     member_number: ["mitgliedsnummer", "mitgliednr", "mitgliedsnr", "nummer", "membernumber", "mitgliedid", "mitgliederid"],
     mandate_reference: ["mandatsreferenz", "mandat", "mandate", "mandatref", "sepamandat", "referenz"],
     mandate_signed_at: ["mandatsdatum", "mandatdatum", "unterschriftsdatum", "mandatesigned", "mandatunterschriebenam"],
@@ -122,6 +123,9 @@ function mapImportRow(row, mapping, fallbackFee) {
   const paidAtRaw = mapping.paid_at ? row[mapping.paid_at] : "";
   const birthRaw = mapping.birth_date ? row[mapping.birth_date] : "";
   const joinedRaw = mapping.joined_at ? row[mapping.joined_at] : "";
+  const isMonthlyAmountColumn = ["monatsbeitrag","monatlicherbeitrag"].includes(normalizeHeader(mapping.annual_fee||""));
+  const periodRaw = mapping.billing_interval ? normalizeHeader(row[mapping.billing_interval]) : (isMonthlyAmountColumn ? "monatlich" : "");
+  const interval = ["monatlich","monthly","monat"].includes(periodRaw) ? "monthly" : (["jaehrlich","jahrlich","yearly","jahr"].includes(periodRaw) ? "yearly" : null);
 
   return {
     first_name: first,
@@ -130,7 +134,9 @@ function mapImportRow(row, mapping, fallbackFee) {
     email: mapping.email ? String(row[mapping.email] || "").trim() || null : null,
     iban: mapping.iban ? String(row[mapping.iban] || "").replace(/\s+/g, "").toUpperCase() || null : null,
     account_holder: mapping.account_holder ? String(row[mapping.account_holder] || "").trim() || null : null,
-    annual_fee: mapping.annual_fee ? parseFee(row[mapping.annual_fee], fallbackFee) : Number(fallbackFee || 0),
+    annual_fee: mapping.annual_fee ? Number((parseFee(row[mapping.annual_fee], fallbackFee)*(isMonthlyAmountColumn?12:1)).toFixed(2)) : Number(fallbackFee || 0),
+    billing_interval: interval,
+    billing_interval_raw: periodRaw,
     member_number: mapping.member_number ? String(row[mapping.member_number] || "").trim() || null : null,
     mandate_reference: mapping.mandate_reference ? String(row[mapping.mandate_reference] || "").trim() || null : null,
     mandate_signed_at: mapping.mandate_signed_at ? parseDateValue(row[mapping.mandate_signed_at]) : null,
@@ -166,6 +172,9 @@ function validateImportedMember(member) {
   if (member.mandate_signed_at && !member.mandate_reference) errors.push("Mandatsreferenz fehlt");
   if (member.contribution_status_raw && !member.contribution_status) errors.push("Beitragsstatus unbekannt");
   if (member.paid_at_raw && !member.paid_at) errors.push("Zahlungsdatum ungültig");
+  if (member.billing_interval_raw && !member.billing_interval) errors.push("Zahlungsrhythmus ungültig (monatlich/jährlich)");
+  if (member.billing_interval==="monthly" && !member.joined_at) errors.push("Monatlicher Beitrag benötigt ein Eintrittsdatum");
+  if (member.billing_interval==="monthly" && ["paid","none"].includes(member.contribution_status)) errors.push("Bei Monatsbeiträgen keine pauschale Jahres-Zahlungsmarkierung importieren");
   if (member.birth_date_raw && !member.birth_date) errors.push("Geburtsdatum ungültig");
   if (member.joined_at_raw && !member.joined_at) errors.push("Eintrittsdatum ungültig");
   return errors;
@@ -185,7 +194,8 @@ function importMappingHtml(columns, mapping) {
     ["postal_code", "PLZ", false],
     ["city", "Ort", false],
     ["joined_at", "Eintrittsdatum", false],
-    ["annual_fee", "Jahresbeitrag", false],
+    ["annual_fee", "Jahres-/Monatsbeitrag", false],
+    ["billing_interval", "Zahlungsrhythmus", false],
     ["contribution_label", "Beitragsart", false],
     ["contribution_status", "Beitragsstatus", false],
     ["paid_at", "Bezahlt am", false],
@@ -546,6 +556,8 @@ async function reviewCorrectedCandidates(sources, club) {
       iban: normalizeIban(source.iban) || null,
       account_holder: String(source.account_holder || "").trim() || null,
       annual_fee: parseFee(source.annual_fee, club.standard_fee),
+      billing_interval: source.billing_interval || null,
+      billing_interval_raw: source.billing_interval_raw || null,
       member_number: String(source.member_number || "").trim() || null,
       mandate_reference: String(source.mandate_reference || "").trim() || null,
       mandate_signed_at: parsedDate,
@@ -636,6 +648,15 @@ async function reviewCorrectedCandidates(sources, club) {
   return { valid, corrections, duplicateActions };
 }
 
+async function syncMonthlyOpenAmounts(memberId,annualTotal){
+  const {error}=await sb.from("contributions")
+    .update({amount:Number((annualTotal/12).toFixed(2))})
+    .eq("member_id",memberId).eq("contribution_year",currentYear)
+    .gt("contribution_month",0).eq("status","open").is("sepa_exported_at",null);
+  if(error) console.error("Monatsraten konnten nicht synchronisiert werden",error);
+  return !error;
+}
+
 async function enhanceMemberPage() {
   const memberClub = vaClub || await getClub();
   const memberContributionTypes = await loadContributionTypes(memberClub.id);
@@ -654,14 +675,14 @@ async function enhanceMemberPage() {
     const statusText = row => !row ? "Kein Beitrag" : row.status === "paid" ? "Bezahlt" : "Offen";
 
     const lines = [
-      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Geburtsdatum","Telefon","Straße","PLZ","Ort","Eintrittsdatum","Beitragsart","IBAN","Kontoinhaber/in","Jahresbeitrag","Beitragsstatus","Bezahlt am","Mandatsreferenz","Mandatsdatum"],
+      ["Mitgliedsnummer","Vorname","Nachname","Abteilung / Gruppe","E-Mail","Geburtsdatum","Telefon","Straße","PLZ","Ort","Eintrittsdatum","Beitragsart","IBAN","Kontoinhaber/in","Jahresbeitrag","Zahlungsrhythmus","Beitragsstatus","Bezahlt am","Mandatsreferenz","Mandatsdatum"],
       ...members.map(m => {
         const contribution = contributionMap.get(m.id);
         return [
           m.member_number||"",m.first_name,m.last_name,m.group_name||"",m.email||"",
           m.birth_date||"",m.phone||"",m.street||"",m.postal_code||"",m.city||"",m.joined_at||"",
-          m.contribution_label||"",m.iban||"",m.account_holder||"",m.annual_fee||0,statusText(contribution),
-          contribution?.paid_at ? String(contribution.paid_at).slice(0,10) : "",
+          m.contribution_label||"",m.iban||"",m.account_holder||"",m.annual_fee||0,m.billing_interval==="monthly"?"Monatlich":"Jährlich",m.billing_interval==="monthly"?"":statusText(contribution),
+          m.billing_interval!=="monthly" && contribution?.paid_at ? String(contribution.paid_at).slice(0,10) : "",
           m.mandate_reference||"",m.mandate_signed_at||""
         ];
       })
@@ -868,6 +889,7 @@ async function enhanceMemberPage() {
         delete clean.paid_at_raw;
         delete clean.birth_date_raw;
         delete clean.joined_at_raw;
+        delete clean.billing_interval_raw;
         return clean;
       });
 
@@ -963,7 +985,7 @@ async function enhanceMemberPage() {
   $("#editMemberForm")?.addEventListener("submit", async e => {
     e.preventDefault();
     const id = $("#editMemberId").value;
-    const amount = Number($("#editMemberFee").value || 0);
+    const amount = annualizedMemberFee($("#editMemberFee").value,billingPeriodForSelection($("#editMemberContributionType"),memberContributionTypes));
     const selectedContribution = memberContributionSelection($("#editMemberContributionType"), memberContributionTypes);
     const editIban = normalizeIban($("#editMemberIban").value);
     const editMandate = $("#editMemberMandate").value.trim();
@@ -1011,6 +1033,7 @@ async function enhanceMemberPage() {
       return;
     }
 
+    if(selectedContribution.billing_interval==="monthly" && !(await syncMonthlyOpenAmounts(id,amount))) return showToast("Mitglied gespeichert, aber Monatsraten konnten nicht aktualisiert werden.");
     showToast("Mitglied aktualisiert ✓");
     closeBackdrop(editSheet);
     setTimeout(() => location.reload(), 500);
@@ -1199,7 +1222,7 @@ function buildSepaXml(club, rows, collectionDate, batchId = "") {
 
   const txs = rows.map((c, index) => {
     const m = c.members || {};
-    const endToEnd = compactId("VF-" + (m.member_number || String(index + 1)) + "-" + contributionYear);
+    const endToEnd = compactId("VF-" + (m.member_number || String(index + 1)) + "-" + contributionYear + "-" + String(c.contribution_month||0).padStart(2,"0"));
     const mandateId = safeSepaText(m.mandate_reference, 35);
     const debtorName = safeSepaText(m.account_holder || memberFullName(m), 70);
 
@@ -1210,7 +1233,7 @@ function buildSepaXml(club, rows, collectionDate, batchId = "") {
 <DbtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></DbtrAgt>
 <Dbtr><Nm>${xmlEscape(debtorName)}</Nm></Dbtr>
 <DbtrAcct><Id><IBAN>${xmlEscape(normalizeIban(m.iban))}</IBAN></Id></DbtrAcct>
-<RmtInf><Ustrd>${xmlEscape(safeSepaText("Mitgliedsbeitrag " + contributionYear, 140))}</Ustrd></RmtInf>
+<RmtInf><Ustrd>${xmlEscape(safeSepaText("Mitgliedsbeitrag " + memberPaymentPeriod(c), 140))}</Ustrd></RmtInf>
 </DrctDbtTxInf>`;
   }).join("");
 
@@ -1252,9 +1275,14 @@ function reminderDueText(c) {
   return ", fällig am " + formatted;
 }
 
+function memberPaymentPeriod(c) {
+  const month=Number(c?.contribution_month||0);
+  return month ? new Date(Number(c.contribution_year),month-1,1).toLocaleDateString("de-DE",{month:"long"})+" "+c.contribution_year : String(c.contribution_year);
+}
+
 function reminderSubject(c) {
   const year = Number(c?.contribution_year || contributionYearFromUrl() || currentYear);
-  return "Mitgliedsbeitrag " + year + " – " + (vaClub?.name || "Verein");
+  return "Mitgliedsbeitrag " + memberPaymentPeriod(c) + " – " + (vaClub?.name || "Verein");
 }
 
 function friendlyReminder(c) {
@@ -1283,7 +1311,7 @@ function friendlyReminder(c) {
 
   return `Hallo ${memberName},
 
-für deinen Mitgliedsbeitrag ${contributionYear} sind noch ${money(c.amount)} offen${dueText}.
+für deinen Mitgliedsbeitrag ${memberPaymentPeriod(c)} sind noch ${money(c.amount)} offen${dueText}.
 
 Wir möchten dich freundlich daran erinnern, den offenen Betrag zu überweisen bzw. den Zahlungseingang zu prüfen.
 
@@ -1395,7 +1423,7 @@ async function enhanceContributionPage() {
     const currentClub = await getClub();
     const all = await loadContributions(selectedYear);
     const collectionDate = $("#collectionDate")?.value;
-    const candidates = all.filter(c => c.status === "open" && !c.sepa_exported_at);
+    const candidates = all.filter(c => c.status === "open" && !c.sepa_exported_at && (!c.due_date || c.due_date<=collectionDate));
 
     if (!candidates.length) {
       const prepared = all.filter(c => c.status === "open" && c.sepa_exported_at);
