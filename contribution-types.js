@@ -92,6 +92,7 @@
   async function saveType(){
     const name=$("#contributionTypeName").value.trim();
     const fee=Number($("#contributionTypeFee").value);
+    const interval=$("#contributionTypeInterval").value;
     let isDefault=$("#contributionTypeDefault").checked;
 
     if(name.length<2){
@@ -100,7 +101,7 @@
       return;
     }
     if(!Number.isFinite(fee)||fee<0){
-      managerMessage("Bitte einen gültigen Jahresbeitrag eingeben.","error");
+      managerMessage("Bitte einen gültigen Beitrag eingeben.","error");
       $("#contributionTypeFee").focus();
       return;
     }
@@ -125,7 +126,8 @@
       const payload={
         club_id:club.id,
         name,
-        annual_fee:fee,
+        annual_fee:Number((fee*(interval==="monthly"?12:1)).toFixed(2)),
+        billing_interval:interval,
         is_default:isDefault,
         active:true,
         updated_at:new Date().toISOString()
