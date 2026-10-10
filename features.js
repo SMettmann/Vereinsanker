@@ -1199,7 +1199,7 @@ function buildSepaXml(club, rows, collectionDate, batchId = "") {
 
   const txs = rows.map((c, index) => {
     const m = c.members || {};
-    const endToEnd = compactId("VF-" + (m.member_number || String(index + 1)) + "-" + contributionYear);
+    const endToEnd = compactId("VF-" + (m.member_number || String(index + 1)) + "-" + contributionYear + "-" + String(r.contribution_month||0).padStart(2,"0"));
     const mandateId = safeSepaText(m.mandate_reference, 35);
     const debtorName = safeSepaText(m.account_holder || memberFullName(m), 70);
 
