@@ -250,7 +250,7 @@ function applicationCard(a){
       '<div><span>Adresse</span><b>'+esc(address)+'</b></div>'+
       '<div><span>Abteilung / Gruppe</span><b>'+esc(a.group_name||"–")+'</b></div>'+
       '<div><span>Beitragsart</span><b>'+esc(a.contribution_label||"Standardbeitrag")+'</b></div>'+
-      '<div><span>Jahresbeitrag</span><b>'+Number(a.annual_fee||0).toLocaleString("de-DE",{style:"currency",currency:"EUR"})+'</b></div>'+
+      '<div><span>Beitrag</span><b>'+joinDisplayFee(a)+'</b></div>'+
       '<div><span>Kontoinhaber</span><b>'+esc(a.account_holder||"–")+'</b></div>'+
       '<div><span>IBAN</span><b>'+esc(a.iban||"–")+'</b></div>'+
       '<div><span>SEPA</span><b>'+(a.sepa_consent?"Zustimmung erteilt":"Nein")+'</b></div>'+
