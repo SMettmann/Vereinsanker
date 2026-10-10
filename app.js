@@ -1099,7 +1099,7 @@ async function loadMembers() {
 async function loadContributionTypes(clubId) {
   const { data, error } = await sb
     .from("contribution_types")
-    .select("id,name,annual_fee,is_default,active,sort_order,created_at")
+    .select("id,name,annual_fee,billing_interval,is_default,active,sort_order,created_at")
     .eq("club_id", clubId)
     .eq("active", true)
     .order("sort_order", { ascending: true })
@@ -1110,6 +1110,15 @@ async function loadContributionTypes(clubId) {
 
 function contributionTypeEuro(value) {
   return Number(value || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+function billingPeriodForSelection(select,types,member=null) {
+  const type=types.find(t=>t.id===select?.value);
+  return type?.billing_interval || (select?.value==="custom" ? member?.billing_interval : "yearly") || "yearly";
+}
+
+function annualizedMemberFee(amount,period) {
+  return Number((Number(amount||0)*(period==="monthly"?12:1)).toFixed(2));
 }
 
 function setupMemberContributionSelect(select, feeInput, types, club, member = null) {
