@@ -19,10 +19,19 @@ jobs:
             join-public.js joins.js standard-beitritt.js settings.html \
             handbuch.html handbuch.js
           unzip -l VEREINSFACH_STRATO_Monats_Jahresbeitraege_mit_Handbuch.zip
+          zip -9 VEREINSFACH_FIX_Beitragsarten.zip settings.html contribution-types.js app.js
+          unzip -l VEREINSFACH_FIX_Beitragsarten.zip
       - name: ZIP bereitstellen
         uses: actions/upload-artifact@v4
         with:
           name: VEREINSFACH_STRATO_mit_Handbuch
           path: VEREINSFACH_STRATO_Monats_Jahresbeitraege_mit_Handbuch.zip
+          if-no-files-found: error
+          retention-days: 30
+      - name: Beitragsarten-Klick-Fix bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: VEREINSFACH_FIX_Beitragsarten
+          path: VEREINSFACH_FIX_Beitragsarten.zip
           if-no-files-found: error
           retention-days: 30
