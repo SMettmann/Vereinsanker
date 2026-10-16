@@ -19,7 +19,7 @@
         image:{type:"jpeg",quality:0.96},
         html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},
         jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
-        pagebreak:{mode:["css","legacy"],avoid:[".chapter"]}
+        pagebreak:{mode:["css","legacy"],avoid:[".chapter h2",".chapter h3",".note",".steps li"]}
       }).from(document.getElementById("handbookContent")).save();
 
       status.textContent="PDF wurde erstellt.";
