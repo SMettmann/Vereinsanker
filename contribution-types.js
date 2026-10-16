@@ -18,26 +18,61 @@
     el.hidden=!text;
   }
 
+  function getBillingIntervalField(){
+    const existing=$("#contributionTypeInterval");
+    if(existing) return existing;
+    const editor=$("#contributionTypeEditor");
+    if(!editor) return null;
+    const field=document.createElement("div");
+    field.className="field";
+    const label=document.createElement("label");
+    label.setAttribute("for","contributionTypeInterval");
+    label.textContent="Zahlungsrhythmus";
+    const select=document.createElement("select");
+    select.id="contributionTypeInterval";
+    [["yearly","Jährlich"],["monthly","Monatlich"]].forEach(([value,name])=>{
+      const option=document.createElement("option");
+      option.value=value;
+      option.textContent=name;
+      select.appendChild(option);
+    });
+    field.append(label,select);
+    const row=editor.querySelector(".contribution-editor-row");
+    if(row) row.insertAdjacentElement("afterend",field);
+    else editor.appendChild(field);
+    return select;
+  }
+
   function resetEditor(){
     editingId=null;
     $("#contributionTypeName").value="";
     $("#contributionTypeFee").value="";
-    $("#contributionTypeInterval").value="yearly";
+    const interval=getBillingIntervalField();
+    if(interval) interval.value="yearly";
     $("#contributionTypeDefault").checked=false;
     $("#contributionTypeEditor").hidden=true;
+    $("#contributionTypeEditor").style.display="none";
     $("#contributionTypeEditorTitle").textContent="Beitragsart hinzufügen";
     $("#saveContributionType").textContent="Speichern";
   }
 
   function openEditor(item=null){
+    const editor=$("#contributionTypeEditor");
+    const interval=getBillingIntervalField();
+    if(!editor||!interval||!$("#contributionTypeName")||!$("#contributionTypeFee")){
+      managerMessage("Das Beitragsformular fehlt. Bitte settings.html und contribution-types.js gemeinsam auf STRATO aktualisieren und mit Strg + F5 neu laden.","error");
+      return;
+    }
     editingId=item?.id||null;
     $("#contributionTypeName").value=item?.name||"";
-    $("#contributionTypeInterval").value=item?.billing_interval||"yearly";
+    interval.value=item?.billing_interval||"yearly";
     $("#contributionTypeFee").value=item?Number(item.annual_fee||0)/(item.billing_interval==="monthly"?12:1):"";
     $("#contributionTypeDefault").checked=item?.is_default||(!types.length);
     $("#contributionTypeEditorTitle").textContent=item?"Beitragsart bearbeiten":"Beitragsart hinzufügen";
     $("#saveContributionType").textContent=item?"Änderungen speichern":"Beitragsart speichern";
-    $("#contributionTypeEditor").hidden=false;
+    editor.hidden=false;
+    editor.style.display="block";
+    editor.scrollIntoView?.({block:"nearest",behavior:"smooth"});
     setTimeout(()=>$("#contributionTypeName")?.focus(),30);
   }
 
@@ -92,7 +127,7 @@
   async function saveType(){
     const name=$("#contributionTypeName").value.trim();
     const fee=Number($("#contributionTypeFee").value);
-    const interval=$("#contributionTypeInterval").value;
+    const interval=getBillingIntervalField()?.value||"yearly";
     let isDefault=$("#contributionTypeDefault").checked;
 
     if(name.length<2){
@@ -184,11 +219,17 @@
     managerMessage("Beitragsart gelöscht.","success");
   }
 
+  // Event-Delegation funktioniert auch dann, wenn die Einstellungen später initialisiert werden.
+  document.addEventListener("click",event=>{
+    if(!event.target?.closest?.("#addContributionType")) return;
+    event.preventDefault();
+    openEditor();
+  });
+
   window.initContributionTypes=async function(currentClub){
     club=currentClub;
     if(!club||!$("#contributionTypesManager")) return;
 
-    $("#addContributionType")?.addEventListener("click",()=>openEditor());
     $("#cancelContributionType")?.addEventListener("click",resetEditor);
     $("#saveContributionType")?.addEventListener("click",saveType);
 
